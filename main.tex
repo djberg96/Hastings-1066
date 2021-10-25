@@ -1,0 +1,64 @@
+\documentclass[a4paper,11pt,twocolumn]{article}
+\pagestyle{myheadings}
+\usepackage[utf8]{inputenc}
+\usepackage[letterpaper,margin=0.5in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{tgbonum}
+\usepackage{csquotes}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{hyphenat}
+\usepackage{fancyhdr}
+\usepackage[dvipsnames]{xcolor}
+
+\title{Hastings: 1066}
+\author{Designed by: Richard Berg}
+
+\setlength{\columnsep}{2em}
+\setcounter{secnumdepth}{4}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\fancyfoot[R]{Page \thepage}
+
+\titlespacing{\paragraph}{0pt}{1em}{\medskipamount}
+
+\titleformat
+  {\section}
+  [runin]
+  {\LARGE}
+  {[\thesection.0]}
+  {0.5em}
+  {}
+
+\titleformat
+  {\subsection}
+  [runin]
+  {\bfseries}
+  {[\thesubsection]}
+  {0.5em}
+  {}
+
+\titleformat
+  {\paragraph}
+  [runin]
+  {\normalfont}
+  {\theparagraph}
+  {1em}
+  {}
+
+\titleformat
+  {\subsubsection}
+  [runin]
+  {\normalfont}
+  {[\thesubsubsection]}
+  {1em}
+  {}
+
+\begin{document}
+\maketitle
+\input{introduction.tex}
+\input{game_parts}
+\end{document}
