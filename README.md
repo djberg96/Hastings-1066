@@ -6,3 +6,5 @@ It does not currently contain any images, though there are not many in the origi
 Other than fixing one or two minor typos, consistent spelling of "Housecarl", and inclusion of the official errata, this text is identical to the magazine rules.
 
 https://boardgamegeek.com/boardgame/6021/hastings-1066
+
+To generate the rules run `pdflatex --jobname=Hastings_1066 main.tex`.
