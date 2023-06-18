@@ -2,6 +2,8 @@
   <rect fill="yellow" width="300" height="650"/>
 
   <g id="shield" fill="transparent" stroke="black">
-    <path d="M 5,150 A 40,40 0 0 1 295,150 Z"/>
+    <path d="M 5,150 A 40,40 0 0 1 295,150"/>
+    <path d="M 5,150 Q 50, 400 150,645"/>
+    <path d="M 295,150 Q 250, 400 150,645"/>
   </g>
 </svg>
