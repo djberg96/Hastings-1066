@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="300" height="650">
+  <title>Kite Shield</title>
+  <desc>Standard Kite Shield circa 1066 AD</desc>
+
+  <rect width="300" height="650" fill="yellow"/>
+
+  <g id="shield" fill="transparent" stroke="black">
+    <path d="M 150,50 A100,50 0 0,0 225,125"
+  </g>
+</svg>
