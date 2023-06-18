@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="300" height="650">
+  <g id="shield" fill="rgb(100,45,35)">
+    <path d="M 5,150 A 40,40 0 0 1 295,150" stroke="white"/>
+    <path d="M 5,150 Q 40, 400 150,620" stroke="white"/>
+    <path d="M 295,150 Q 260, 400 150,620" stroke="white"/>
+
+    <!-- just need this for fill color really -->
+    <polygon points="5,150 295,150 150,620"/>
+  </g>
+</svg>
