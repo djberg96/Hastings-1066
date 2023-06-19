@@ -1,4 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="300" height="650">
+  <!-- I eyeballed this from https://irongatearmory.com/product/norman-shield-with-steel-cross/ -->
+  <title>Norman Kite Shield</title>
+  <desc>A simple SVG approximation of a Norman kite shield</desc>
+  
   <defs>
     <path id="top" d="M 5,150 A 40,40 0 0 1 295,150"/>
     <path id="bottom_left" d="M 5,150 Q 40, 400 150,620 L 150,150"/>
