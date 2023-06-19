@@ -11,7 +11,7 @@
     </clipPath>
   </defs>
   
-  <g id="shield" fill="rgb(100,45,35)">
+  <g id="shield" fill="rgb(100,45,35)" stroke="#BCC6CC" stroke-width="3">
     <use xlink:href="#top"/>
     <use xlink:href="#bottom_left"/>
     <use xlink:href="#bottom_right"/>
