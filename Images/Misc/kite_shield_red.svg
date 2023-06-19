@@ -1,25 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="300" height="650">
   <defs>
-    <path id="path1" d="M 5,150 A 40,40 0 0 1 295,150"/>
-    <path id="path2" d="M 5,150 Q 40, 400 150,620"/>
-    <path id="path3" d="M 295,150 Q 260, 400 150,620"/>
-
-    <!-- TODO: update paths and remove this -->
-    <polygon id="filler" points="5,150 295,150 150,620"/>
+    <path id="top" d="M 5,150 A 40,40 0 0 1 295,150"/>
+    <path id="bottom_left" d="M 5,150 Q 40, 400 150,620 L 150,150"/>
+    <path id="bottom_right" d="M 295,150 Q 260, 400 150,620 L 150,150"/>
 
     <clipPath id="shieldclip">
-      <use xlink:href="#path1"/>
-      <use xlink:href="#path2"/>
-      <use xlink:href="#path3"/>
-      <use xlink:href="#filler"/>
+      <use xlink:href="#top"/>
+      <use xlink:href="#bottom_left"/>
+      <use xlink:href="#bottom_right"/>
     </clipPath>
   </defs>
   
   <g id="shield" fill="rgb(100,45,35)">
-    <use xlink:href="#path1"/>
-    <use xlink:href="#path2"/>
-    <use xlink:href="#path3"/>
-    <use xlink:href="#filler"/>
+    <use xlink:href="#top"/>
+    <use xlink:href="#bottom_left"/>
+    <use xlink:href="#bottom_right"/>
   </g>
 
   <defs>
