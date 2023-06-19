@@ -64,23 +64,40 @@
       fill="darkgrey"
       stroke="black"
     />
+
+    <circle
+      id="smallbolt"
+      r="3"
+      fill="darkgrey"
+      stroke="black"
+    />
   </defs>
 
   <use x="150" y="30" xlink:href="#bolt" fill="black"/>
   <use x="150" y="65" xlink:href="#bolt" fill="black"/>
   <use x="150" y="100" xlink:href="#bolt" fill="black"/>
 
-  <use x="30" y="170" xlink:href="#bolt" fill="black"/>
-  <use x="60" y="170" xlink:href="#bolt" fill="black"/>
-  <use x="90" y="170" xlink:href="#bolt" fill="black"/>
+  <use x="27" y="170" xlink:href="#bolt" fill="black"/>
+  <use x="57" y="170" xlink:href="#bolt" fill="black"/>
+  <use x="87" y="170" xlink:href="#bolt" fill="black"/>
 
-  <use x="210" y="170" xlink:href="#bolt" fill="black"/>
-  <use x="240" y="170" xlink:href="#bolt" fill="black"/>
-  <use x="270" y="170" xlink:href="#bolt" fill="black"/>
+  <use x="213" y="170" xlink:href="#bolt" fill="black"/>
+  <use x="243" y="170" xlink:href="#bolt" fill="black"/>
+  <use x="273" y="170" xlink:href="#bolt" fill="black"/>
 
   <use x="150" y="250" xlink:href="#bolt" fill="black"/>
   <use x="150" y="325" xlink:href="#bolt" fill="black"/>
   <use x="150" y="400" xlink:href="#bolt" fill="black"/>
   <use x="150" y="475" xlink:href="#bolt" fill="black"/>
   <use x="150" y="550" xlink:href="#bolt" fill="black"/>
+
+
+  <use x="114" y="170" xlink:href="#smallbolt" fill="black"/>
+  <use x="122" y="145" xlink:href="#smallbolt" fill="black"/>
+  <use x="150" y="133" xlink:href="#smallbolt" fill="black"/>
+  <use x="178" y="145" xlink:href="#smallbolt" fill="black"/>
+  <use x="186" y="170" xlink:href="#smallbolt" fill="black"/>
+  <use x="178" y="193" xlink:href="#smallbolt" fill="black"/>
+  <use x="150" y="207" xlink:href="#smallbolt" fill="black"/>
+  <use x="122" y="193" xlink:href="#smallbolt" fill="black"/>
 </svg>
