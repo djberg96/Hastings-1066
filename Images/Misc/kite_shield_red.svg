@@ -1,4 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="300" height="650">
+  <defs>
+    <clipPath id="shieldclip">
+      <path d="M 5,150 A 40,40 0 0 1 295,150" fill="none"/>
+      <path d="M 5,150 Q 40, 400 150,620" fill="none"/>
+      <path d="M 295,150 Q 260, 400 150,620" fill="none"/>
+      <polygon points="5,150 295,150 150,620"/>
+    </clipPath>
+  </defs>
+  
   <g id="shield" fill="rgb(100,45,35)">
     <path d="M 5,150 A 40,40 0 0 1 295,150" stroke="white"/>
     <path d="M 5,150 Q 40, 400 150,620" stroke="white"/>
@@ -8,13 +17,17 @@
     <polygon points="5,150 295,150 150,620"/>
   </g>
 
-  <line
-    id="vertical"
-    x1="150" y1="28" x2="150" y2="570"
-    stroke="silver"
-    stroke-width="45"
-    stroke-linecap="round"
-  />
+  <defs>
+    <line
+      id="vertical"
+      x1="150" y1="0" x2="150" y2="620"
+      stroke="silver"
+      stroke-width="45"
+      stroke-linecap="round"
+    />
+  </defs>
+
+  <use xlink:href="#vertical" clip-path="url(#shieldclip)"/>
 
   <line
     id="horizontal"
