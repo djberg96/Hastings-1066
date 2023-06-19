@@ -25,17 +25,18 @@
       stroke-width="45"
       stroke-linecap="round"
     />
+
+    <line
+      id="horizontal"
+      x1="5" y1="170" x2="300" y2="170"
+      stroke="silver"
+      stroke-width="45"
+      stroke-linecap="round"
+    />
   </defs>
 
   <use xlink:href="#vertical" clip-path="url(#shieldclip)"/>
-
-  <line
-    id="horizontal"
-    x1="30" y1="170" x2="270" y2="170"
-    stroke="silver"
-    stroke-width="45"
-    stroke-linecap="round"
-  />
+  <use xlink:href="#horizontal" clip-path="url(#shieldclip)"/>
 
   <circle
     id="centerpiece"
