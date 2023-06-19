@@ -21,7 +21,7 @@
     <line
       id="vertical"
       x1="150" y1="0" x2="150" y2="620"
-      stroke="silver"
+      stroke="#BCC6CC"
       stroke-width="45"
       stroke-linecap="round"
     />
@@ -29,7 +29,7 @@
     <line
       id="horizontal"
       x1="5" y1="170" x2="300" y2="170"
-      stroke="silver"
+      stroke="#BCC6CC "
       stroke-width="45"
       stroke-linecap="round"
     />
@@ -43,7 +43,7 @@
     cx="150"
     cy="170"
     r="45"
-    fill="silver"
+    fill="#BCC6CC"
     stroke="black"
     stroke-width="3"
   />
