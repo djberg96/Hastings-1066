@@ -48,6 +48,15 @@
     stroke-width="3"
   />
 
+  <circle
+    id="morecenterpiece"
+    cx="150"
+    cy="170"
+    r="29"
+    fill="lightgrey"
+    stroke="grey"
+  />
+
   <defs id="bolts">
     <circle
       id="bolt"
