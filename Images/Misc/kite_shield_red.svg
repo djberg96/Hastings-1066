@@ -3,6 +3,8 @@
     <path id="path1" d="M 5,150 A 40,40 0 0 1 295,150"/>
     <path id="path2" d="M 5,150 Q 40, 400 150,620"/>
     <path id="path3" d="M 295,150 Q 260, 400 150,620"/>
+
+    <!-- TODO: update paths and remove this -->
     <polygon id="filler" points="5,150 295,150 150,620"/>
 
     <clipPath id="shieldclip">
