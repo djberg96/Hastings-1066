@@ -1,5 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
   <rect width="100" height="100" fill="rgb(180,100,40)" stroke="black" stroke-width="3"/>
+  <g>
+    <rect id="ineffective"
+      x="1.5"
+      y="40"
+      height="20"
+      width="97"
+      fill="white"
+      opacity="0.9"
+    />
+  </g>
 
   <g id="battleaxe" transform="translate(0,100) rotate(160, 46, -13) scale(0.01,-0.01) matrix(1,0,0,-1,0,100)" fill="black" stroke="none" >
     <path d="M481 4529 l-24 -10 26 -27 c43 -45 86 -147 107 -254 25 -127 27 -294
@@ -217,13 +227,4 @@
       <text x="50" y="80" font-size="22">A</text>
     </g>
   </g>
-
-  <rect id="ineffective"
-    x="1.5"
-    y="40"
-    height="20"
-    width="97"
-    fill="white"
-    opacity="0.8"
-  >
 </svg>
