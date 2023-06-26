@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-  <rect width="100" height="100" fill="rgb(250,200,15)" stroke="black" stroke-width="3"/>
+  <rect width="100" height="100" fill="rgb(245,135,15)" stroke="black" stroke-width="3"/>
   <g>
     <rect id="ineffective"
       x="1.5"
