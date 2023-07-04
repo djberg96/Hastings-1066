@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <title>Franco-Flemish Morale Marker</title>
+  <desc>The Franco-Flemish Morale Marker for the Norman player</desc>
+  
+  <rect width="100" height="100" fill="rgb(80,160,220)" stroke="black" stroke-width="3"/>
+
+  <text text-anchor="middle" x="50%" y="32%" font-size="16">
+    <tspan x="53%">FR-FLM</tspan>
+    <tspan x="50%" dy="35%" font-size="24">MORALE</tspan>
+  </text>
+</svg>
