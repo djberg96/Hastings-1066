@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <title>Norman Nasal Helmet</title>
+  <desc>A simple SVG approximation of a Norman nasal helmet</desc>
+  <rect width="400" height="400" fill="yellow"/>
+
+  <path stroke="black" stroke-width="3" d="
+      M 200,5
+      L 200,270 350,270
+      Q 310,110 200,5
+      M 200,5
+      L 200,270 50,270
+      Q 90,110 200,5
+    "
+  />
+
+  <rect x="170" y="270" width="60" height="120"/>
+</svg>
