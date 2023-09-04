@@ -17,13 +17,13 @@
     <rect x="170" y="270" width="60" height="120"/>
   </g>
 
-  <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30" fill="white">
-    <text x="50%" y="18%" font-size="18">Alan</text>
+  <g id="attributes" text-anchor="middle" font-size="30" fill="white">
+    <text x="50%" y="23%" font-size="18">Alan</text>
     <g id="shield_wall_defense">
-      <text x="85" y="80">0</text>
+      <text x="85" y="90">0</text>
     </g>
     <g id="shield_wall_attack">
-      <text x="15" y="80">3</text>
+      <text x="15" y="90">3</text>
     </g>
   </g>
 </svg>
