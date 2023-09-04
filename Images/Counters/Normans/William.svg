@@ -19,13 +19,13 @@
   />
   </g>
 
-  <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30" fill="white">
-    <text x="50%" y="18%" font-size="18">William</text>
+  <g id="attributes" text-anchor="middle" font-size="30" fill="white">
+    <text x="50%" y="23%" font-size="18">William</text>
     <g id="shield_wall_defense">
-      <text x="85" y="80">2</text>
+      <text x="85" y="90">2</text>
     </g>
     <g id="shield_wall_attack">
-      <text x="15" y="80">7</text>
+      <text x="15" y="90">7</text>
     </g>
   </g>
 </svg>
