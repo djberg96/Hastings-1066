@@ -20,11 +20,11 @@
 
     <g id="attributes" text-anchor="middle" font-size="30" fill="white">
       <text x="50" y="20" font-size="18">Eustace</text>
-      <g id="shield_wall_defense">
-        <text x="85" y="90">0</text>
-      </g>
-      <g id="shield_wall_attack">
+      <g id="command_range">
         <text x="15" y="90">4</text>
+      </g>
+      <g id="rally_rating">
+        <text x="85" y="90">0</text>
       </g>
     </g>
   </g>

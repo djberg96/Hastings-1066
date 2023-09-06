@@ -19,11 +19,11 @@
 
   <g id="attributes" text-anchor="middle" font-size="30" fill="white">
     <text x="50%" y="23%" font-size="18">Odo</text>
-    <g id="shield_wall_defense">
-      <text x="85" y="90">1</text>
-    </g>
-    <g id="shield_wall_attack">
+    <g id="command_range">
       <text x="15" y="90">6</text>
+    </g>
+    <g id="rally_rating">
+      <text x="85" y="90">1</text>
     </g>
   </g>
 </svg>
