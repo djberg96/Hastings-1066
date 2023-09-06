@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="60" height="60">
   <title>Franco-Flemish Cavalry</title>
   <desc>Franco-Flemish Cavalry unit for S\&amp;T Hastings 1066</desc>
 
-  <rect width="100" height="100" fill="rgb(80,160,220)" stroke="black" stroke-width="3"/>
+  <rect width="100%" height="100%" fill="rgb(80,160,220)" stroke="black" stroke-width="3%"/>
 
-  <g transform="translate(20,5) scale(0.1,0.1)">
+  <g transform="translate(14,3) scale(0.06,0.06)">
     <path id="horse_path" d="M533.7,86.3c4,1.2,5.2,18.7-2.1,33.3
 	    c-4.1,8.2-9.9,13.7-14.9,17.3c-2.5,1.8-5.5,8.7-4.4,11.7c0.7,2.2,1.7,4.6,2.9,7.1c6.3,13.4,14,13.6,17.8,23.1
 	    c6.5,15.9-6.4,27.1,52,86.7c0,0,12.9,15.5-3,37.8c0,0-3.9,22.8-20.6,12c0,0-13.7,11.2-39.5-10.7c0,0-7.9-29-57.5-31.3
@@ -16,15 +16,15 @@
     />
   </g>
 
-  <g id="attributes" text-anchor="middle" font-size="30">
+  <g id="attributes" text-anchor="middle" font-size="18">
     <g id="shield_wall_defense">
-      <text x="85" y="90">6</text>
+      <text x="85%" y="90%">6</text>
     </g>
     <g id="shield_wall_attack">
-      <text x="15" y="90">8</text>
+      <text x="15%" y="90%">8</text>
     </g>
     <g id="morale_rating">
-      <text x="50" y="90" font-size="22">B</text>
+      <text x="50%" y="90%" font-size="14">B</text>
     </g>
   </g>
 </svg>
