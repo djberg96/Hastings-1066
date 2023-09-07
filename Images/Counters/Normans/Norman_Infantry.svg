@@ -20,10 +20,9 @@
   </defs>
 
   <g id="scale" transform="scale(0.6)">
-  
-  <g id="shield" fill="red" stroke="black" stroke-width="5" transform="rotate(35) translate(50,-22) scale(0.1, 0.1)">
-    <use xlink:href="#shield_path"/>
-  </g>
+    <g id="shield" fill="red" stroke="black" stroke-width="5" transform="rotate(35) translate(50,-22) scale(0.1, 0.1)">
+      <use xlink:href="#shield_path"/>
+    </g>
 
     <g transform="translate(8,59) rotate(-138,30,-25) scale(0.003,-0.003)">
       <path d="M650 12793 c-282 -47 -577 -329 -635 -608 -41 -199 7 -348 165 -505
@@ -72,4 +71,5 @@
         <text x="50" y="90" font-size="22">C</text>
       </g>
     </g>
+  </g>
 </svg>
