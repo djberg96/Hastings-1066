@@ -1,29 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="60" height="60">
   <title>Odo</title>
   <desc>Odo leader unit for S\&amp;T Hastings 1066</desc>
 
-  <rect width="100" height="100" fill="red" stroke="black" stroke-width="3"/>
+  <rect width="100%" height="100%" fill="red" stroke="black" stroke-width="3%"/>
 
-  <g id="crown" transform="translate(30,28) scale(0.10,0.10)" fill="white">
-    <path d="
-        M 200,5
-        L 200,270 350,270
-        Q 310,110 200,5
-        M 200,5
-        L 200,270 50,270
-        Q 90,110 200,5
-      "
-    />
-    <rect x="170" y="270" width="60" height="120"/>
-  </g>
-
-  <g id="attributes" text-anchor="middle" font-size="30" fill="white">
-    <text x="50%" y="23%" font-size="18">Odo</text>
-    <g id="command_range">
-      <text x="15" y="90">6</text>
+  <g id="scale" transform="scale(0.6)">
+    <g id="crown" transform="translate(30,30) scale(0.10,0.10)" fill="white">
+      <path d="
+          M 200,5
+          L 200,270 350,270
+          Q 310,110 200,5
+          M 200,5
+          L 200,270 50,270
+          Q 90,110 200,5
+        "
+      />
+      <rect x="170" y="270" width="60" height="120"/>
     </g>
-    <g id="rally_rating">
-      <text x="85" y="90">1</text>
+
+    <g id="attributes" text-anchor="middle" font-size="30" fill="white">
+      <text x="50" y="20" font-size="18">Odo</text>
+      <g id="command_range">
+        <text x="15" y="90">6</text>
+      </g>
+      <g id="rally_rating">
+        <text x="85" y="90">1</text>
+      </g>
     </g>
   </g>
 </svg>
