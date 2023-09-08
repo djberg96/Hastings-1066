@@ -31,10 +31,13 @@
     <g id="attributes" text-anchor="middle" font-size="30" fill="white">
       <text x="50" y="20" font-size="18">Alan</text>
       <g id="command_range">
-        <text x="15" y="90">3</text>
+        <text x="15" y="90">-</text>
+      </g>
+      <g id="movement">
+        <text x="50" y="90" font-size="14">2MP</text>
       </g>
       <g id="rally_rating">
-        <text x="85" y="90">0</text>
+        <text x="85" y="90">-</text>
       </g>
     </g>
   </g>
