@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100">
-  <rect width="100" height="100" fill="rgb(250,200,15)" stroke="black" stroke-width="3"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="60" height="60">
+  <rect width="100%" height="100%" fill="rgb(250,200,15)" stroke="black" stroke-width="3%"/>
 
   <defs>
     <g id="spear" stroke="black" stroke-width="15">
@@ -10,26 +10,28 @@
     </g>
   </defs>
 
-  <g id="spear1" stroke="black" stroke-width="15" transform="translate(22,52) rotate(20) scale(0.05, 0.05)">
-    <use xlink:href="#spear"/>
-  </g>
+  <g id="scale" transform="scale(0.6)">
+    <g id="spear1" stroke="black" stroke-width="15" transform="translate(22,52) rotate(20) scale(0.05, 0.05)">
+      <use xlink:href="#spear"/>
+    </g>
 
-  <g id="spear2" stroke="black" stroke-width="15" transform="translate(44,64) rotate(-20) scale(0.05, 0.05)">
-    <use xlink:href="#spear"/>
-  </g>
+    <g id="spear2" stroke="black" stroke-width="15" transform="translate(44,64) rotate(-20) scale(0.05, 0.05)">
+      <use xlink:href="#spear"/>
+    </g>
 
-  <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30">
-    <g id="normal_attack">
-      <text x="15" y="80">2</text>
-    </g>
-    <g id="normal_defense">
-      <text x="85" y="80">3</text>
-    </g>
-    <g id="morale_rating">
-      <text x="50" y="80" font-size="22">E</text>
-    </g>
-    <g id="missile_type">
-      <text x="80" y="30" font-size="22">J</text>
+    <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30">
+      <g id="normal_attack">
+        <text x="15" y="80">2</text>
+      </g>
+      <g id="normal_defense">
+        <text x="85" y="80">3</text>
+      </g>
+      <g id="morale_rating">
+        <text x="50" y="80" font-size="22">E</text>
+      </g>
+      <g id="missile_type">
+        <text x="80" y="30" font-size="22">J</text>
+      </g>
     </g>
   </g>
 </svg>

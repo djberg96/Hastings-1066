@@ -1,44 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100">
-  <rect width="100" height="100" fill="rgb(250,200,15)" stroke="black" stroke-width="3"/>
-  <g>
-    <rect id="ineffective"
-      x="1.5"
-      y="40"
-      height="20"
-      width="97"
-      fill="white"
-      opacity="0.9"
-    />
-  </g>
-  <defs>
-    <g id="spear" stroke="black" stroke-width="15">
-      <path d="m330.1-870.61c-1.159-11.226-3.5907-17.91-12.002-19.904 1.8847-12.385 11.765-22.027 23.891-22.243 12.088-0.14737 21.987 9.431 24.16 22.197-8.452 2.2514-13.635 10.318-15.181 20.489-2.6992-2.0298-6.1163-3.5668-10.43-3.6468-4.0576-0.38143-7.8867 1.2315-10.439 3.1078z"/>
-      <path d="m330.5-855.44 0.30135 4.4358-0.17934 971.64h19.344l0.0147-971.58 0.0429-4.2492c-2.5518 1.8759-5.8998 2.7778-10.214 2.6988-3.3768-0.004-6.4896-1.2843-9.3096-2.9357z"/>
-      <path d="m342.32-1024.5 19.373 112.66-4.4302 5.1042c-4.0532-3.7589-9.4951-5.975-15.275-5.977-6.6865 0.0294-12.879 3.1782-17.014 7.911l-5.9228-7.2853 20.3-112.19c0.0438-1.8435 2.552-1.8762 2.969-0.2219z"/>
-      <path d="m340.54-873.71c7.9937 0.33994 14.186 5.3737 13.844 10.965 0.0367 5.7119-6.5783 10.584-14.572 10.244-7.6236-0.0456-13.884-5.1166-13.694-11.237 0.34214-5.5912 6.7978-10.017 14.421-9.9718z"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="60" height="60">
+  <rect width="100%" height="100%" fill="rgb(250,200,15)" stroke="black" stroke-width="3%"/>
+  <g id="scale" transform="scale(0.6)">
+    <g>
+      <rect id="ineffective"
+        x="1.5"
+        y="40"
+        height="20"
+        width="97"
+        fill="white"
+        opacity="0.9"
+      />
     </g>
-  </defs>
+    <defs>
+      <g id="spear" stroke="black" stroke-width="15">
+        <path d="m330.1-870.61c-1.159-11.226-3.5907-17.91-12.002-19.904 1.8847-12.385 11.765-22.027 23.891-22.243 12.088-0.14737 21.987 9.431 24.16 22.197-8.452 2.2514-13.635 10.318-15.181 20.489-2.6992-2.0298-6.1163-3.5668-10.43-3.6468-4.0576-0.38143-7.8867 1.2315-10.439 3.1078z"/>
+        <path d="m330.5-855.44 0.30135 4.4358-0.17934 971.64h19.344l0.0147-971.58 0.0429-4.2492c-2.5518 1.8759-5.8998 2.7778-10.214 2.6988-3.3768-0.004-6.4896-1.2843-9.3096-2.9357z"/>
+        <path d="m342.32-1024.5 19.373 112.66-4.4302 5.1042c-4.0532-3.7589-9.4951-5.975-15.275-5.977-6.6865 0.0294-12.879 3.1782-17.014 7.911l-5.9228-7.2853 20.3-112.19c0.0438-1.8435 2.552-1.8762 2.969-0.2219z"/>
+        <path d="m340.54-873.71c7.9937 0.33994 14.186 5.3737 13.844 10.965 0.0367 5.7119-6.5783 10.584-14.572 10.244-7.6236-0.0456-13.884-5.1166-13.694-11.237 0.34214-5.5912 6.7978-10.017 14.421-9.9718z"/>
+      </g>
+    </defs>
 
-  <g id="spear1" stroke="black" stroke-width="15" transform="translate(22,52) rotate(20) scale(0.05, 0.05)">
-    <use xlink:href="#spear"/>
-  </g>
+    <g id="spear1" stroke="black" stroke-width="15" transform="translate(22,52) rotate(20) scale(0.05, 0.05)">
+      <use xlink:href="#spear"/>
+    </g>
 
-  <g id="spear2" stroke="black" stroke-width="15" transform="translate(44,64) rotate(-20) scale(0.05, 0.05)">
-    <use xlink:href="#spear"/>
-  </g>
+    <g id="spear2" stroke="black" stroke-width="15" transform="translate(44,64) rotate(-20) scale(0.05, 0.05)">
+      <use xlink:href="#spear"/>
+    </g>
 
-  <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30">
-    <g id="normal_attack">
-      <text x="15" y="80">2</text>
-    </g>
-    <g id="normal_defense">
-      <text x="85" y="80">3</text>
-    </g>
-    <g id="morale_rating">
-      <text x="50" y="80" font-size="22">E</text>
-    </g>
-    <g id="missile_type">
-      <text x="80" y="30" font-size="22">J</text>
+    <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30">
+      <g id="normal_attack">
+        <text x="15" y="80">2</text>
+      </g>
+      <g id="normal_defense">
+        <text x="85" y="80">3</text>
+      </g>
+      <g id="morale_rating">
+        <text x="50" y="80" font-size="22">E</text>
+      </g>
+      <g id="missile_type">
+        <text x="80" y="30" font-size="22">J</text>
+      </g>
     </g>
   </g>
 </svg>
