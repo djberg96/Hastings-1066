@@ -28,18 +28,18 @@
       <use xlink:href="#spear"/>
     </g>
 
-    <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30">
+    <g id="attributes" text-anchor="middle" font-size="30">
       <g id="normal_attack">
-        <text x="15" y="80">2</text>
+        <text x="15" y="90">2</text>
       </g>
       <g id="normal_defense">
-        <text x="85" y="80">3</text>
+        <text x="85" y="90">3</text>
       </g>
       <g id="morale_rating">
-        <text x="50" y="80" font-size="22">E</text>
+        <text x="50" y="90" font-size="22">E</text>
       </g>
       <g id="missile_type">
-        <text x="80" y="30" font-size="22">J</text>
+        <text x="80" y="35" font-size="22">J</text>
       </g>
     </g>
   </g>
