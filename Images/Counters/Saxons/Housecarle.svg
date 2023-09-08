@@ -202,21 +202,21 @@
       <path d="M5516 1325 c10 -8 26 -14 34 -14 9 0 4 6 -10 14 -33 19 -49 19 -24 0z"/>
     </g>
 
-    <g id="attributes" text-anchor="middle" dominant-baseline="central" font-size="30">
+    <g id="attributes" text-anchor="middle" font-size="30">
       <g id="normal_attack">
-        <text x="15" y="20">7</text>
+        <text x="15" y="30">7</text>
       </g>
       <g id="normal_defense">
-        <text x="85" y="20">5</text>
+        <text x="85" y="30">5</text>
       </g>
       <g id="shield_wall_defense">
-        <text x="85" y="80">8</text>
+        <text x="85" y="90">8</text>
       </g>
       <g id="shield_wall_attack">
-        <text x="15" y="80">3</text>
+        <text x="15" y="90">3</text>
       </g>
       <g id="morale_rating">
-        <text x="50" y="80" font-size="22">A</text>
+        <text x="50" y="90" font-size="22">A</text>
       </g>
     </g>
   </g>
