@@ -7,6 +7,6 @@
   <text text-anchor="middle" x="50%" y="30%" font-size="12">
     <tspan x="55%">Center</tspan>
     <tspan x="55%" dy="20%">Wing</tspan>
-    <tspan x="50%" dy="35%" font-size="14">MORALE</tspan>
+    <tspan x="50%" dy="35%">MORALE</tspan>
   </text>
 </svg>
