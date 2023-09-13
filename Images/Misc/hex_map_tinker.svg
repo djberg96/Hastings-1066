@@ -1,0 +1,53 @@
+<svg id="hex-map" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 502 810.3">
+  <defs>
+    <path
+      id="hex"
+      data-terrain="1"
+      fill="#BBC77E"
+      stroke="#444444"
+      d="M50.24,0.25L100.23,29.112L100.23,86.835L50.24,115.697L0.25,86.835L0.25,29.112L50.24,0.25Z"
+    />
+
+    <polygon
+      id="hex2"
+      fill="#963e0f"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+  </defs>
+
+  <defs>
+    <g id="hex4block">
+      <use xlink:href="#hex"/>
+      <use xlink:href="#hex" transform="translate(100,0)"/>
+      <use xlink:href="#hex" transform="translate(50,86)"/>
+      <use xlink:href="#hex" transform="translate(150,86)"/>
+    </g>
+
+    <g id="hex4block2">
+      <use xlink:href="#hex2"/>
+      <use xlink:href="#hex2" transform="translate(100,0)"/>
+      <use xlink:href="#hex2" transform="translate(50,86)"/>
+      <use xlink:href="#hex2" transform="translate(150,86)"/>
+    </g>
+  </defs>
+
+  <use xlink:href="#hex4block2"/>
+
+  <!--
+  <use xlink:href="#hex4block"/>
+  <use xlink:href="#hex4block" transform="translate(200,0)"/>
+  <use xlink:href="#hex4block" transform="translate(0,172)"/>
+  <use xlink:href="#hex4block" transform="translate(200,172)"/>
+  -->
+
+  <!--
+  <g class="row">
+    <path id="0" class="hex" fill="#BBC77E" stroke="#444444" data-terrain="1" d="M50.24,0.25L100.23,29.112L100.23,86.835L50.24,115.697L0.25,86.835L0.25,29.112L50.24,0.25Z"></path>
+    <path id="1" class="hex" fill="#BBC77E" stroke="#444444" data-terrain="1" d="M150.24,0.25L200.23,29.112L200.23,86.835L150.24,115.697L100.25,86.835L100.25,29.112L150.24,0.25Z"></path>
+    <path id="2" class="hex" fill="#BBC77E" stroke="#444444" data-terrain="1" d="M250.24,0.25L300.23,29.112L300.23,86.835L250.24,115.697L200.25,86.835L200.25,29.112L250.24,0.25Z" opacity="1"></path>
+    <path id="3" class="hex" fill="#BBC77E" stroke="#444444" data-terrain="1" d="M350.24,0.25L400.23,29.112L400.23,86.835L350.24,115.697L300.25,86.835L300.25,29.112L350.24,0.25Z" opacity="1"></path>
+    <path id="4" class="hex" fill="#BBC77E" stroke="#444444" data-terrain="1" d="M450.24,0.25L500.23,29.112L500.23,86.835L450.24,115.697L400.25,86.835L400.25,29.112L450.24,0.25Z"></path>
+  </g>
+  -->
+</svg>
