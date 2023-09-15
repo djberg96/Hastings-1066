@@ -250,4 +250,35 @@
     <use id="0602" xlink:href="#level2" transform="translate(2700,430)"/>
     <use id="0601" xlink:href="#level2" transform="translate(2800,430)"/>
   </g>
+  <g id="row7">
+    <use id="0729" xlink:href="#level2" transform="translate(50,516)"/>
+    <use id="0728" xlink:href="#level2" transform="translate(150,516)"/>
+    <use id="0727" xlink:href="#level2" transform="translate(250,516)"/>
+    <use id="0726" xlink:href="#level2" transform="translate(350,516)"/>
+    <use id="0725" xlink:href="#level3" transform="translate(450,516)"/>
+    <use id="0724" xlink:href="#level3" transform="translate(550,516)"/>
+    <use id="0723" xlink:href="#level4" transform="translate(650,516)"/>
+    <use id="0722" xlink:href="#level4" transform="translate(750,516)"/>
+    <use id="0721" xlink:href="#level4" transform="translate(850,516)"/>
+    <use id="0720" xlink:href="#level4" transform="translate(950,516)"/>
+    <use id="0719" xlink:href="#level4" transform="translate(1050,516)"/>
+    <use id="0718" xlink:href="#level4" transform="translate(1150,516)"/>
+    <use id="0717" xlink:href="#level4" transform="translate(1250,516)"/>
+    <use id="0716" xlink:href="#level4" transform="translate(1350,516)"/>
+    <use id="0715" xlink:href="#level4" transform="translate(1450,516)"/>
+    <use id="0714" xlink:href="#level4" transform="translate(1550,516)"/>
+    <use id="0713" xlink:href="#level4" transform="translate(1650,516)"/>
+    <use id="0712" xlink:href="#level4" transform="translate(1750,516)"/>
+    <use id="0711" xlink:href="#level4" transform="translate(1850,516)"/>
+    <use id="0710" xlink:href="#level4" transform="translate(1950,516)"/>
+    <use id="0709" xlink:href="#level4" transform="translate(2050,516)"/>
+    <use id="0708" xlink:href="#level3" transform="translate(2150,516)"/>
+    <use id="0707" xlink:href="#level3" transform="translate(2250,516)"/>
+    <use id="0706" xlink:href="#level3" transform="translate(2350,516)"/>
+    <use id="0705" xlink:href="#level2" transform="translate(2450,516)"/>
+    <use id="0704" xlink:href="#level3" transform="translate(2550,516)"/>
+    <use id="0703" xlink:href="#level3" transform="translate(2650,516)"/>
+    <use id="0702" xlink:href="#level3" transform="translate(2750,516)"/>
+    <use id="0701" xlink:href="#level2" transform="translate(2850,516)"/>
+  </g>
 </svg>
