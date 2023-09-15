@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 3000 2500">
+  <defs>
+    <filter id="paper">
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="0.04"
+        result="noise"
+        numOctaves="5"
+      />
+
+      <feDiffuseLighting in="noise" surfaceScale="2" result="texture">
+        <feDistantLight azimuth="45" elevation="75"/>
+      </feDiffuseLighting>
+
+      <feComposite
+        in="SourceGraphic"
+        in2="texture"
+        operator="arithmetic"
+        k1="1"
+        k2="0"
+        k3="0"
+        k4="0"
+      />
+    </filter>
+
+    <polygon
+      id="level5"
+      filter="url(#paper)"
+      fill="rgb(200,125,80)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+
+    <polygon
+      id="level4"
+      filter="url(#paper)"
+      fill="rgb(215,200,90)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+
+    <polygon
+      id="level3"
+      filter="url(#paper)"
+      fill="rgb(150,180,100)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+
+    <polygon
+      id="level2"
+      filter="url(#paper)"
+      fill="rgb(120,200,150)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+
+    <polygon
+      id="level1"
+      filter="url(#paper)"
+      fill="rgb(200,230,150)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+  </defs>
+
+  <g id="row1">
+    <use id="0129" xlink:href="#level4"/>
+    <use id="0128" xlink:href="#level4" transform="translate(100,0)"/>
+    <use id="0127" xlink:href="#level4" transform="translate(200,0)"/>
+    <use id="0126" xlink:href="#level4" transform="translate(300,0)"/>
+    <use id="0125" xlink:href="#level4" transform="translate(400,0)"/>
+    <use id="0124" xlink:href="#level4" transform="translate(500,0)"/>
+    <use id="0123" xlink:href="#level4" transform="translate(600,0)"/>
+    <use id="0122" xlink:href="#level4" transform="translate(700,0)"/>
+    <use id="0121" xlink:href="#level4" transform="translate(800,0)"/>
+    <use id="0120" xlink:href="#level4" transform="translate(900,0)"/>
+    <use id="0119" xlink:href="#level4" transform="translate(1000,0)"/>
+    <use id="0118" xlink:href="#level4" transform="translate(1100,0)"/>
+    <use id="0117" xlink:href="#level4" transform="translate(1200,0)"/>
+    <use id="0116" xlink:href="#level4" transform="translate(1300,0)"/>
+    <use id="0115" xlink:href="#level4" transform="translate(1400,0)"/>
+    <use id="0114" xlink:href="#level4" transform="translate(1500,0)"/>
+    <use id="0113" xlink:href="#level4" transform="translate(1600,0)"/>
+    <use id="0112" xlink:href="#level4" transform="translate(1700,0)"/>
+    <use id="0111" xlink:href="#level3" transform="translate(1800,0)"/>
+    <use id="0110" xlink:href="#level3" transform="translate(1900,0)"/>
+    <use id="0109" xlink:href="#level3" transform="translate(2000,0)"/>
+    <use id="0108" xlink:href="#level2" transform="translate(2100,0)"/>
+    <use id="0107" xlink:href="#level2" transform="translate(2200,0)"/>
+    <use id="0106" xlink:href="#level2" transform="translate(2300,0)"/>
+    <use id="0105" xlink:href="#level2" transform="translate(2400,0)"/>
+    <use id="0104" xlink:href="#level2" transform="translate(2500,0)"/>
+    <use id="0103" xlink:href="#level2" transform="translate(2600,0)"/>
+    <use id="0102" xlink:href="#level2" transform="translate(2700,0)"/>
+    <use id="0101" xlink:href="#level1" transform="translate(2800,0)"/>
+  </g>
+</svg>
