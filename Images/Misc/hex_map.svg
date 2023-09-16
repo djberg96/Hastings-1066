@@ -817,7 +817,6 @@
     <use id="2508" xlink:href="#level3" transform="translate(2150)"/>
     <use id="2507" xlink:href="#level3" transform="translate(2250)"/>
   </g>
-  <!-- points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25" -->
   <g id="sandlake_brook" transform="translate(250,2062)">
     <polyline
       points="
@@ -859,6 +858,46 @@
         1250, -907
         1300, -934
         1300, -995
+      "
+      fill="none"
+      stroke="blue"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-opacity="0.7"
+      stroke-linejoin="round"
+    />
+  </g>
+  <!-- points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25" -->
+  <g id="northeast_stream" transform="translate(1800,116)">
+    <polyline
+      points="
+        50, 86
+        100, 59
+        100, 2
+        100, 59
+        150, 86
+        200, 59
+        250, 86
+        300, 59
+        350, 86
+        400, 59
+        450, 86
+        500, 59
+        550, 86
+        600, 59
+        650, 86
+        700, 59
+        750, 86
+        800, 59
+        850, 86
+        900, 59
+        950, 86
+        1000, 59
+        1000, 2 
+        1050, -25
+        1100, 2 
+        1150, -25
+        1150, -82
       "
       fill="none"
       stroke="blue"
