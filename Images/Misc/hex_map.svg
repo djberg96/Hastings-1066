@@ -954,4 +954,24 @@
       stroke-linejoin="round"
     />
   </g>
+  <g id="west_stream2" transform="translate(0,630)">
+    <polyline
+      points="
+        150, -25
+        200, 2
+        250, -25
+        300, 2
+        350, -25
+        400, 2
+        450, -25
+        500, 2
+      "
+      fill="none"
+      stroke="blue"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-opacity="0.7"
+      stroke-linejoin="round"
+    />
+  </g>
 </svg>
