@@ -23,7 +23,7 @@
       />
     </filter>
 
-    <filter id="ridge_filter">  
+    <filter id="ridge_filter" filterUnits="userSpaceOnUse">
       <feTurbulence
         type="fractalNoise"
         baseFrequency="0.55"
@@ -85,9 +85,10 @@
       fill="none"
       stroke="black"
       stroke-width="35"
-      stroke-linecap="round"
+      stroke-linecap="square"
       stroke-opacity="0.5"
-      stroke-linejoin="round"
+      stroke-linejoin="square"
+      filter="url(#ridge_filter)"
     />
 
     <polyline
@@ -96,9 +97,10 @@
       fill="none"
       stroke="black"
       stroke-width="35"
-      stroke-linecap="round"
+      stroke-linecap="square"
       stroke-opacity="0.5"
-      stroke-linejoin="round"
+      stroke-linejoin="square"
+      filter="url(#ridge_filter)"
     />
 
     <polyline
@@ -107,9 +109,10 @@
       fill="none"
       stroke="black"
       stroke-width="35"
-      stroke-linecap="round"
+      stroke-linecap="square"
       stroke-opacity="0.5"
-      stroke-linejoin="round"
+      stroke-linejoin="square"
+      filter="url(#ridge_filter)"
     />
 
     <clipPath id="level3_ridge">
