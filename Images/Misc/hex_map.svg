@@ -1242,7 +1242,7 @@
       <use id="2507_ridge_upper_right" xlink:href="#ridge_line_upper_right" clip-path="url(#level3_ridge)"/>
     </g>
   </g>
-  <g id="all_streams" fill="none" stroke="blue" stroke-width="18" stroke-linecap="round" stroke-opacity="0.7" stroke-linejoin="round">
+  <g id="all_streams" fill="none" stroke="blue" stroke-width="18" stroke-linecap="round" stroke-opacity="0.6" stroke-linejoin="round">
     <g id="sandlake_brook" transform="translate(250,2062)" filter="url(#stream)">
       <polyline
         points="
