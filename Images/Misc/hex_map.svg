@@ -1,5 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 3000 2500">
   <defs>
+    <filter id="stream">
+      <feTurbulence
+        type="noise"
+        baseFrequency="0.05"
+        numOctaves="3"
+        result="noise" />
+      <feDisplacementMap
+        in2="noise"
+        in="SourceGraphic"
+        scale="10"
+        xChannelSelector="R"
+        yChannelSelector="G"
+      />
+    </filter>
     <filter id="paper">
       <feTurbulence
         type="fractalNoise"
@@ -1228,7 +1242,7 @@
       <use id="2507_ridge_upper_right" xlink:href="#ridge_line_upper_right" clip-path="url(#level3_ridge)"/>
     </g>
   </g>
-  <g id="sandlake_brook" transform="translate(250,2062)">
+  <g id="sandlake_brook" transform="translate(250,2062)" filter="url(#stream)">
     <polyline
       points="
         100, 86
@@ -1278,8 +1292,7 @@
       stroke-linejoin="round"
     />
   </g>
-  <!-- points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25" -->
-  <g id="northeast_stream" transform="translate(1800,116)">
+  <g id="northeast_stream" transform="translate(1800,116)" filter="url(#stream)">
     <polyline
       points="
         50, 86
@@ -1307,8 +1320,6 @@
         1000, 2 
         1050, -25
         1100, 2 
-        1150, -25
-        1150, -82
       "
       fill="none"
       stroke="blue"
@@ -1318,8 +1329,7 @@
       stroke-linejoin="round"
     />
   </g>
-  <!-- points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25" -->
-  <g id="east_stream" transform="translate(2550,950)">
+  <g id="east_stream" transform="translate(2550,950)" filter="url(#stream)">
     <polyline
       points="
         50, 86
@@ -1330,7 +1340,6 @@
         250, 29
         300, 2
         350, 29
-        400, 2
       "
       fill="none"
       stroke="blue"
@@ -1340,7 +1349,7 @@
       stroke-linejoin="round"
     />
   </g>
-  <g id="west_stream" transform="translate(0,630)">
+  <g id="west_stream" transform="translate(0,630)" filter="url(#stream)">
     <polyline
       points="
         50, 86
@@ -1365,7 +1374,7 @@
       stroke-linejoin="round"
     />
   </g>
-  <g id="west_stream2" transform="translate(0,630)">
+  <g id="west_stream2" transform="translate(0,630)" filter="url(#stream)">
     <polyline
       points="
         150, -25
@@ -1385,7 +1394,7 @@
       stroke-linejoin="round"
     />
   </g>
-  <g id="west_stream3" transform="translate(0,630)">
+  <g id="west_stream3" transform="translate(0,630)" filter="url(#stream)">
     <polyline
       points="
         250, -25
