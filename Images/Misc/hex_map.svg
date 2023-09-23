@@ -1242,175 +1242,141 @@
       <use id="2507_ridge_upper_right" xlink:href="#ridge_line_upper_right" clip-path="url(#level3_ridge)"/>
     </g>
   </g>
-  <g id="sandlake_brook" transform="translate(250,2062)" filter="url(#stream)">
-    <polyline
-      points="
-        100, 86
-        100, 29
-        150, 0
-        200, 29
-        250, 0
-        250, -58
-        300, -87
-        300, -144
-        350, -173
-        350, -230
-        400, -257
-        450, -230
-        500, -257
-        500, -314
-        550, -341
-        550, -402
-        600, -429
-        600, -486
-        650, -509
-        700, -482
-        750, -509
-        750, -566
-        800, -595
-        850, -566
-        900, -595
-        900, -653
-        950, -680
-        950, -737
-        1000, -766
-        1050, -736
-        1100, -766
-        1100, -823
-        1150, -850
-        1150, -907
-        1200, -934
-        1250, -907
-        1300, -934
-        1300, -995
-      "
-      fill="none"
-      stroke="blue"
-      stroke-width="18"
-      stroke-linecap="round"
-      stroke-opacity="0.7"
-      stroke-linejoin="round"
-    />
-  </g>
-  <g id="northeast_stream" transform="translate(1800,116)" filter="url(#stream)">
-    <polyline
-      points="
-        50, 86
-        100, 59
-        100, 2
-        100, 59
-        150, 86
-        200, 59
-        250, 86
-        300, 59
-        350, 86
-        400, 59
-        450, 86
-        500, 59
-        550, 86
-        600, 59
-        650, 86
-        700, 59
-        750, 86
-        800, 59
-        850, 86
-        900, 59
-        950, 86
-        1000, 59
-        1000, 2 
-        1050, -25
-        1100, 2 
-      "
-      fill="none"
-      stroke="blue"
-      stroke-width="18"
-      stroke-linecap="round"
-      stroke-opacity="0.7"
-      stroke-linejoin="round"
-    />
-  </g>
-  <g id="east_stream" transform="translate(2550,950)" filter="url(#stream)">
-    <polyline
-      points="
-        50, 86
-        100, 113
-        150, 86
-        150, 29
-        200, 2
-        250, 29
-        300, 2
-        350, 29
-      "
-      fill="none"
-      stroke="blue"
-      stroke-width="18"
-      stroke-linecap="round"
-      stroke-opacity="0.7"
-      stroke-linejoin="round"
-    />
-  </g>
-  <g id="west_stream" transform="translate(0,630)" filter="url(#stream)">
-    <polyline
-      points="
-        50, 86
-        100, 59 
-        100, 2
-        150, -25
-        150, -82
-        100, -109
-        100, -166
-        150, -193
-        150, -250
-        200, -277
-        200, -334
-        150, -361
-        150, -428
-      "
-      fill="none"
-      stroke="blue"
-      stroke-width="18"
-      stroke-linecap="round"
-      stroke-opacity="0.7"
-      stroke-linejoin="round"
-    />
-  </g>
-  <g id="west_stream2" transform="translate(0,630)" filter="url(#stream)">
-    <polyline
-      points="
-        150, -25
-        200, 2
-        250, -25
-        300, 2
-        350, -25
-        400, 2
-        450, -25
-        500, 2
-      "
-      fill="none"
-      stroke="blue"
-      stroke-width="18"
-      stroke-linecap="round"
-      stroke-opacity="0.7"
-      stroke-linejoin="round"
-    />
-  </g>
-  <g id="west_stream3" transform="translate(0,630)" filter="url(#stream)">
-    <polyline
-      points="
-        250, -25
-        250, -82
-        300, -109
-        300, -166
-        350, -193
-        400, -166
-        450, -193
-      "
-      fill="none"
-      stroke="blue"
-      stroke-width="18"
-      stroke-linecap="round"
-      stroke-opacity="0.7"
-      stroke-linejoin="round"
-    />
+  <g id="all_streams" fill="none" stroke="blue" stroke-width="18" stroke-linecap="round" stroke-opacity="0.7" stroke-linejoin="round">
+    <g id="sandlake_brook" transform="translate(250,2062)" filter="url(#stream)">
+      <polyline
+        points="
+          100, 86
+          100, 29
+          150, 0
+          200, 29
+          250, 0
+          250, -58
+          300, -87
+          300, -144
+          350, -173
+          350, -230
+          400, -257
+          450, -230
+          500, -257
+          500, -314
+          550, -341
+          550, -402
+          600, -429
+          600, -486
+          650, -509
+          700, -482
+          750, -509
+          750, -566
+          800, -595
+          850, -566
+          900, -595
+          900, -653
+          950, -680
+          950, -737
+          1000, -766
+          1050, -736
+          1100, -766
+          1100, -823
+          1150, -850
+          1150, -907
+          1200, -934
+          1250, -907
+          1300, -934
+          1300, -995
+        "
+      />
+    </g>
+    <g id="northeast_stream" transform="translate(1800,116)" filter="url(#stream)">
+      <polyline
+        points="
+          50, 86
+          100, 59
+          100, 2
+          100, 59
+          150, 86
+          200, 59
+          250, 86
+          300, 59
+          350, 86
+          400, 59
+          450, 86
+          500, 59
+          550, 86
+          600, 59
+          650, 86
+          700, 59
+          750, 86
+          800, 59
+          850, 86
+          900, 59
+          950, 86
+          1000, 59
+          1000, 2
+          1050, -25
+          1100, 2
+        "
+      />
+    </g>
+    <g id="east_stream" transform="translate(2550,950)" filter="url(#stream)">
+      <polyline
+        points="
+          50, 86
+          100, 113
+          150, 86
+          150, 29
+          200, 2
+          250, 29
+          300, 2
+          350, 29
+        "
+      />
+    </g>
+    <g id="west_stream" transform="translate(0,630)" filter="url(#stream)">
+      <polyline
+        points="
+          50, 86
+          100, 59
+          100, 2
+          150, -25
+          150, -82
+          100, -109
+          100, -166
+          150, -193
+          150, -250
+          200, -277
+          200, -334
+          150, -361
+          150, -428
+        "
+      />
+    </g>
+    <g id="west_stream2" transform="translate(0,630)" filter="url(#stream)">
+      <polyline
+        points="
+          150, -25
+          200, 2
+          250, -25
+          300, 2
+          350, -25
+          400, 2
+          450, -25
+          500, 2
+        "
+      />
+    </g>
+    <g id="west_stream3" transform="translate(0,630)" filter="url(#stream)">
+      <polyline
+        points="
+          250, -25
+          250, -82
+          300, -109
+          300, -166
+          350, -193
+          400, -166
+          450, -193
+        "
+      />
+    </g>
   </g>
 </svg>
