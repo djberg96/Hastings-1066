@@ -506,9 +506,20 @@
     <use id="0606" xlink:href="#level3" transform="translate(2300)"/>
     <use id="0605" xlink:href="#level3" transform="translate(2400)"/>
     <use id="0604" xlink:href="#level2" transform="translate(2500)"/>
-    <use id="0603" xlink:href="#level2" transform="translate(2600)"/>
-    <use id="0602" xlink:href="#level2" transform="translate(2700)"/>
-    <use id="0601" xlink:href="#level2" transform="translate(2800)"/>
+    <g transform="translate(2600)">
+      <use id="0603" xlink:href="#level2"/>
+      <use id="0603_ridge_lower_right" xlink:href="#ridge_line_lower_right" clip-path="url(#level3_ridge)"/>
+      <use id="0603_ridge_lower_left" xlink:href="#ridge_line_lower_left" clip-path="url(#level3_ridge)"/>
+    </g>
+    <g transform="translate(2700)">
+      <use id="0602" xlink:href="#level2"/>
+      <use id="0602_ridge_lower_right" xlink:href="#ridge_line_lower_right" clip-path="url(#level3_ridge)"/>
+      <use id="0602_ridge_lower_left" xlink:href="#ridge_line_lower_left" clip-path="url(#level3_ridge)"/>
+    </g>
+    <g transform="translate(2800)">
+      <use id="0601" xlink:href="#level2"/>
+      <use id="0601_ridge_lower_left" xlink:href="#ridge_line_lower_left" clip-path="url(#level3_ridge)"/>
+    </g>
   </g>
   <g id="row7" transform="translate(0,516)">
     <g transform="translate(50)">
@@ -565,7 +576,10 @@
     <use id="0704" xlink:href="#level3" transform="translate(2550)"/>
     <use id="0703" xlink:href="#level3" transform="translate(2650)"/>
     <use id="0702" xlink:href="#level3" transform="translate(2750)"/>
-    <use id="0701" xlink:href="#level2" transform="translate(2850)"/>
+    <g transform="translate(2850)">
+      <use id="0701" xlink:href="#level2"/>
+      <use id="0701_ridge_right" xlink:href="#ridge_line_left" clip-path="url(#level3_ridge)"/>
+    </g>
   </g>
   <g id="row8" transform="translate(0,602)">
     <use id="0829" xlink:href="#level2"/>
@@ -606,7 +620,10 @@
     <use id="0804" xlink:href="#level3" transform="translate(2500)"/>
     <use id="0803" xlink:href="#level3" transform="translate(2600)"/>
     <use id="0802" xlink:href="#level3" transform="translate(2700)"/>
-    <use id="0801" xlink:href="#level2" transform="translate(2800)"/>
+    <g transform="translate(2800)">
+      <use id="0801" xlink:href="#level2"/>
+      <use id="0801_ridge_upper_left" xlink:href="#ridge_line_upper_left" clip-path="url(#level3_ridge)"/>
+    </g>
   </g>
   <g id="row9" transform="translate(0,688)">
     <use id="0929" xlink:href="#level2" transform="translate(50)"/>
