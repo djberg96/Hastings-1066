@@ -897,8 +897,14 @@
     <use id="1323" xlink:href="#level2" transform="translate(650)"/>
     <use id="1322" xlink:href="#level2" transform="translate(750)"/>
     <use id="1321" xlink:href="#level2" transform="translate(850)"/>
-    <use id="1320" xlink:href="#level2" transform="translate(950)"/>
-    <use id="1319" xlink:href="#level2" transform="translate(1050)"/>
+    <g transform="translate(950)">
+      <use id="1320" xlink:href="#level2"/>
+      <use id="1320_ridge_lower_right" xlink:href="#ridge_line_lower_right" clip-path="url(#level3_ridge)"/>
+    </g>
+    <g transform="translate(1050)">
+      <use id="1319" xlink:href="#level2"/>
+      <use id="1319_ridge_lower_left" xlink:href="#ridge_line_lower_left" clip-path="url(#level3_ridge)"/>
+    </g>
     <use id="1318" xlink:href="#level2" transform="translate(1150)"/>
     <use id="1317" xlink:href="#level2" transform="translate(1250)"/>
     <use id="1316" xlink:href="#level2" transform="translate(1350)"/>
@@ -929,8 +935,15 @@
     <use id="1422" xlink:href="#level2" transform="translate(700)"/>
     <use id="1421" xlink:href="#level2" transform="translate(800)"/>
     <use id="1420" xlink:href="#level2" transform="translate(900)"/>
+    <g transform="translate(900)">
+      <use id="1420" xlink:href="#level2"/>
+      <use id="1420_ridge_right" xlink:href="#ridge_line_right" clip-path="url(#level3_ridge)"/>
+    </g>
     <use id="1419" xlink:href="#level4" transform="translate(1000)"/>
-    <use id="1418" xlink:href="#level2" transform="translate(1100)"/>
+    <g transform="translate(1100)">
+      <use id="1418" xlink:href="#level2"/>
+      <use id="1418_ridge_left" xlink:href="#ridge_line_left" clip-path="url(#level3_ridge)"/>
+    </g>
     <use id="1417" xlink:href="#level2" transform="translate(1200)"/>
     <use id="1416" xlink:href="#level2" transform="translate(1300)"/>
     <use id="1415" xlink:href="#level2" transform="translate(1400)"/>
@@ -959,8 +972,14 @@
     <use id="1523" xlink:href="#level2" transform="translate(650)"/>
     <use id="1522" xlink:href="#level2" transform="translate(750)"/>
     <use id="1521" xlink:href="#level2" transform="translate(850)"/>
-    <use id="1520" xlink:href="#level2" transform="translate(950)"/>
-    <use id="1519" xlink:href="#level2" transform="translate(1050)"/>
+    <g transform="translate(950)">
+      <use id="1520" xlink:href="#level2"/>
+      <use id="1520_ridge_upper_right" xlink:href="#ridge_line_upper_right" clip-path="url(#level3_ridge)"/>
+    </g>
+    <g transform="translate(1050)">
+      <use id="1519" xlink:href="#level2"/>
+      <use id="1519_ridge_upper_left" xlink:href="#ridge_line_upper_left" clip-path="url(#level3_ridge)"/>
+    </g>
     <use id="1518" xlink:href="#level2" transform="translate(1150)"/>
     <use id="1517" xlink:href="#level2" transform="translate(1250)"/>
     <use id="1516" xlink:href="#level2" transform="translate(1350)"/>
