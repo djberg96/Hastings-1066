@@ -1497,7 +1497,7 @@
       />
     </g>
   </g>
-  <g id="swamp1" transform="translate(910,1375)">
+  <g id="swamp_middle" transform="translate(910,1375)">
     <use id="reeds_1921" xlink:href="#reeds" transform="translate(-50,185)"/>
     <use id="reeds_1920" xlink:href="#reeds" transform="translate(50,185)"/>
     <use id="reeds_1820" xlink:href="#reeds" transform="translate(50,12)"/>
@@ -1506,5 +1506,11 @@
     <use id="reeds_1720" xlink:href="#reeds" transform="translate(0,100)"/>
     <use id="reeds_1719" xlink:href="#reeds" transform="translate(100,100)"/>
     <use id="reeds_1718" xlink:href="#reeds" transform="translate(200,100)"/>
+  </g>
+  <g id="swamp_east" transform="translate(2760,870)">
+    <use id="reeds_1101" xlink:href="#reeds"/>
+    <use id="reeds_1102" xlink:href="#reeds" transform="translate(100)"/>
+    <use id="reeds_1102" xlink:href="#reeds" transform="translate(-45,90)"/>
+    <use id="reeds_1102" xlink:href="#reeds" transform="translate(50,90)"/>
   </g>
 </svg>
