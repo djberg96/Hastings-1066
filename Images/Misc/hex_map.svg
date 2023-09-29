@@ -204,6 +204,14 @@
     <clipPath id="level3_ridge">
       <use xlink:href="#level3"/>
     </clipPath>
+
+    <g id="reeds" stroke="darkgreen" stroke-width="7" fill="none" transform="scale(0.8)">
+      <path d="M 50,95 V 20"/>
+      <path d="M 42,95 Q 40,70 30,35"/>
+      <path d="M 33,95 Q 30,60 15,55"/>
+      <path d="M 58,95 Q 60,70 70,35"/>
+      <path d="M 67,95 Q 70,60 85,55"/>
+    </g>
   </defs>
 
   <g id="row1">
@@ -1488,5 +1496,15 @@
         "
       />
     </g>
+  </g>
+  <g id="swamp1" transform="translate(910,1375)">
+    <use id="reeds_1921" xlink:href="#reeds" transform="translate(-50,185)"/>
+    <use id="reeds_1920" xlink:href="#reeds" transform="translate(50,185)"/>
+    <use id="reeds_1820" xlink:href="#reeds" transform="translate(50,12)"/>
+    <use id="reeds_1819" xlink:href="#reeds" transform="translate(150,12)"/>
+    <use id="reeds_1818" xlink:href="#reeds" transform="translate(250,12)"/>
+    <use id="reeds_1720" xlink:href="#reeds" transform="translate(0,100)"/>
+    <use id="reeds_1719" xlink:href="#reeds" transform="translate(100,100)"/>
+    <use id="reeds_1718" xlink:href="#reeds" transform="translate(200,100)"/>
   </g>
 </svg>
