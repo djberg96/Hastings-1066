@@ -212,6 +212,25 @@
       <path d="M 58,95 Q 60,70 70,35"/>
       <path d="M 67,95 Q 70,60 85,55"/>
     </g>
+
+    <g id="trunk" stroke="brown" stroke-width="5" fill="none">
+      <path d="M 50,95 V 60"/>
+    </g>
+    <g id="leaves" fill="green">
+      <circle cx="40" cy="40" r="15"/>
+      <circle cx="60" cy="40" r="15"/>
+      <circle cx="50" cy="30" r="15"/>
+      <circle cx="50" cy="50" r="15"/>
+    </g>
+    <g id="tree">
+      <use href="#trunk"/>
+      <use href="#leaves"/>
+    </g>
+    <g id="trees" transform="scale(0.8)">
+      <use xlink:href="#tree" x="0" y="0" transform="translate(-25,-5)"/>
+      <use xlink:href="#tree" x="0" y="0" />
+      <use xlink:href="#tree" x="0" y="0" transform="translate(25,-10)"/>
+    </g>
   </defs>
 
   <g id="row1">
@@ -1512,5 +1531,27 @@
     <use id="reeds_1102" xlink:href="#reeds" transform="translate(100)"/>
     <use id="reeds_1102" xlink:href="#reeds" transform="translate(-45,90)"/>
     <use id="reeds_1102" xlink:href="#reeds" transform="translate(50,90)"/>
+  </g>
+
+  <g id="forest_sw" transform="translate(610,1995)">
+    <use id="trees_2423" xlink:href="#trees" transform="translate(0,0)"/>
+    <use id="trees_2524" xlink:href="#trees" transform="translate(-50,90)"/>
+    <use id="trees_2523" xlink:href="#trees" transform="translate(50,90)"/>
+  </g>
+
+  <g id="forest_south" transform="translate(1210,1995)">
+    <use id="trees_2417" xlink:href="#trees" transform="translate(0,0)"/>
+    <use id="trees_2417" xlink:href="#trees" transform="translate(100,0)"/>
+    <use id="trees_2516" xlink:href="#trees" transform="translate(-50,90)"/>
+    <use id="trees_2519" xlink:href="#trees" transform="translate(50,90)"/>
+    <use id="trees_2519" xlink:href="#trees" transform="translate(-150,90)"/>
+    <use id="trees_2519" xlink:href="#trees" transform="translate(150,90)"/>
+    <use id="trees_2519" xlink:href="#trees" transform="translate(250,90)"/>
+  </g>
+
+  <g id="forest_southeast" transform="translate(1210,1995)">
+    <use id="trees_2311" xlink:href="#trees" transform="translate(0,0)"/>
+    <use id="trees_2411" xlink:href="#trees" transform="translate(100,0)"/>
+    <use id="trees_2410" xlink:href="#trees" transform="translate(-50,90)"/>
   </g>
 </svg>
