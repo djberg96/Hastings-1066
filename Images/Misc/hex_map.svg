@@ -1544,14 +1544,19 @@
     <use id="trees_2417" xlink:href="#trees" transform="translate(100,0)"/>
     <use id="trees_2516" xlink:href="#trees" transform="translate(-50,90)"/>
     <use id="trees_2519" xlink:href="#trees" transform="translate(50,90)"/>
-    <use id="trees_2519" xlink:href="#trees" transform="translate(-150,90)"/>
-    <use id="trees_2519" xlink:href="#trees" transform="translate(150,90)"/>
-    <use id="trees_2519" xlink:href="#trees" transform="translate(250,90)"/>
+    <use id="trees_2518" xlink:href="#trees" transform="translate(-150,90)"/>
+    <use id="trees_2517" xlink:href="#trees" transform="translate(150,90)"/>
+    <use id="trees_2516" xlink:href="#trees" transform="translate(250,90)"/>
   </g>
 
   <g id="forest_southeast" transform="translate(1860,1910)">
     <use id="trees_2311" xlink:href="#trees" transform="translate(0,0)"/>
     <use id="trees_2411" xlink:href="#trees" transform="translate(50,90)"/>
     <use id="trees_2410" xlink:href="#trees" transform="translate(-50,90)"/>
+  </g>
+
+  <g id="forest_south" transform="translate(1910,1995)">
+    <use id="trees_2509" xlink:href="#trees" transform="translate(0,0)"/>
+    <use id="trees_2508" xlink:href="#trees" transform="translate(100,0)"/>
   </g>
 </svg>
