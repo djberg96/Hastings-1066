@@ -1,5 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
+  <title>Housecarle</title>
+  <desc>Saxon Housecarle unit for S\&amp;T Hastings 1066</desc>
+
   <rect width="100%" height="100%" fill="rgb(180,100,40)" stroke="black" stroke-width="3%"/>
+
+  <g id="facing_arrow">
+    <polygon points="30,2 33,7 27,7"/>
+  </g>
 
   <g id="scale" transform="scale(0.6)">
     <g id="battleaxe" transform="translate(0,100) rotate(160, 46, -13) scale(0.01,-0.01) matrix(1,0,0,-1,0,100)" fill="black" stroke="none" >
