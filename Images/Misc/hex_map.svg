@@ -214,8 +214,8 @@
       <circle cx="50" cy="50" r="15"/>
     </g>
     <g id="tree">
-      <use href="#trunk"/>
-      <use href="#leaves"/>
+      <use xlink:href="#trunk"/>
+      <use xlink:href="#leaves"/>
     </g>
     <g id="trees" transform="scale(0.8)">
       <use xlink:href="#tree" x="0" y="0" transform="translate(-25,-5)"/>
