@@ -1,5 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
+  <title>Slingers</title>
+  <desc>Saxon Slingers unit for S\&amp;T Hastings 1066</desc>
+  
   <rect width="100%" height="100%" fill="rgb(250,200,15)" stroke="black" stroke-width="3%"/>
+
+  <g id="facing_arrow">
+    <polygon points="30,2 33,7 27,7"/>
+  </g>
 
   <g id="scale" transform="scale(0.6)">
     <g transform="translate(20,10) scale(0.1,0.1)">
