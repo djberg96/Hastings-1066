@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
+  <title>Thegn</title>
+  <desc>Ineffective side of Saxon Thegn unit for S\&amp;T Hastings 1066</desc>
+
   <rect width="100%" height="100%" fill="rgb(245,135,15)" stroke="black" stroke-width="3%"/>
+
+  <g id="facing_arrow">
+    <polygon points="30,2 33,7 27,7"/>
+  </g>
+
   <g id="scale" transform="scale(0.6)">  
     <g>
       <rect id="ineffective"
@@ -11,7 +19,7 @@
         opacity="0.9"
       />
     </g>
-    <g transform="translate(8,59) rotate(-138,30,-25) scale(0.003,-0.003)">
+    <g transform="translate(8,64) rotate(-138,30,-25) scale(0.003,-0.003)">
       <path d="M650 12793 c-282 -47 -577 -329 -635 -608 -41 -199 7 -348 165 -505
         107 -106 224 -187 408 -280 117 -59 156 -85 213 -139 56 -54 69 -72 69 -97 0
         -26 6 -34 33 -44 17 -7 58 -38 89 -68 48 -47 56 -59 51 -82 -11 -58 49 -119
