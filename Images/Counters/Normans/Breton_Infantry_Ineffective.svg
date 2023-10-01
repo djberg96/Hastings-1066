@@ -3,6 +3,11 @@
   <desc>Ineffective side of Breton Infantry unit for S\&amp;T Hastings 1066</desc>
 
   <rect width="100%" height="100%" fill="green" stroke="black" stroke-width="3%"/>
+
+  <g id="facing_arrow">
+    <polygon points="30,2 33,7 27,7"/>
+  </g>
+
   <g>
     <rect id="ineffective"
       x="1.5%"
@@ -29,7 +34,7 @@
     </clipPath>
   </defs>
 
-  <g id="scale" transform="scale(0.6)">
+  <g id="scale" transform="scale(0.6) translate(0,5)">
     <g id="shield" fill="none" stroke="black" stroke-width="5" transform="rotate(35) translate(50,-22) scale(0.1, 0.1)">
       <use xlink:href="#shield_path"/>
     </g>
