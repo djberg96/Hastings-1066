@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="60" height="60">
   <title>Norman Infantry - Ineffective</title>
-  <desc>Back side of Norman Infantry unit for S\&amp;T Hastings 1066</desc>
+  <desc>Ineffective side of Norman Infantry unit for S\&amp;T Hastings 1066</desc>
 
   <rect width="100%" height="100%" fill="red" stroke="black" stroke-width="3%"/>
   <g>
@@ -28,7 +28,7 @@
       <use xlink:href="#shield_path"/>
     </clipPath>
   </defs>
-  
+
   <g id="scale" transform="scale(0.6)">
     <g id="shield" fill="none" stroke="black" stroke-width="5" transform="rotate(35) translate(50,-22) scale(0.1, 0.1)">
       <use xlink:href="#shield_path"/>
