@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
+  <title>Franco-Flemish Bowmen</title>
+  <desc>Ineffective side of Franco-Flemish Bowmen unit for S\&amp;T Hastings 1066</desc>
+
   <rect width="100%" height="100%" fill="rgb(80,160,220)" stroke="black" stroke-width="3%"/>
+
+  <g id="facing_arrow">
+    <polygon points="30,2 33,7 27,7"/>
+  </g>
+
   <g>
     <rect id="ineffective"
       x="1.5%"
