@@ -1641,4 +1641,20 @@
       <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">11</text>
     </g>
   </g>
+
+  <g id="road">
+    <polyline
+      points="
+        1375,17
+        1560,325
+        1660,325
+        2520,1820
+      "
+      fill="none"
+      stroke="black"
+      stroke-width="10"
+      stroke-linejoin="round"
+      opacity="0.3"
+    />
+  </g>
 </svg>
