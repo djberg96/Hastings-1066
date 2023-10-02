@@ -93,6 +93,14 @@
       points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
     />
 
+    <polygon
+      id="battle_track"
+      filter="url(#paper)"
+      fill="rgb(220,240,240)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+
     <polyline
       id="ridge_line_upper_right"
       points="50.24,0.25 100.23,29.112"
@@ -1549,5 +1557,20 @@
   <g id="forest_south" transform="translate(2110,1995)">
     <use id="trees_2509" xlink:href="#trees" transform="translate(50,90)"/>
     <use id="trees_2508" xlink:href="#trees" transform="translate(-50,90)"/>
+  </g>
+
+  <g id="assault_period" transform="translate(0,2234)">
+    <g id="assault_period_label" transform="translate(150)">
+      <text x="110" y="-15" text-anchor="middle" fill="black" font-size="40">ASSAULT PERIOD</text>
+    </g>
+    <g id="assault_period1" transform="translate(150)">
+      <use id="assault_period1_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">I</text>
+    </g>
+
+    <g id="assault_period2" transform="translate(250)">
+      <use id="assault_period2_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">II</text>
+    </g>
   </g>
 </svg>
