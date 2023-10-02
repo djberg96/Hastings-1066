@@ -1657,4 +1657,11 @@
       opacity="0.3"
     />
   </g>
+
+  <g id="labels">
+    <text x="1315" y="385" font-size="45" opacity="0.3" transform="rotate(-30,1315,385)">
+      <tspan>Senlac</tspan>
+      <tspan dx="-100" dy="45">Hill</tspan>
+    </text>
+  </g>
 </svg>
