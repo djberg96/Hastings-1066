@@ -1642,6 +1642,69 @@
     </g>
   </g>
 
+  <g id="terrain_key" transform="translate(1850,2234)">
+    <g id="level_1_key">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Level 1</text>
+      <use id="level_1_key_hex" xlink:href="#level1"/>
+      <text x="50" y="65" text-anchor="middle" fill="black" font-size="26">100ft</text>
+    </g>
+    <g id="level_2_key" transform="translate(100)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Level 2</text>
+      <use id="level_2_key_hex" xlink:href="#level2"/>
+      <text x="50" y="65" text-anchor="middle" fill="black" font-size="26">150ft</text>
+    </g>
+    <g id="level_3_key" transform="translate(200)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Level 3</text>
+      <use id="level_3_key_hex" xlink:href="#level3"/>
+      <text x="50" y="65" text-anchor="middle" fill="black" font-size="26">200ft</text>
+    </g>
+    <g id="level_4_key" transform="translate(300)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Level 4</text>
+      <use id="level_4_key_hex" xlink:href="#level4"/>
+      <text x="50" y="65" text-anchor="middle" fill="black" font-size="26">250ft</text>
+    </g>
+    <g id="level_5_key" transform="translate(400)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Level 5</text>
+      <use id="level_5_key_hex" xlink:href="#level5"/>
+      <text x="50" y="65" text-anchor="middle" fill="black" font-size="26">300ft</text>
+    </g>
+    <g id="wooded_key" transform="translate(600)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Wooded</text>
+      <use id="wooded_key_hex" xlink:href="#level1"/>
+      <use id="wooded_key_graphic" xlink:href="#trees" transform="translate(10,18)"/>
+    </g>
+    <g id="marsh_key" transform="translate(700)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Marsh</text>
+      <use id="marsh_key_hex" xlink:href="#level2"/>
+      <use id="marsh_key_graphic" xlink:href="#reeds" transform="translate(10,15)"/>
+    </g>
+    <g id="ridge_key" transform="translate(800)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Ridge</text>
+      <use id="ridge_key_hex" xlink:href="#level3"/>
+      <use id="ridge_top_left" xlink:href="#ridge_line_top_left" clip-path="url(#level3_ridge)"/>
+      <use id="ridge_top_right" xlink:href="#ridge_line_top_right" clip-path="url(#level3_ridge)"/>
+    </g>
+    <g id="stream_key" transform="translate(900)">
+      <text x="50" y="-15" text-anchor="middle" fill="black" font-size="26">Stream</text>
+      <use id="stream_key_hex" xlink:href="#level1"/>
+      <polyline
+        filter="url(#stream)"
+        fill="none"
+        stroke="blue"
+        stroke-width="18"
+        stroke-linecap="round"
+        stroke-opacity="0.6"
+        stroke-linejoin="round"
+        points="
+          50, 109
+          100, 82
+          100, 25
+          100, 82
+        "
+      />
+    </g>
+  </g>
+
   <g id="road">
     <polyline
       points="
