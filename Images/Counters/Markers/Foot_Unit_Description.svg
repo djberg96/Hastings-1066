@@ -284,7 +284,7 @@
       stroke-width="1"
     />
 
-    <text x="2" y="84" font-size="10">
+    <text x="16" y="84" font-size="10">
       <tspan>Shield Wall</tspan>
       <tspan x="18" dy="12">Attack</tspan>
     </text>
