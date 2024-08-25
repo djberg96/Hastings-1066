@@ -88,15 +88,18 @@ Because of the lack of Saxon bowmen and Norman spearmen, the opposing sides coul
 \subsection{The Missile Combat Tables}
 \subsection{Missile Fire Matrix}
 
-\begin{tabular}{ lcccc }
-  \multicolumn{5}{c}{ \textbf{Range in Hexes}} \\
-  Weapon & Max. Range & 3 & 2 & 1* \\
-  \hline \\ [-2.0ex]
-  Bow & 3 hexes & 3 & 4 & 5 \\
-  Javelin & 2 hexes & - & 2 & 3 \\
-  Sling & 3 hexes & 1 & 1 & 2 \\
-  \hline
-\end{tabular}
+{\def\arraystretch{1.2}
+  \begin{tabular}{ |lcccc| }
+    \multicolumn{5}{c}{ \textbf{Range in Hexes}} \\
+    \hline
+    Weapon & Max. Range & 3 & 2 & 1* \\
+    \hline
+    Bow & 3 hexes & 3 & 4 & 5 \\
+    Javelin & 2 hexes & - & 2 & 3 \\
+    Sling & 3 hexes & 1 & 1 & 2 \\
+    \hline
+  \end{tabular}
+}
 \par
 The resultant number is the missile fire strength of the unit.
 
@@ -104,17 +107,21 @@ The resultant number is the missile fire strength of the unit.
 
 \subsection{Missile Combat Results Table}
 
-\resizebox{\columnwidth}{!}{\begin{tabular}{ ccccccccccc }
+{\def\arraystretch{1.2}
+\resizebox{\columnwidth}{!}{\begin{tabular}{ |ccccccccccc| }
   \multicolumn{11}{c}{ \textbf{Fire Ratio} } \\
+  \hline& & & & & & & & & &\\[-2.5ex]
   Die Roll & 1-4 & 1-3 & 1-2 & 1-1.5 & 1-1 & 1.5-1 & 2-1 & 3-1 & 4-1 & 5-1 \\
-  \hline \\ [-1.5ex]
+  \hline
   1 & -- & -- & -- & -- & -- & M & M & M & D & D \\
   2 & -- & -- & -- & -- & M & M & M & D & D & D \\
   3 & -- & -- & -- & M & M & M & D & D & D & 1 \\
   4 & -- & -- & M & M & M & D & D & D & 1 & 1 \\
   5 & -- & M & M & M & D & D & D & 1 & 1 & 1 \\
-  6 & M & M & M & D & D & D & 1 & 1 & 1 & 1
+  6 & M & M & M & D & D & D & 1 & 1 & 1 & 1 \\
+  \hline
 \end{tabular}}
+}
 \par
 Attacks at less than 1-4 are ineffective. Attacks at greater than 5-1 odds are treated as 5-1.
 
