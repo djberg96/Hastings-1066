@@ -77,15 +77,55 @@ Because of the lack of Saxon bowmen and Norman spearmen, the opposing sides coul
 
 \subsection{Missile Supply Table}
 
-\begin{tabular}{ lcc }
-  \textbf{Assault Period} & \multicolumn{2}{ c } {\textbf{Fire Segments Allowed}} \\
-  & Norman & Saxon \\
-  & Bowmen & Jav/Sps \\
-  \hline
+\begin{tabular}{ |l|cc| }
+  \hline & & \\[-2.0ex]
+  \textbf{Assault} & \multicolumn{2}{c|}{\textbf{Fire Segments Allowed}} \\
+  \textbf{Period} & Norman Bowmen & Saxon Jav/Sps \\
+  \hline & &\\ [-2.0ex]
   First & 6 & 4 \\
-  Second & 3 & 2
+  Second & 3 & 2 \\
+  \hline
 \end{tabular}
 
 \subsection{The Missile Combat Tables}
-\subsection{Missile Fire Matrix} \textit{(see map)}
-\subsection{Missile Combat Results Table} \textit{(see map)}
+\subsection{Missile Fire Matrix}
+
+{\def\arraystretch{1.2}
+  \begin{tabular}{ |lcccc| }
+    \hline
+    & & \multicolumn{3}{c|}{ \textbf{Range}} \\
+    \hline
+    Weapon & Max. Range & 3 & 2 & 1* \\
+    \hline
+    Bow & 3 hexes & 3 & 4 & 5 \\
+    Javelin & 2 hexes & - & 2 & 3 \\
+    Sling & 3 hexes & 1 & 1 & 2 \\
+    \hline
+  \end{tabular}
+}
+\par
+The resultant number is the missile fire strength of the unit.
+
+* Bowmen cannot enter ZOC. Bowmen starting a movement segment in an enemy ZOC must move out if possible.
+
+\subsection{Missile Combat Results Table}
+
+{\def\arraystretch{1.2}
+\resizebox{\columnwidth}{!}{\begin{tabular}{ |ccccccccccc| }
+  \multicolumn{11}{c}{ \textbf{Fire Ratio} } \\
+  \hline& & & & & & & & & &\\[-2.5ex]
+  Die Roll & 1-4 & 1-3 & 1-2 & 1-1.5 & 1-1 & 1.5-1 & 2-1 & 3-1 & 4-1 & 5-1 \\
+  \hline
+  1 & -- & -- & -- & -- & -- & M & M & M & D & D \\
+  2 & -- & -- & -- & -- & M & M & M & D & D & D \\
+  3 & -- & -- & -- & M & M & M & D & D & D & 1 \\
+  4 & -- & -- & M & M & M & D & D & D & 1 & 1 \\
+  5 & -- & M & M & M & D & D & D & 1 & 1 & 1 \\
+  6 & M & M & M & D & D & D & 1 & 1 & 1 & 1 \\
+  \hline
+\end{tabular}}
+}
+\par
+Attacks at less than 1-4 are ineffective. Attacks at greater than 5-1 odds are treated as 5-1.
+
+Explanation of results: "--" = No effect; M = Unit must undergo a morale check; D = Unit is disrupted; 1 = Unit loses 1 step and any leader present must be checked for possible loss.
