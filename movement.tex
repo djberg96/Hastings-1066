@@ -87,7 +87,38 @@ These are the \textit{maximum} number of movement points the unit can use within
 
 \subsubsection[Missile Fire]{} A unit using reaction cannot use missile fire in the following defensive missile fire segment, unless the moving unit is a bowman unit. Bowman units can both react and fire.
 
-\subsection{Terrain Effects Chart} \textbf{see map}
+\subsection{Terrain Effects Chart}
+
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{ |ccl| }
+  \multicolumn{3}{c}{\textbf{Terrain Effects Chart}} \\
+  \hline & &\\[-2.0ex]
+  \textbf{Terrain Type} & \textbf{Movement Cost} & \textbf{Effect on Combat} \\
+  \hline & & \\[-2.0ex]
+  Clear & 1 MP & None \\
+  \rowcolor{BabyBlue}
+  Ridge, Uphill & None* & Foot: -1 Melee\\
+  \rowcolor{BabyBlue}
+  & & Knight: -2 Melee \\
+  Ridge, Downhill & None* & Foot: +1 Melee \\
+  & & Knight: None \\
+  \rowcolor{BabyBlue}
+  Movement Downhill & None* & Foot: None \\
+  \rowcolor{BabyBlue}
+  & & Knight: +1/+2 Melee \\
+  Marsh & Foot: 2 MP & -1 Def \\
+  & Knight*: 3 MP & \\
+  \rowcolor{BabyBlue}
+  Stream & +1 MP & None \\
+  Woods & Foot: 2MP & +2 in Melee/+1 vs Bow \\
+  & Knight: 3 MP & (for units in woods)\\
+  \rowcolor{BabyBlue}
+  Road & 1 MP & None \\
+  \hline
+\end{tabular}
+}
+
+* Knights: Morale Check. Treat rout as disrupt.
 
 \subsection{Stacking}
 
