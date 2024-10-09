@@ -2,5 +2,4 @@
 *.log
 *.synctex.*
 *test*
-*.jpg
 main.pdf
