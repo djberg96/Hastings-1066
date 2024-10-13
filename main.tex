@@ -61,6 +61,26 @@
   {1em}
   {}
 
+\newenvironment{hangsubsubsection}
+{
+  \titleformat
+  {\subsubsection}
+  [hang]
+  {\bfseries}
+  {[\thesubsubsection]}
+  {1em}
+  {}
+}
+{
+  \titleformat
+  {\subsubsection}
+  [runin]
+  {\bfseries}
+  {[\thesubsubsection]}
+  {1em}
+  {}
+}
+
 \definecolor{BabyBlue}{rgb}{0.54, 0.81, 0.94}
 
 \begin{document}
