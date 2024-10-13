@@ -2,11 +2,15 @@
   <title>Franco-Flemish Knight Order Marker</title>
   <desc>The Franco-Flemish Knight Order Marker for the Norman player</desc>
 
-  <rect width="100%" height="100%" fill="rgb(80,160,220)" stroke="black" stroke-width="3%"/>
+  <g id="background">
+    <rect width="100%" height="100%" fill="rgb(80,160,220)" stroke="black" stroke-width="3%"/>
+  </g>
 
-  <text text-anchor="middle" x="50%" y="25%" font-size="12">
-    <tspan x="55%">FR-FLM</tspan>
-    <tspan x="55%" dy="25%">Knight</tspan>
-    <tspan x="50%" dy="35%" font-size="15" font-weight="bold">ORDER</tspan>
-  </text>
+  <g id="text" text-anchor="middle" font-size="12">
+    <text x="50%" y="25%">
+      <tspan x="50%">FR-FLM</tspan>
+      <tspan x="50%" dy="25%">Knight</tspan>
+      <tspan x="50%" dy="35%" font-size="14" font-weight="bold">ORDER</tspan>
+    </text>
+  </g>
 </svg>
