@@ -7,6 +7,6 @@ Other than fixing one or two minor typos, consistent spelling of "Housecarl", an
 
 https://boardgamegeek.com/boardgame/6021/hastings-1066
 
-To generate the rules run the command `pdflatex --jobname=Hastings_1066 main.tex`, which will generate a "Hastings_1066.pdf" file. You can, of course, change the name to whatever you like.
+I've uploaded a PDF, but there's a chance it's out of date. To generate the rules PDF from source run the command `pdflatex --jobname=Hastings_1066 main.tex`, which will generate a "Hastings_1066.pdf" file. You can, of course, change the name to whatever you like.
 
 Installing pdflatex will depend on your operating system. I leave that as an exercise to the reader.
