@@ -1,0 +1,113 @@
+<svg
+  width="810"
+  height="245"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+>
+  <defs>
+    <filter id="paper">
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency="0.04"
+        result="noise"
+        numOctaves="5"
+      />
+
+      <feDiffuseLighting in="noise" surfaceScale="2" result="texture">
+        <feDistantLight azimuth="45" elevation="75"/>
+      </feDiffuseLighting>
+
+      <feComposite
+        in="SourceGraphic"
+        in2="texture"
+        operator="arithmetic"
+        k1="1"
+        k2="0"
+        k3="0"
+        k4="0"
+      />
+    </filter>
+
+    <polygon
+      id="battle_track"
+      filter="url(#paper)"
+      fill="rgb(220,240,240)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+
+    <polygon
+      id="battle_phase"
+      filter="url(#paper)"
+      fill="rgb(160,210,235)"
+      stroke="#444444"
+      points="50.24,0.25 100.23,29.112 100.23,86.835 50.24,115.697 0.25,86.835 0.25,29.112 50.24,0.25"
+    />
+  </defs>
+
+  <g id="battle_phase_group" transform="translate(5,40)">
+    <g id="battle_phase1">
+      <use id="assault_phase1_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">1</text>
+    </g>
+
+    <g id="battle_phase2" transform="translate(100,0)">
+      <use id="battle_phase2_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">2</text>
+    </g>
+
+    <g id="battle_phase3" transform="translate(200,0)">
+      <use id="battle_phase3_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">3</text>
+    </g>
+
+    <g id="battle_phase4" transform="translate(300,0)">
+      <use id="battle_phase4_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">4</text>
+    </g>
+
+    <g id="battle_phase5" transform="translate(400,0)">
+      <use id="battle_phase5_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">5</text>
+    </g>
+
+    <g id="battle_phase6" transform="translate(500,0)">
+      <use id="battle_phase6_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">6</text>
+    </g>
+
+    <g id="battle_phase7" transform="translate(600,0)">
+      <use id="battle_phase7_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">7</text>
+    </g>
+
+    <g id="battle_phase8" transform="translate(700,0)">
+      <use id="battle_phase8_hex" xlink:href="#battle_track"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">8</text>
+    </g>
+
+    <g id="battle_phase9" transform="translate(150,85)">
+      <use id="battle_phase9_hex" xlink:href="#battle_phase"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">9</text>
+    </g>
+
+    <g id="battle_phase10" transform="translate(250,85)">
+      <use id="battle_phase8_hex" xlink:href="#battle_phase"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">10</text>
+    </g>
+
+    <g id="battle_phase11" transform="translate(350,85)">
+      <use id="battle_phase11_hex" xlink:href="#battle_phase"/>
+      <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">11</text>
+    </g>
+  </g>
+
+  <g id="battle_phase_labels">
+    <text x="15" y="30" font-size="40" font-weight="bold">BATTLE PHASE TRACK</text>
+    <text font-size="30">
+      <tspan x="15" y="180">Extended</tspan>
+      <tspan x="15" dy="25">Battle</tspan>
+      <tspan x="15" dy="25">Phase</tspan>
+    </text>
+  </g>
+</svg>
