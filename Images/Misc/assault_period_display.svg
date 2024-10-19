@@ -38,8 +38,8 @@
   </defs>
 
   <g id="assault_period">
-    <g id="assault_period_label">
-      <text x="110" y="20" text-anchor="middle" fill="black" font-size="24">ASSAULT PERIOD</text>
+    <g id="assault_period_label" font-weight="bold">
+      <text x="110" y="20" text-anchor="middle" fill="black" font-size="20">ASSAULT PERIOD</text>
     </g>
     <g id="assault_period1">
       <use id="assault_period1_hex" xlink:href="#battle_track" x="10" y="30"/>
