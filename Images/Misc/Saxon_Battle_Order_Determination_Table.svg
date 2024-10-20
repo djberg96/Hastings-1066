@@ -40,7 +40,7 @@
     <g id="attack_and_pursue_1">
       <text id="order" font-size="13" font-weight="bold" y="45%">
         <tspan x="3%">Attack &amp; Pursue, 1 turn</tspan>
-        <tspan x="31%">+1</tspan>
+        <tspan x="30.5%">+1</tspan>
         <tspan x="42.5%">5,6</tspan>
         <tspan x="60%">5</tspan>
         <tspan x="75%">5</tspan>
@@ -51,7 +51,7 @@
     <g id="attack_and_pursue_2">
       <text id="order" font-size="13" font-weight="bold" y="56%">
         <tspan x="3%">Attack &amp; Pursue, 2 turns</tspan>
-        <tspan x="29.5%">+1/+1</tspan>
+        <tspan x="28.5%">+1/+1</tspan>
         <tspan x="43.5%">7</tspan>
         <tspan x="60%">6</tspan>
         <tspan x="75%">4</tspan>
