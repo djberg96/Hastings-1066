@@ -82,6 +82,13 @@
   {}
 }
 
+\newenvironment{noverticalspace}
+{%
+  \par % ensure we're in vertical mode
+  \offinterlineskip % don't do the baselineskip calculations
+}
+{\par}% be sure to finish up
+
 \definecolor{BabyBlue}{rgb}{0.54, 0.81, 0.94}
 
 \begin{document}
