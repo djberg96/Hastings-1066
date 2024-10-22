@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="80">
+  <defs>
+    <rect id="box" width="70" height="70" fill="rgb(170,210,230)" stroke="black" stroke-width="1"/>
+  </defs>
+  
+  <rect id="background" width="100%" height="100%" fill="rgb(250,200,15)" stroke="black" stroke-width="1"/>
+  <g id="boxes">
+    <use id="box0" href="#box" x="-50" y="5"/>
+    <use id="box1" href="#box" x="20" y="5"/>
+    <use id="box2" href="#box" x="90" y="5"/>
+    <use id="box3" href="#box" x="160" y="5"/>
+    <use id="box4" href="#box" x="230" y="5"/>
+    <use id="box5" href="#box" x="300" y="5"/>
+    <use id="box6" href="#box" x="370" y="5"/>
+    <use id="box7" href="#box" x="440" y="5"/>
+    <use id="box8" href="#box" x="510" y="5"/>
+    <use id="box8" href="#box" x="580" y="5"/>
+  </g>
+
+  <g id="numbers" font-size="32" font-family="Verdana" fill="black">
+    <text dominant-baseline="middle" text-anchor="middle">
+      <tspan x="54" y="44">-4</tspan>
+      <tspan x="124" y="44">-3</tspan>
+      <tspan x="194" y="44">-2</tspan>
+      <tspan x="264" y="44">-1</tspan>
+      <tspan x="334" y="44">0</tspan>
+      <tspan x="404" y="44">+1</tspan>
+      <tspan x="474" y="44">+2</tspan>
+      <tspan x="544" y="44">+3</tspan>
+    </text>
+  </g>
+</svg>
