@@ -18,12 +18,27 @@
 
   <g id="wings">
     <text font-size="16" font-weight="bold" text-anchor="middle" alignment-baseline="middle">
-      <tspan x="46" y="76">Saxon</tspan>
+      <tspan x="46" y="79">Saxon</tspan>
       <tspan x="46" dy="15">Left</tspan>
       <tspan x="46" dy="44">Saxon</tspan>
       <tspan x="46" dy="15">Center</tspan>
       <tspan x="46" dy="44">Saxon</tspan>
       <tspan x="46" dy="15">Right</tspan>
+    </text>
+  </g>
+
+  <g id="tactics">
+    <text font-size="11" font-weight="bold" text-anchor="middle" alignment-baseline="middle">
+      <tspan x="115" y="28">Shield</tspan>
+      <tspan x="115" dy="15">Wall</tspan>
+      <tspan x="178" y="28">Attack</tspan>
+      <tspan x="176" dy="15">&amp; Purs.1</tspan>
+      <tspan x="240" y="28">Attack</tspan>
+      <tspan x="240" dy="15">&amp; Purs.2</tspan>
+      <tspan x="306" y="28">Adv. to</tspan>
+      <tspan x="306" dy="15">Combat</tspan>
+      <tspan x="369" y="28">Melee in</tspan>
+      <tspan x="369" dy="15">Place</tspan>
     </text>
   </g>
 </svg>
