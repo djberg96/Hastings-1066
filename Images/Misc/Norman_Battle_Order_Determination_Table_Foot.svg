@@ -14,7 +14,7 @@
   </g>
 
   <g id="unit_type">
-    <text x="10" y="14%">FOOT</text>
+    <text x="10" y="14%" font-weight="bold">FOOT</text>
   </g>
 
   <g id="headers">
