@@ -1,0 +1,21 @@
+<svg width="200" height="50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Norman Strategy Display</title>
+  <desc>The Norman Strategy Display</desc>
+
+  <defs>
+    <rect id="box" width="26" height="26" stroke="black" stroke-width="1"/>
+  </defs>
+
+  <g id="background">
+    <rect width="100%" height="100%" fill="rgb(210,90,120)" stroke="black" stroke-width="2"/>
+  </g>
+
+  <g id="wings" font-weight="bold" font-size="8">
+    <use xlink:href="#box" x="12" y="10" fill="green"/>
+    <text x="9" y="46">Bretons</text>
+    <use xlink:href="#box" x="87" y="10" fill="red"/>
+    <text x="84" y="46">Normans</text>
+    <use xlink:href="#box" x="162" y="10" fill="rgb(80,160,220)"/>
+    <text x="150" y="46">Fr-Flemish</text>
+  </g>
+</svg>
