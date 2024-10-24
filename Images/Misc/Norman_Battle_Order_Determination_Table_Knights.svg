@@ -1,94 +1,98 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="175">
-  <title>Saxon Battle Order Determination Table</title>
-  <desc>The Saxon Battle Order Determination Table</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="200">
+  <title>Norman Battle Order Determination Table - Knight</title>
+  <desc>The Norman Battle Order Determination Table for Knights</desc>
 
   <g id="background_rectangles">
-    <rect id="background" width="100%" height="100%" fill="rgb(250,200,15)" stroke="black" stroke-width="1"/>
-    <rect id="order_background" x="2%" y="5%" width="96%" height="90%" fill="white" stroke="black" stroke-width="2"/>
+    <rect id="background" width="100%" height="100%" fill="rgb(210,90,120)" stroke="black" stroke-width="1"/>
+    <rect id="order_background" x="2%" y="36" width="96%" height="160" fill="white" stroke="black" stroke-width="2"/>
   </g>
 
   <g id="lines">  
-    <line id="header_line" x1="2%" y1="24%" x2="98%" y2="24%" stroke="black" stroke-width="2"/>
-    <line id="col1" x1="27%" y1="5%" x2="27%" y2="95%" stroke="black" stroke-width="2"/>
-    <line id="col2" x1="37%" y1="5%" x2="37%" y2="95%" stroke="black" stroke-width="2"/>
+    <line id="header_line" x1="2%" y1="35%" x2="98%" y2="35%" stroke="black" stroke-width="2"/>
+    <line id="col1" x1="27%" y1="36" x2="27%" y2="98%" stroke="black" stroke-width="2"/>
+    <line id="col2" x1="37%" y1="36" x2="37%" y2="98%" stroke="black" stroke-width="2"/>
+  </g>
+
+  <g id="unit_type">
+    <text x="10" y="13%" font-weight="bold">KNIGHTS</text>
   </g>
 
   <g id="headers">
     <text id="header" font-size="14" font-weight="bold">
-      <tspan x="3%" y="17%">Battle Order</tspan>
-      <tspan x="28%" y="13%">Strategy</tspan>
+      <tspan x="3%" y="29%">Battle Order</tspan>
+      <tspan x="28%" y="25%">Strategy</tspan>
       <tspan x="29%" dy="8%">Effect</tspan>
-      <tspan x="39%" y="17%">AGGRESSIVE</tspan>
-      <tspan x="56%" y="17%">MODERATE</tspan>
-      <tspan x="71%" y="17%">CAUTIOUS</tspan>
-      <tspan x="86%" y="17%">DEFENSIVE</tspan>
+      <tspan x="39%" y="29%">AGGRESSIVE</tspan>
+      <tspan x="56%" y="29%">MODERATE</tspan>
+      <tspan x="71%" y="29%">CAUTIOUS</tspan>
+      <tspan x="86%" y="29%">DEFENSIVE</tspan>
     </text>
   </g>
 
   <g id="orders">
-    <g id="shield_wall">
-      <text id="order" font-size="13" font-weight="bold" y="34%">
-        <tspan x="3%">Shield Wall</tspan>
+    <g id="hold">
+      <text id="order" font-size="13" font-weight="bold" y="44%">
+        <tspan x="3%">Hold</tspan>
         <tspan x="31%">-2</tspan>
-        <tspan x="42.5%">3,4</tspan>
-        <tspan x="58.5%">4,8</tspan>
-        <tspan x="74%">6,7</tspan>
-        <tspan x="88%">4,6,7</tspan>
+        <tspan x="43%">6</tspan>
+        <tspan x="60%">7</tspan>
+        <tspan x="72%">7,8,12</tspan>
+        <tspan x="87%">3,7,8,11</tspan>
       </text>
     </g>
 
-    <g id="attack_and_pursue_1">
-      <text id="order" font-size="13" font-weight="bold" y="45%">
-        <tspan x="3%">Attack &amp; Pursue, 1 turn</tspan>
+    <g id="charge_1">
+      <text id="order" font-size="13" font-weight="bold" y="54%">
+        <tspan x="3%">Charge, 1 turn</tspan>
+        <tspan x="30.5%">+2</tspan>
+        <tspan x="41%">7,8,12</tspan>
+        <tspan x="59%">8,9</tspan>
+        <tspan x="73%">9,10</tspan>
+        <tspan x="89%">9,10</tspan>
+      </text>
+    </g>
+
+    <g id="charge_2">
+      <text id="order" font-size="13" font-weight="bold" y="64%">
+        <tspan x="3%">Charge, 2 turns</tspan>
+        <tspan x="29%">+2/+2</tspan>
+        <tspan x="42%">9,10</tspan>
+        <tspan x="59.5%">10</tspan>
+        <tspan x="74%">11</tspan>
+        <tspan x="90%">12</tspan>
+      </text>
+    </g>
+
+    <g id="advance_1">
+      <text id="order" font-size="13" font-weight="bold" y="74%">
+        <tspan x="3%">Advance, 1 turn</tspan>
         <tspan x="30.5%">+1</tspan>
-        <tspan x="42.5%">5,6</tspan>
-        <tspan x="60%">5</tspan>
-        <tspan x="75%">5</tspan>
-        <tspan x="90%">5</tspan>
+        <tspan x="41.5%">3,4,5</tspan>
+        <tspan x="57%">3,4,5,6</tspan>
+        <tspan x="73%">4,5,6</tspan>
+        <tspan x="88.5%">4,5,6</tspan>
       </text>
     </g>
 
-    <g id="attack_and_pursue_2">
-      <text id="order" font-size="13" font-weight="bold" y="56%">
-        <tspan x="3%">Attack &amp; Pursue, 2 turns</tspan>
-        <tspan x="28.5%">+1/+1</tspan>
-        <tspan x="43.5%">7</tspan>
-        <tspan x="60%">6</tspan>
-        <tspan x="75%">4</tspan>
-        <tspan x="90%">-</tspan>
+    <g id="advance_2">
+      <text id="order" font-size="13" font-weight="bold" y="84%">
+        <tspan x="3%">Advance, 2 turns</tspan>
+        <tspan x="29%">+1/+1</tspan>
+        <tspan x="43%">11</tspan>
+        <tspan x="58%">11,12</tspan>
+        <tspan x="75%">3</tspan>
+        <tspan x="90.5%">-</tspan>
       </text>
     </g>
 
-    <g id="advance_to_combat">
-      <text id="order" font-size="13" font-weight="bold" y="67%">
-        <tspan x="3%">Advance to Combat</tspan>
-        <tspan x="31.5%">0</tspan>
-        <tspan x="42.5%">8,9</tspan>
-        <tspan x="59%">7,9</tspan>
-        <tspan x="74%">8,9</tspan>
-        <tspan x="87.6%">9,10,12</tspan>
-      </text>
-    </g>
-
-    <g id="melee_fire_in_place">
-      <text id="order" font-size="13" font-weight="bold" y="78%">
-        <tspan x="3%">Melee/Fire in Place</tspan>
-        <tspan x="31%">-1</tspan>
-        <tspan x="40.5%">10,11,12</tspan>
-        <tspan x="56%">3,10,11,12</tspan>
-        <tspan x="71%">3,10,11,12</tspan>
-        <tspan x="88%">3,8,11</tspan>
-      </text>
-    </g>
-
-    <g id="melee_fire_in_place">
-      <text id="order" font-size="13" font-weight="bold" y="89%">
+    <g id="optional">
+      <text id="order" font-size="13" font-weight="bold" y="94%">
         <tspan x="3%">Optional</tspan>
         <tspan x="31.5%">?</tspan>
         <tspan x="43.5%">2</tspan>
         <tspan x="60%">2</tspan>
         <tspan x="75%">2</tspan>
-        <tspan x="90%">2</tspan>
+        <tspan x="90.5%">2</tspan>
       </text>
     </g>
   </g>
