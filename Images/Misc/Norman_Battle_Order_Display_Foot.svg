@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="410" height="240">
+  <g id="background">
+    <rect id="main_background" width="100%" height="100%" fill="rgb(210,90,120)" stroke="black" stroke-width="1"/>
+    <rect id="white_background" x="8" y="10" width="390" height="220" fill="white" stroke="black" stroke-width="3"/>
+    <rect id="green_background" x="81" y="52" width="316" height="177" fill="green"/>
+    <rect id="red_background" x="81" y="110" width="316" height="119" fill="red"/>
+    <rect id="blue_background" x="81" y="171" width="316" height="58" fill="rgb(80,160,220)"/>
+  </g>
+
+  <g id="grid">
+    <line id="vertical_line1" x1="80" y1="4%" x2="20%" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="vertical_line2" x1="160" y1="4%" x2="160" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="vertical_line3" x1="240" y1="4%" x2="240" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="vertical_line4" x1="320" y1="4%" x2="320" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="horizontal_line1" x1="80" y1="53" x2="398" y2="22%" stroke="black" stroke-width="3"/>
+    <line id="horizontal_line2" x1="20%" y1="46%" x2="398" y2="46%" stroke="black" stroke-width="3"/>
+    <line id="horizontal_line3" x1="20%" y1="71%" x2="398" y2="71%" stroke="black" stroke-width="3"/>
+  </g>
+
+  <g id="wings">
+    <text font-size="13" font-weight="bold" text-anchor="middle" alignment-baseline="middle">
+      <tspan x="45" y="79">BRETON</tspan>
+      <tspan x="45" dy="15">FOOT</tspan>
+      <tspan x="45" dy="44">NORMAN</tspan>
+      <tspan x="45" dy="15">FOOT</tspan>
+      <tspan x="45" dy="44">FR-FLM</tspan>
+      <tspan x="45" dy="15">FOOT</tspan>
+    </text>
+  </g>
+
+  <g id="tactics">
+    <text font-size="11" font-weight="bold" text-anchor="middle" alignment-baseline="middle">
+      <tspan x="120" y="30">Shield</tspan>
+      <tspan x="120" dy="15">Wall</tspan>
+      <tspan x="200" y="30">Advance to</tspan>
+      <tspan x="201" dy="15">Combat 1</tspan>
+      <tspan x="281" y="30">Advance to</tspan>
+      <tspan x="281" dy="15">Combat 2</tspan>
+      <tspan x="359" y="30">Melee</tspan>
+      <tspan x="358" dy="15">in Place</tspan>
+    </text>
+  </g>
+</svg>
