@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="410" height="240">
+  <g id="background">
+    <rect id="main_background" width="100%" height="100%" fill="rgb(210,90,120)" stroke="black" stroke-width="1"/>
+    <rect id="white_background" x="8" y="10" width="390" height="220" fill="white" stroke="black" stroke-width="3"/>
+    <rect id="green_background" x="81" y="52" width="316" height="177" fill="green"/>
+    <rect id="red_background" x="81" y="110" width="316" height="119" fill="red"/>
+    <rect id="blue_background" x="81" y="168" width="316" height="61" fill="rgb(80,160,220)"/>
+  </g>
+
+  <g id="grid">
+    <line id="vertical_line1" x1="80" y1="4%" x2="20%" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="vertical_line2" x1="144" y1="4%" x2="144" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="vertical_line3" x1="208" y1="4%" x2="208" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="vertical_line4" x1="272" y1="4%" x2="272" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="vertical_line5" x1="336" y1="4%" x2="336" y2="96%" stroke="black" stroke-width="3"/>
+    <line id="horizontal_line1" x1="80" y1="53" x2="398" y2="22%" stroke="black" stroke-width="3"/>
+    <line id="horizontal_line2" x1="20%" y1="46%" x2="398" y2="46%" stroke="black" stroke-width="3"/>
+    <line id="horizontal_line3" x1="20%" y1="70%" x2="398" y2="70%" stroke="black" stroke-width="3"/>
+  </g>
+
+  <g id="wings">
+    <text font-size="13" font-weight="bold" text-anchor="middle" alignment-baseline="middle">
+      <tspan x="45" y="79">BRETON</tspan>
+      <tspan x="45" dy="15">KNIGHTS</tspan>
+      <tspan x="45" dy="44">NORMAN</tspan>
+      <tspan x="45" dy="15">KNIGHTS</tspan>
+      <tspan x="45" dy="44">FR-FLM</tspan>
+      <tspan x="45" dy="15">KNIGHTS</tspan>
+    </text>
+  </g>
+
+  <g id="tactics">
+    <text font-size="12" font-weight="bold" text-anchor="middle" alignment-baseline="middle">
+      <tspan x="113" y="30">Hold</tspan>
+      <tspan x="175" y="30">Charge</tspan>
+      <tspan x="177" dy="15">1</tspan>
+      <tspan x="241" y="30">Charge</tspan>
+      <tspan x="241" dy="15">2</tspan>
+      <tspan x="304" y="30">Advance</tspan>
+      <tspan x="305" dy="15">1</tspan>
+      <tspan x="367" y="30">Advance</tspan>
+      <tspan x="365" dy="15">2</tspan>
+    </text>
+  </g>
+</svg>
