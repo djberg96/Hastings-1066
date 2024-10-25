@@ -1,6 +1,6 @@
 <svg
-  width="210"
-  height="145"
+  width="202"
+  height="120"
   xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink"
 >
@@ -38,17 +38,14 @@
   </defs>
 
   <g id="assault_period">
-    <g id="assault_period_label" font-weight="bold">
-      <text x="110" y="20" text-anchor="middle" fill="black" font-size="20">ASSAULT PERIOD</text>
-    </g>
     <g id="assault_period1">
-      <use id="assault_period1_hex" xlink:href="#battle_track" x="10" y="30"/>
-      <text x="60" y="90" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="30">I</text>
+      <use id="assault_period1_hex" xlink:href="#battle_track" x="1" y="2.5"/>
+      <text x="50.5" y="65" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="30">I</text>
     </g>
 
     <g id="assault_period2">
-      <use id="assault_period2_hex" xlink:href="#battle_track" x="110" y="30"/>
-      <text x="160" y="90" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="30">II</text>
+      <use id="assault_period2_hex" xlink:href="#battle_track" x="101" y="2.5"/>
+      <text x="150.5" y="65" dominant-baseline="middle" text-anchor="middle" fill="black" font-size="30">II</text>
     </g>
   </g>
 </svg>
