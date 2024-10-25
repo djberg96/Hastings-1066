@@ -1,6 +1,6 @@
 <svg
   width="810"
-  height="245"
+  height="202"
   xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink"
 >
@@ -45,7 +45,7 @@
     />
   </defs>
 
-  <g id="battle_phase_group" transform="translate(5,40)">
+  <g id="battle_phase_group" transform="translate(5,1)">
     <g id="battle_phase1">
       <use id="assault_phase1_hex" xlink:href="#battle_track"/>
       <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">1</text>
@@ -100,14 +100,5 @@
       <use id="battle_phase11_hex" xlink:href="#battle_phase"/>
       <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">11</text>
     </g>
-  </g>
-
-  <g id="battle_phase_labels">
-    <text x="15" y="30" font-size="40" font-weight="bold">BATTLE PHASE TRACK</text>
-    <text font-size="30">
-      <tspan x="15" y="180">Extended</tspan>
-      <tspan x="15" dy="25">Battle</tspan>
-      <tspan x="15" dy="25">Phase</tspan>
-    </text>
   </g>
 </svg>
