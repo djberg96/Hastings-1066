@@ -15,6 +15,7 @@
 \usepackage{authblk}
 \usepackage{xcolor,colortbl}
 \usepackage{graphicx}
+\usepackage{tocloft}
 
 \graphicspath{
   {./Images/Counters/},
@@ -90,7 +91,10 @@
 {\par}% be sure to finish up
 
 \definecolor{BabyBlue}{rgb}{0.54, 0.81, 0.94}
+
+\renewcommand{\contentsname}{Hastings 1066 - Table of Contents}
 \setcounter{tocdepth}{2}
+\setlength{\cftsecindent}{0em}
 
 \begin{document}
 \maketitle
