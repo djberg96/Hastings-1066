@@ -1,0 +1,227 @@
+\contentsline {section}{\numberline {1}INTRODUCTION}{1}{}%
+\contentsline {section}{\numberline {2}GAME PARTS}{1}{}%
+\contentsline {subsection}{\numberline {2.1}The Game Map}{1}{}%
+\contentsline {subsection}{\numberline {2.2}The Playing Pieces}{1}{}%
+\contentsline {subsection}{\numberline {2.3}Game Charts and Tables}{2}{}%
+\contentsline {subsection}{\numberline {2.4}Game Tracks and Displays}{2}{}%
+\contentsline {subsection}{\numberline {2.5}Game Scale and Playing Time}{2}{}%
+\contentsline {subsection}{\numberline {2.6}Inventory of Game Parts}{3}{}%
+\contentsline {section}{\numberline {3}SEQUENCE OF PLAY}{3}{}%
+\contentsline {subsection}{\numberline {3.1}The Assault Period}{3}{}%
+\contentsline {subsection}{\numberline {3.2}The Battle Turn}{3}{}%
+\contentsline {subsection}{\numberline {3.3}The Extended Assault Period}{3}{}%
+\contentsline {subsubsection}{\numberline {3.3.1}}{3}{}%
+\contentsline {subsubsection}{\numberline {3.3.2}}{4}{}%
+\contentsline {subsection}{\numberline {3.4}Assault Period Display}{4}{}%
+\contentsline {subsection}{\numberline {3.5}Battle Turn Record Track}{4}{}%
+\contentsline {section}{\numberline {4}STRATEGY AND BATTLE ORDER}{4}{}%
+\contentsline {subsection}{\numberline {4.1}Wings and Nationalities}{4}{}%
+\contentsline {subsubsection}{\numberline {4.1.1}Saxon Wings}{4}{}%
+\contentsline {subsubsection}{\numberline {4.1.2}Defining Saxon Wings}{4}{}%
+\contentsline {subsubsection}{\numberline {4.1.3}Saxon Leader Loss and Wings}{4}{}%
+\contentsline {subsubsection}{\numberline {4.1.4}Norman Sections}{4}{}%
+\contentsline {subsubsection}{\numberline {4.1.5}Leaders and Unit Orders}{4}{}%
+\contentsline {subsubsection}{\numberline {4.1.6}Define Wings and Sections}{4}{}%
+\contentsline {subsection}{\numberline {4.2}Strategy}{4}{}%
+\contentsline {subsubsection}{\numberline {4.2.1}Strategies}{5}{}%
+\contentsline {subsubsection}{\numberline {4.2.2}Strategy Display}{5}{}%
+\contentsline {subsubsection}{\numberline {4.2.3}Order Tables}{5}{}%
+\contentsline {subsubsection}{\numberline {4.2.4}Orders}{5}{}%
+\contentsline {subsubsection}{\numberline {4.2.5}Leaders and Orders}{5}{}%
+\contentsline {subsubsection}{\numberline {4.2.6}Order Length}{5}{}%
+\contentsline {subsubsection}{\numberline {4.2.7}Optional Order}{5}{}%
+\contentsline {subsection}{\numberline {4.3}Battle Order}{5}{}%
+\contentsline {subsubsection}{\numberline {4.3.1}Shield Wall:}{5}{}%
+\contentsline {subsubsection}{\numberline {4.3.2}Melee/Fire in Place:}{5}{}%
+\contentsline {subsubsection}{\numberline {4.3.3}Advance to Combat:}{5}{}%
+\contentsline {subsubsection}{\numberline {4.3.4}Attack \& Pursue \textit {(Saxon foot only)}:}{5}{}%
+\contentsline {subsubsection}{\numberline {4.3.5}Hold:}{6}{}%
+\contentsline {subsubsection}{\numberline {4.3.6}Advance:}{6}{}%
+\contentsline {subsubsection}{\numberline {4.3.7}Charge:}{6}{}%
+\contentsline {subsubsection}{\numberline {4.3.8}Exceptions to Order Rules}{6}{}%
+\contentsline {subsection}{\numberline {4.4}Displays and Tables}{6}{}%
+\contentsline {subsubsection}{\numberline {4.4.1}Saxon Strategy Display}{6}{}%
+\contentsline {subsubsection}{\numberline {4.4.2}\mbox {Saxon Battle Order Determination Table}}{6}{}%
+\contentsline {subsubsection}{\numberline {4.4.3}Saxon Battle Order Display}{6}{}%
+\contentsline {subsubsection}{\numberline {4.4.4}Saxon Strategy Effects Track}{7}{}%
+\contentsline {subsubsection}{\numberline {4.4.5}Norman Strategy Display}{7}{}%
+\contentsline {subsubsection}{\numberline {4.4.6}Norman Battle Order Determ. Table}{7}{}%
+\contentsline {subsubsection}{\numberline {4.4.7}Norman Battle Order Display}{7}{}%
+\contentsline {subsubsection}{\numberline {4.4.8}Norman Strategy Effects Track}{7}{}%
+\contentsline {section}{\numberline {5}Movement}{7}{}%
+\contentsline {subsection}{\numberline {5.1}How to Move}{7}{}%
+\contentsline {subsubsection}{\numberline {5.1.1}Movement Calculation}{7}{}%
+\contentsline {subsubsection}{\numberline {5.1.2}Movement Costs}{7}{}%
+\contentsline {subsubsection}{\numberline {5.1.3}Movement Limits}{7}{}%
+\contentsline {subsubsection}{\numberline {5.1.4}Movement Point Use}{7}{}%
+\contentsline {subsubsection}{\numberline {5.1.5}Movement and Facing}{7}{}%
+\contentsline {subsection}{\numberline {5.2}Restrictions on Movement}{7}{}%
+\contentsline {subsubsection}{\numberline {5.2.1}Moving Through Units}{7}{}%
+\contentsline {subsubsection}{\numberline {5.2.2}Movement and Combat}{8}{}%
+\contentsline {subsubsection}{\numberline {5.2.3}No Skipping}{8}{}%
+\contentsline {subsubsection}{\numberline {5.2.4}Movement During Fire and Melee}{8}{}%
+\contentsline {subsubsection}{\numberline {5.2.5}Battle Order Limits}{8}{}%
+\contentsline {subsection}{\numberline {5.3}The Effects of Terrain on Movement}{8}{}%
+\contentsline {subsubsection}{\numberline {5.3.1}Hex Costs}{8}{}%
+\contentsline {subsubsection}{\numberline {5.3.2}Terrain Color}{8}{}%
+\contentsline {subsubsection}{\numberline {5.3.3}Uphill}{8}{}%
+\contentsline {subsubsection}{\numberline {5.3.4}Downhill}{8}{}%
+\contentsline {subsubsection}{\numberline {5.3.5}Norman Knights}{8}{}%
+\contentsline {subsubsection}{\numberline {5.3.6}Knights and Marsh}{8}{}%
+\contentsline {subsubsection}{\numberline {5.3.7}The Road}{8}{}%
+\contentsline {subsection}{\numberline {5.4}Reaction}{8}{}%
+\contentsline {subsubsection}{\numberline {5.4.1}Reaction Defined}{8}{}%
+\contentsline {subsubsection}{\numberline {5.4.2}How Reaction Works}{8}{}%
+\contentsline {subsubsection}{\numberline {5.4.3}Reaction and ZOCs}{8}{}%
+\contentsline {subsubsection}{\numberline {5.4.4}Eligible Units}{8}{}%
+\contentsline {subsubsection}{\numberline {5.4.5}Morale Check}{9}{}%
+\contentsline {subsubsection}{\numberline {5.4.6}Missile Fire}{9}{}%
+\contentsline {subsection}{\numberline {5.5}Terrain Effects Chart}{9}{}%
+\contentsline {subsection}{\numberline {5.6}Stacking}{9}{}%
+\contentsline {subsubsection}{\numberline {5.6.1}Limits}{9}{}%
+\contentsline {subsubsection}{\numberline {5.6.2}Moving Through Units}{9}{}%
+\contentsline {subsubsection}{\numberline {5.6.3}Knights and Stacking}{9}{}%
+\contentsline {subsection}{\numberline {5.7}Zones of Control}{9}{}%
+\contentsline {subsubsection}{\numberline {5.7.1}Stopping Movement}{9}{}%
+\contentsline {subsubsection}{\numberline {5.7.2}Leaving a ZOC}{9}{}%
+\contentsline {subsubsection}{\numberline {5.7.3}Bowmen and ZOCs}{9}{}%
+\contentsline {subsubsection}{\numberline {5.7.4}MP and ZOCs}{9}{}%
+\contentsline {subsubsection}{\numberline {5.7.5}Competing ZOCs}{9}{}%
+\contentsline {subsubsection}{\numberline {5.7.6}Friendly ZOCs}{9}{}%
+\contentsline {subsubsection}{\numberline {5.7.7}ZOCs and Combat}{9}{}%
+\contentsline {section}{\numberline {6}FACING}{9}{}%
+\contentsline {subsection}{\numberline {6.1}How Units Are Faced}{9}{}%
+\contentsline {subsubsection}{\numberline {6.1.1}Facing Direction}{9}{}%
+\contentsline {subsubsection}{\numberline {6.1.2}Combat Units}{10}{}%
+\contentsline {subsubsection}{\numberline {6.1.3}Battle Order}{10}{}%
+\contentsline {subsection}{\numberline {6.2}Effects of Facing on Combat}{10}{}%
+\contentsline {subsubsection}{\numberline {6.2.1}Missile Armed Troops}{10}{}%
+\contentsline {subsubsection}{\numberline {6.2.2}Melee}{10}{}%
+\contentsline {subsubsection}{\numberline {6.2.3}Flank or Rear}{10}{}%
+\contentsline {subsubsection}{\numberline {6.2.4}Defensive Ratings}{10}{}%
+\contentsline {section}{\numberline {7}MISSILE FIRE COMBAT}{10}{}%
+\contentsline {subsection}{\numberline {7.1}How to Engage in Missile Combat}{10}{}%
+\contentsline {subsubsection}{\numberline {7.1.1}Missile Capability}{10}{}%
+\contentsline {subsubsection}{\numberline {7.1.2}Missile Strength}{10}{}%
+\contentsline {subsubsection}{\numberline {7.1.3}Combined Fire}{10}{}%
+\contentsline {subsubsection}{\numberline {7.1.4}Missile Procedure}{10}{}%
+\contentsline {subsubsection}{\numberline {7.1.5}Melee and Missile}{10}{}%
+\contentsline {subsubsection}{\numberline {7.1.6}Missile Fire Results}{10}{}%
+\contentsline {subsubsection}{\numberline {7.1.7}Leaders}{11}{}%
+\contentsline {subsection}{\numberline {7.2}Missile Fire Restrictions}{11}{}%
+\contentsline {subsubsection}{\numberline {7.2.1}When Missiles Fire}{11}{}%
+\contentsline {subsubsection}{\numberline {7.2.2}Direction}{11}{}%
+\contentsline {subsubsection}{\numberline {7.2.3}ZOC Restrictions}{11}{}%
+\contentsline {subsubsection}{\numberline {7.2.4}Woods}{11}{}%
+\contentsline {subsubsection}{\numberline {7.2.5}Firing Through Units}{11}{}%
+\contentsline {subsubsection}{\numberline {7.2.6}Leaders}{11}{}%
+\contentsline {subsubsection}{\numberline {7.2.7}Low Odds}{11}{}%
+\contentsline {subsection}{\numberline {7.3}High Trajectory Fire}{11}{}%
+\contentsline {subsubsection}{\numberline {7.3.1}Low Trajectory Fire}{11}{}%
+\contentsline {subsubsection}{\numberline {7.3.2}Saxon Bowmen}{11}{}%
+\contentsline {subsubsection}{\numberline {7.3.3}Resolution}{11}{}%
+\contentsline {subsubsection}{\numberline {7.3.4}Terrain}{11}{}%
+\contentsline {subsection}{\numberline {7.4}Missile Supply Limits}{11}{}%
+\contentsline {subsubsection}{\numberline {7.4.1}Fire Segment}{11}{}%
+\contentsline {subsubsection}{\numberline {7.4.2}One and All}{11}{}%
+\contentsline {subsubsection}{\numberline {7.4.3}Saving Ammo}{11}{}%
+\contentsline {subsubsection}{\numberline {7.4.4}Saxon Bowmen}{12}{}%
+\contentsline {subsubsection}{\numberline {7.4.5}Missile Supply Table}{12}{}%
+\contentsline {subsection}{\numberline {7.5}The Missile Combat Tables}{12}{}%
+\contentsline {subsubsection}{\numberline {7.5.1}Missile Fire Matrix}{12}{}%
+\contentsline {subsubsection}{\numberline {7.5.2}Missile Combat Results Table}{12}{}%
+\contentsline {section}{\numberline {8}MELEE COMBAT}{12}{}%
+\contentsline {subsection}{\numberline {8.1}Which Units Can Melee}{12}{}%
+\contentsline {subsubsection}{\numberline {8.1.1}ZoC}{12}{}%
+\contentsline {subsubsection}{\numberline {8.1.2}Mandatory Attacks}{12}{}%
+\contentsline {subsubsection}{\numberline {8.1.3}Disrupted Units}{12}{}%
+\contentsline {subsubsection}{\numberline {8.1.4}Only One Melee}{12}{}%
+\contentsline {subsection}{\numberline {8.2}Multiple-Unit and Multi-Hex Combat}{12}{}%
+\contentsline {subsubsection}{\numberline {8.2.1}Multiple Units}{12}{}%
+\contentsline {subsubsection}{\numberline {8.2.2}One Unit Versus Many}{13}{}%
+\contentsline {subsubsection}{\numberline {8.2.3}Attacks and ZOCs}{13}{}%
+\contentsline {subsubsection}{\numberline {8.2.4}No Split Strength}{13}{}%
+\contentsline {subsubsection}{\numberline {8.2.5}Different Results}{13}{}%
+\contentsline {subsection}{\numberline {8.3}Melee Resolution}{13}{}%
+\contentsline {subsubsection}{\numberline {8.3.1}Procedure}{13}{}%
+\contentsline {subsubsection}{\numberline {8.3.2}Differentials}{13}{}%
+\contentsline {subsubsection}{\numberline {8.3.3}Results}{13}{}%
+\contentsline {subsection}{\numberline {8.4}The Effects of Terrain on Melee}{13}{}%
+\contentsline {subsection}{\numberline {8.5}The Effects of Leaders on Melee}{13}{}%
+\contentsline {section}{\numberline {9}MELEE RESULTS}{13}{}%
+\contentsline {subsection}{\numberline {9.1}Melee Results Table}{13}{}%
+\contentsline {subsection}{\numberline {9.2}Explanation of Melee Results}{13}{}%
+\contentsline {subsubsection}{\numberline {9.2.1}Morale Check}{13}{}%
+\contentsline {subsubsection}{\numberline {9.2.2}Disrupted}{13}{}%
+\contentsline {subsubsection}{\numberline {9.2.3}Routed}{13}{}%
+\contentsline {subsubsection}{\numberline {9.2.4}Reduced}{14}{}%
+\contentsline {subsection}{\numberline {9.3}Retreats and Displacement}{14}{}%
+\contentsline {subsubsection}{\numberline {9.3.1}Owning Player}{14}{}%
+\contentsline {subsubsection}{\numberline {9.3.2}Routed Units}{14}{}%
+\contentsline {subsubsection}{\numberline {9.3.3}Blocked Retreat}{14}{}%
+\contentsline {subsubsection}{\numberline {9.3.4}Displacement}{14}{}%
+\contentsline {subsection}{\numberline {9.4}Pursuit}{14}{}%
+\contentsline {subsubsection}{\numberline {9.4.1}No Advance}{14}{}%
+\contentsline {subsubsection}{\numberline {9.4.2}When Pursuit Occurs}{14}{}%
+\contentsline {subsubsection}{\numberline {9.4.3}After Rout}{14}{}%
+\contentsline {subsubsection}{\numberline {9.4.4}When Pursuit Stops}{14}{}%
+\contentsline {subsubsection}{\numberline {9.4.5}Enemy ZOCs}{14}{}%
+\contentsline {subsubsection}{\numberline {9.4.6}Followup Movement}{14}{}%
+\contentsline {subsection}{\numberline {9.5}Rally}{15}{}%
+\contentsline {subsubsection}{\numberline {9.5.1}When Rally Happens}{15}{}%
+\contentsline {subsubsection}{\numberline {9.5.2}How to Rally}{15}{}%
+\contentsline {subsubsection}{\numberline {9.5.3}Routed Units}{15}{}%
+\contentsline {subsubsection}{\numberline {9.5.4}The Rally Check Table}{15}{}%
+\contentsline {subsection}{\numberline {9.6}Morale Checks}{15}{}%
+\contentsline {subsubsection}{\numberline {9.6.1}Conducting Morale Checks}{15}{}%
+\contentsline {subsubsection}{\numberline {9.6.2}Cavalry}{15}{}%
+\contentsline {subsubsection}{\numberline {9.6.3}Reaction Movement}{15}{}%
+\contentsline {subsubsection}{\numberline {9.6.4}Adjacent Units}{15}{}%
+\contentsline {subsubsection}{\numberline {9.6.5}No Limits}{15}{}%
+\contentsline {subsubsection}{\numberline {9.6.6}Morale Check Table}{15}{}%
+\contentsline {section}{\numberline {10}LEADERS}{15}{}%
+\advance \cftsubsecnumwidth 0.4em\relax 
+\contentsline {subsection}{\numberline {10.1}Leader Counters}{15}{}%
+\contentsline {subsubsection}{\numberline {10.1.1}Command Radius}{15}{}%
+\contentsline {subsubsection}{\numberline {10.1.2}Rally Range}{15}{}%
+\contentsline {subsubsection}{\numberline {10.1.3}Subordinate}{16}{}%
+\contentsline {subsection}{\numberline {10.2}Leaders and Movement}{16}{}%
+\contentsline {subsubsection}{\numberline {10.2.1}Movement}{16}{}%
+\contentsline {subsubsection}{\numberline {10.2.2}Enemy ZOCs}{16}{}%
+\contentsline {subsubsection}{\numberline {10.2.3}Adjacent Enemy Units}{16}{}%
+\contentsline {subsection}{\numberline {10.3}Leaders and Combat}{16}{}%
+\contentsline {subsubsection}{\numberline {10.3.1}Strength}{16}{}%
+\contentsline {subsubsection}{\numberline {10.3.2}Disrupted Unit}{16}{}%
+\contentsline {subsubsection}{\numberline {10.3.3}Routed Unit}{16}{}%
+\contentsline {subsection}{\numberline {10.4}Leader Casualties}{16}{}%
+\contentsline {subsubsection}{\numberline {10.4.1}Possible Casualty}{16}{}%
+\contentsline {subsubsection}{\numberline {10.4.2}Killed or Captured}{16}{}%
+\contentsline {subsubsection}{\numberline {10.4.3}Wounded}{16}{}%
+\contentsline {subsubsection}{\numberline {10.4.4}Wounded Again}{16}{}%
+\contentsline {subsubsection}{\numberline {10.4.5}William and Harold}{16}{}%
+\contentsline {subsection}{\numberline {10.5}The Leader Casualty Table}{16}{}%
+\contentsline {section}{\numberline {11}INITIAL DEPLOYMENT}{16}{}%
+\contentsline {subsection}{\numberline {11.1}Norman Deployment}{16}{}%
+\contentsline {subsection}{\numberline {11.2}Saxon Deployment}{17}{}%
+\contentsline {subsection}{\numberline {11.3}Variable Deployment (Optional)}{17}{}%
+\contentsline {subsection}{\numberline {11.4}Saxon Reinforcements}{17}{}%
+\contentsline {subsubsection}{\numberline {11.4.1}First Assault Period}{17}{}%
+\contentsline {subsubsection}{\numberline {11.4.2}Remaining Units}{17}{}%
+\contentsline {subsection}{\numberline {11.5}Reforming Armies}{17}{}%
+\contentsline {subsubsection}{\numberline {11.5.1}First Assault Period}{17}{}%
+\contentsline {subsubsection}{\numberline {11.5.2}Routed and Disrupted Units}{17}{}%
+\contentsline {subsubsection}{\numberline {11.5.3}Reforming Area}{17}{}%
+\contentsline {subsubsection}{\numberline {11.5.4}Norman Reform}{17}{}%
+\contentsline {subsubsection}{\numberline {11.5.5}Norman Rearrangement}{17}{}%
+\contentsline {subsubsection}{\numberline {11.5.6}Saxon Reform}{17}{}%
+\contentsline {subsubsection}{\numberline {11.5.7}Saxon Reduction}{17}{}%
+\contentsline {section}{\numberline {12}VICTORY CONDITIONS}{17}{}%
+\contentsline {subsection}{\numberline {12.1}How to Win}{17}{}%
+\contentsline {subsubsection}{\numberline {12.1.1}Norman Victory}{18}{}%
+\contentsline {subsubsection}{\numberline {12.1.2}Norman Victory Alt}{18}{}%
+\contentsline {subsubsection}{\numberline {12.1.3}Saxon Victory}{18}{}%
+\contentsline {subsection}{\numberline {12.2}Casualty Points}{18}{}%
+\contentsline {section}{\numberline {13}ERRATA}{18}{}%
+\contentsline {subsection}{\numberline {13.1}Counters}{18}{}%
+\contentsline {subsection}{\numberline {13.2}Map/Charts}{18}{}%
+\contentsline {subsection}{\numberline {13.3}Rules}{18}{}%
