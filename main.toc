@@ -55,8 +55,8 @@
 \contentsline {subsubsection}{\numberline {5.1.3}Movement Limits}{7}{}%
 \contentsline {subsubsection}{\numberline {5.1.4}Movement Point Use}{7}{}%
 \contentsline {subsubsection}{\numberline {5.1.5}Movement and Facing}{7}{}%
-\contentsline {subsection}{\numberline {5.2}Restrictions on Movement}{7}{}%
-\contentsline {subsubsection}{\numberline {5.2.1}Moving Through Units}{7}{}%
+\contentsline {subsection}{\numberline {5.2}Restrictions on Movement}{8}{}%
+\contentsline {subsubsection}{\numberline {5.2.1}Moving Through Units}{8}{}%
 \contentsline {subsubsection}{\numberline {5.2.2}Movement and Combat}{8}{}%
 \contentsline {subsubsection}{\numberline {5.2.3}No Skipping}{8}{}%
 \contentsline {subsubsection}{\numberline {5.2.4}Movement During Fire and Melee}{8}{}%
