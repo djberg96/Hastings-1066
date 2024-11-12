@@ -2,5 +2,6 @@
   <title>Gyrth Command Marker</title>
   <desc>Saxon Gyrth Command Marker for S\&amp;T Hastings 1066</desc>
   
-  <circle fill="teal" stroke-width="0.1" r="2.5" cx="3" cy="3" stroke="black"/>
+  <rect id="background" fill="none" height="100%" width="100%"/>
+  <circle fill="teal" r="2.5" cx="3" cy="3"/>
 </svg>
