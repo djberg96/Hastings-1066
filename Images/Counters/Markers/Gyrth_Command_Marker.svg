@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" height="30" width="30">
+<svg xmlns="http://www.w3.org/2000/svg" height="10" width="10">
   <title>Gyrth Command Marker</title>
   <desc>Saxon Gyrth Command Marker for S\&amp;T Hastings 1066</desc>
   
   <rect id="background" fill="none" height="100%" width="100%"/>
-  <circle fill="teal" r="10" cx="60%" cy="60%"/>
+  <circle fill="red" r="5" cx="50%" cy="50%"/>
 </svg>
