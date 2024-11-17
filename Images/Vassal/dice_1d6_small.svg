@@ -1,0 +1,7 @@
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <title>1d6</title>
+  <desc>Dice Icon</desc>
+
+  <rect fill="white" width="24" height="24" stroke="black"/>
+  <circle fill="black" r="3" cx="12" cy="12"/>
+</svg>

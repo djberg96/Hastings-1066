@@ -1,0 +1,11 @@
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
+  <title>3d6</title>
+  <desc>Dice Icon</desc>
+
+  <g id="dice">
+    <rect fill="white" width="24" height="24" stroke="black"/>
+    <circle r="3" cx="6" cy="18"/>
+    <circle r="3" cx="12" cy="12"/>
+    <circle r="3" cx="18" cy="6"/>
+  </g>
+</svg>

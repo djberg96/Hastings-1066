@@ -1,0 +1,8 @@
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <rect fill="white" width="100%" id="background" height="100%"/>
+  <rect x="10%" y="25%" fill="black" width="80%" rx="3" id="base" height="60%"/>
+  <rect x="30%" y="17%" fill="black" width="40%" rx="2" id="flash" height="50%"/>
+  <rect x="14%" y="22%" fill="black" width="10%" rx="1" id="flash" height="40%"/>
+  <circle stroke-width="1.2" r="15%" cx="50%" cy="55%" stroke="white"/>
+  <circle fill="white" r="5%" cx="78%" cy="35%"/>
+</svg>
