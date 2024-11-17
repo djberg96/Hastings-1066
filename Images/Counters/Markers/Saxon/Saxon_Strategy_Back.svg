@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" height="60" width="60">
+  <title>Strategy Marker Back</title>
+  <desc>Back side of Norman Strategy Markers</desc>
+
+  <rect fill="rgb(180,100,40)" width="100%" stroke-width="3%" height="100%" stroke="black"/>
+
+  <g id="text" transform="rotate(315,33,30)">
+    <text text-anchor="middle" x="50%" y="54%" font-size="14" fill="white">Strategy</text>
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg width="60" height="60" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60">
+  <defs id="common">
+    <rect fill="none" width="60" stroke-width="9" id="background" height="60" stroke="rgb(180,100,40)"/>
+
+    <g stroke-width="2" id="border" stroke="black">
+      <line y2="1" x1="0" x2="60" y1="1"/>
+      <line y2="60" x1="1" x2="1" y1="1"/>
+      <line y2="59" x1="0" x2="60" y1="59"/>
+      <line y2="60" x1="59" x2="59" y1="1"/>
+    </g>
+
+    <clipPath id="block">
+      <use xlink:href="#background"/>
+    </clipPath>
+  </defs>
+
+  <use clip-path="url(#block)" xlink:href="#background"/>
+  <use clip-path="url(#block)" xlink:href="#border"/>
+  <text x="50%" font-size="12" y="25%" fill="white" text-anchor="middle" stroke="black" font-weight="bold" stroke-width="0.5">HIDDEN</text>
+</svg>
