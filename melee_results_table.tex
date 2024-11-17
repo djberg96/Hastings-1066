@@ -1,0 +1,35 @@
+\documentclass{article}
+\usepackage{xcolor,colortbl}
+\usepackage{graphicx}
+\definecolor{BabyBlue}{rgb}{0.54, 0.81, 0.94}
+
+
+\begin{document}
+  \begin{table}
+  \noindent\makebox[\textwidth]{
+  {
+    \def\arraystretch{1.4}
+      \begin{tabular}{ |cccccccccccc| }
+        \hline
+        \rowcolor{BabyBlue}
+        \multicolumn{12}{|c|}{ \textbf{[9.1] MELEE COMBAT RESULTS TABLE} } \\
+        \rowcolor{BabyBlue}
+        \multicolumn{12}{|c|}{ \textbf{Melee Differential} } \\
+        \hline
+        Die Roll & -6 & -5 & -4 & -3 & -2 & -1 & 0 & +1 & +2/+3 & +4/+5 & +6 \\
+        \hline
+        1 & 1/- & 1/- & 1/- & 1/- & 1/- & 1/D* & 1/D* & M/- & D*/- & 1/1 & D*/1 \\
+        \rowcolor{BabyBlue}
+        2 & 1/- & 1/- & 1/- & 1/- & 1/D* & M/- & M/- & D*/- & 1/1 & D*/1 & -/M \\
+        3 & 1/- & 1/- & 1/- & 1/D* & M/- & D*/- & 1/1 & D*/1 & -/M & -/1 & -/1\\
+        \rowcolor{BabyBlue}
+        4 & 1/- & 1/- & 1/D* & M/1 & D*/- & 1/1 & 1/1 & D*/1 & -/M & -/1 & -/1\\
+        5 & 1/- & 1/D* & M/- & D*/- & 1/1 & 1/1 & D*/1 & -/M & -/1 & -/1 & -/1M\\
+        \rowcolor{BabyBlue}
+        6 & 1/D* & M/- & D*/- & 1/1 & 1/1 & D*/1 & -/M & -/1 & -/1 & -/1M & -/1M\\
+        \hline
+      \end{tabular}
+    }
+  }
+  \end{table}
+\end{document}
