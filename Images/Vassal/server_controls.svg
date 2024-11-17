@@ -1,0 +1,20 @@
+<svg width="20" height="24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 20 24">
+  <title>Server Controls</title>
+  <desc>Server control icon for Vassal</desc>
+
+  <g id="dice">
+    <rect fill="white" width="20" height="24" stroke="black"/>
+    <rect x="2" y="2" fill="white" width="16" height="20" stroke="black" stroke-width="0.5"/>
+    <rect x="3.5" y="3.5" fill="white" width="13" height="3" stroke="black" stroke-width="0.5"/>
+    <rect x="3.5" y="6.5" fill="white" width="13" height="3" stroke="black" stroke-width="0.5"/>
+    <rect x="3.5" y="9.5" fill="white" width="13" height="3" stroke="black" stroke-width="0.5"/>
+    <circle r="0.4" cx="15" cy="5"/>
+    <circle r="0.4" cx="15" cy="8"/>
+    <circle r="0.4" cx="15" cy="11"/>
+    <circle r="0.5" cx="4" cy="14.5"/>
+    <circle r="0.5" cx="4" cy="16.5"/>
+    <circle r="0.5" cx="4" cy="18.5"/>
+    <circle r="0.5" cx="4" cy="20.5"/>
+    <circle fill="none" stroke-width="0.5" r="1" cx="10" cy="18" stroke="black"/>
+  </g>
+</svg>
