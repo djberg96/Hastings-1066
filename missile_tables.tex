@@ -12,14 +12,10 @@
       \hline
       \rowcolor{BabyBlue}
       \multicolumn{3}{|c|}{\textbf{[7.45] MISSILE SUPPLY TABLE}} \\
-      \rowcolor{BabyBlue}
       \textbf{Assault Period} & \multicolumn{2}{c|}{\textbf{Fire Segments Allowed}} \\
-      \rowcolor{BabyBlue}
       & Norman Bowmen & Saxon Jav/Sps \\
       \hline
-      \rowcolor{BabyBlue}
       First & 6 & 4 \\
-      \rowcolor{BabyBlue}
       Second & 3 & 2 \\
       \hline
     \end{tabular}
@@ -34,24 +30,43 @@
         \hline
         \rowcolor{BabyBlue}
         \multicolumn{5}{|c|}{\textbf{[7.51] MISSILE FIRE MATRIX}} \\
-        \rowcolor{BabyBlue}
         & & \multicolumn{3}{c|}{ \textbf{Hex Range}} \\
         \hline
-        \rowcolor{BabyBlue}
         Weapon & Max. Range & 3 & 2 & 1* \\
         \hline
         Bow & 3 hexes & 3 & 4 & 5 \\
         Javelin & 2 hexes & - & 2 & 3 \\
         Sling & 3 hexes & 1 & 1 & 2 \\
         \hline
-        \rowcolor{BabyBlue}
         \multicolumn{5}{|c|}{Number is missile fire strength of unit.} \\
-        \rowcolor{BabyBlue}
         \multicolumn{5}{|c|}{Bowmen may not enter enemy ZOC.} \\
-        \rowcolor{BabyBlue}
         \multicolumn{5}{|c|}{Bowmen in enemy ZOC must leave ZOC.} \\
         \hline
       \end{tabular}
     }
+  }
+
+  \vspace*{2em}
+
+  {\def\arraystretch{1.2}
+    \resizebox{\columnwidth}{!}{\begin{tabular}{ |ccccccccccc| }
+        \hline
+        \rowcolor{BabyBlue}
+        \multicolumn{11}{|c|}{\textbf{[7.52] MISSILE FIRE COMBAT RESULTS TABLE}} \\
+        \multicolumn{11}{|c|}{ \textbf{Fire Ratio} } \\
+        \hline& & & & & & & & & &\\[-2.5ex]
+        Die Roll & 1-4 & 1-3 & 1-2 & 1-1.5 & 1-1 & 1.5-1 & 2-1 & 3-1 & 4-1 & 5-1 \\
+        \hline
+        1 & -- & -- & -- & -- & -- & M & M & M & D & D \\
+        \rowcolor{BabyBlue}
+        2 & -- & -- & -- & -- & M & M & M & D & D & D \\
+        3 & -- & -- & -- & M & M & M & D & D & D & 1 \\
+        \rowcolor{BabyBlue}
+        4 & -- & -- & M & M & M & D & D & D & 1 & 1 \\
+        5 & -- & M & M & M & D & D & D & 1 & 1 & 1 \\
+        \rowcolor{BabyBlue}
+        6 & M & M & M & D & D & D & 1 & 1 & 1 & 1 \\
+        \hline
+    \end{tabular}}
   }
 \end{document}
