@@ -1,0 +1,57 @@
+\documentclass{article}
+\usepackage{xcolor,colortbl}
+\usepackage{graphicx}
+
+\definecolor{BabyBlue}{rgb}{0.54, 0.81, 0.94}
+\thispagestyle{empty}
+
+\begin{document}
+  \def\arraystretch{1.2}
+  \noindent\makebox[\textwidth]{
+    \begin{tabular}{ |lcc| }
+      \hline
+      \rowcolor{BabyBlue}
+      \multicolumn{3}{|c|}{\textbf{[7.45] MISSILE SUPPLY TABLE}} \\
+      \rowcolor{BabyBlue}
+      \textbf{Assault Period} & \multicolumn{2}{c|}{\textbf{Fire Segments Allowed}} \\
+      \rowcolor{BabyBlue}
+      & Norman Bowmen & Saxon Jav/Sps \\
+      \hline
+      \rowcolor{BabyBlue}
+      First & 6 & 4 \\
+      \rowcolor{BabyBlue}
+      Second & 3 & 2 \\
+      \hline
+    \end{tabular}
+  }
+
+  \vspace*{2em}
+
+  \noindent\makebox[\textwidth]{
+    {
+      \def\arraystretch{1.2}
+      \begin{tabular}{ |lcccc| }
+        \hline
+        \rowcolor{BabyBlue}
+        \multicolumn{5}{|c|}{\textbf{[7.51] MISSILE FIRE MATRIX}} \\
+        \rowcolor{BabyBlue}
+        & & \multicolumn{3}{c|}{ \textbf{Hex Range}} \\
+        \hline
+        \rowcolor{BabyBlue}
+        Weapon & Max. Range & 3 & 2 & 1* \\
+        \hline
+        Bow & 3 hexes & 3 & 4 & 5 \\
+        Javelin & 2 hexes & - & 2 & 3 \\
+        Sling & 3 hexes & 1 & 1 & 2 \\
+        \hline
+        \rowcolor{BabyBlue}
+        \multicolumn{5}{|c|}{Number is missile fire strength of unit.} \\
+        \rowcolor{BabyBlue}
+        \multicolumn{5}{|c|}{Bowmen may not enter enemy ZOC.} \\
+        \rowcolor{BabyBlue}
+        \multicolumn{5}{|c|}{Bowmen in enemy ZOC must leave ZOC.} \\
+        \hline
+      \end{tabular}
+    }
+  }
+\end{document}
