@@ -1,0 +1,45 @@
+\documentclass{article}
+\usepackage{xcolor,colortbl}
+\usepackage{graphicx}
+\usepackage{multirow}
+
+\definecolor{BabyBlue}{rgb}{0.54, 0.81, 0.94}
+\thispagestyle{empty}
+
+\begin{document}
+  \vspace*{-8em}
+  \resizebox{\columnwidth}{!}{
+  \begin{tabular}{ |ccl| }
+    \hline
+    \rowcolor{BabyBlue}
+    \multicolumn{3}{|c|}{\textbf{[5.5] Terrain Effects Chart}} \\
+    \hline
+    \textbf{Terrain Type} & \textbf{Movement Cost} & \textbf{Effect on Combat} \\
+    \hline
+    Clear & 1 MP & None \\
+    \rowcolor{BabyBlue}
+    & & Foot: -1 Melee \\
+    \rowcolor{BabyBlue}
+    \multirow{-2}{*}{Ridge, Uphill} & \multirow{-2}{*}{None*} & Knight: -2 Melee \\
+    & & Foot: +1 Melee \\
+    \multirow{-2}{*}{Ridge, Downhill} & \multirow{-2}{*}{None*} & Knight: None \\
+    \rowcolor{BabyBlue}
+    & & Foot: None \\
+    \rowcolor{BabyBlue}
+    \multirow{-2}{*}{Movement Downhill} & \multirow{-2}{*}{None*} & Knight: +1/+2 Melee \\
+    \multirow{2}{*}{Marsh} & Foot: 2 MP & \multirow{2}{*}{-1 Def} \\
+    & Knight*: 3 MP & \\
+    \rowcolor{BabyBlue}
+    Stream & +1 MP & None \\
+    \multirow{2}{*}{Woods} & Foot: 2MP & +2 in Melee/+1 vs Bow \\
+    & Knight: 3 MP & (for units in woods)\\
+    \rowcolor{BabyBlue}
+    Road & 1 MP & None \\
+    \hline
+  \end{tabular}
+  }
+
+  \vspace*{2em}
+
+  * Knights: Morale Check. Treat rout as disrupt.
+\end{document}
