@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">
+  <title>Missile Segments</title>
+  <desc>A Saxon marker for tracking remaining missile segments in S\&amp;T Hastings 1066</desc>
+
+  <rect width="100%" height="100%" fill="rgb(250,200,15)" stroke="black" stroke-width="3%"/>
+
+  <text text-anchor="middle" alignment-baseline="middle" x="50%" y="30%" font-size="11" fill="black">
+    <tspan>Saxon</tspan>
+    <tspan x="50%" dy="1.2em">Missile</tspan>
+    <tspan x="50%" dy="1.2em">Segments</tspan>
+  </text>
+</svg>
