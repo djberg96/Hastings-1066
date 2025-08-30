@@ -102,7 +102,7 @@
     />
 
     <polygon
-      id="battle_phase"
+      id="battle_phase_extended"
       filter="url(#paper)"
       fill="rgb(160,210,235)"
       stroke="#444444"
@@ -1629,17 +1629,17 @@
     </g>
 
     <g id="battle_phase9" transform="translate(1350)">
-      <use id="battle_phase9_hex" xlink:href="#battle_phase"/>
+      <use id="battle_phase9_hex" xlink:href="#battle_phase_extended"/>
       <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">9</text>
     </g>
 
     <g id="battle_phase10" transform="translate(1450)">
-      <use id="battle_phase8_hex" xlink:href="#battle_phase"/>
+      <use id="battle_phase10_hex" xlink:href="#battle_phase_extended"/>
       <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">10</text>
     </g>
 
     <g id="battle_phase11" transform="translate(1550)">
-      <use id="battle_phase11_hex" xlink:href="#battle_phase"/>
+      <use id="battle_phase11_hex" xlink:href="#battle_phase_extended"/>
       <text x="50" y="75" text-anchor="middle" fill="black" font-size="50">11</text>
     </g>
   </g>
