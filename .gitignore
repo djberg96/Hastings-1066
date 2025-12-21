@@ -2,4 +2,6 @@
 *.log
 *.synctex.*
 *test*
+*.fls
+*.fdb*
 main.pdf
