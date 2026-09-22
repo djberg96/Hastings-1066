@@ -45,10 +45,11 @@ public sealed class HastingsGame : MonoBehaviour
             heading=new GUIStyle(GUI.skin.label){fontSize=body+8,fontStyle=FontStyle.Bold,wordWrap=true};
             small=new GUIStyle(GUI.skin.label){fontSize=body-3,wordWrap=true};
             hexNumber=new GUIStyle(GUI.skin.label){alignment=TextAnchor.MiddleCenter,
-                fontStyle=FontStyle.Bold,clipping=TextClipping.Overflow};
-            hexNumber.normal.textColor=new Color(.20f,.13f,.09f,.95f);
+                fontStyle=FontStyle.Normal,wordWrap=false,clipping=TextClipping.Clip,
+                padding=new RectOffset(0,0,0,0)};
+            hexNumber.normal.textColor=new Color(.19f,.20f,.13f,.86f);
             hexNumberShadow=new GUIStyle(hexNumber);
-            hexNumberShadow.normal.textColor=new Color(.99f,.95f,.80f,.95f);
+            hexNumberShadow.normal.textColor=new Color(.98f,.96f,.78f,.60f);
             menuTitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.055f),42,76),
                 fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleCenter};
             menuSubtitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.024f),21,34),
@@ -245,17 +246,24 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawHexNumbers(Rect region)
     {
-        int fontSize=Mathf.Clamp(Mathf.RoundToInt(24*scale),12,24);
+        int fontSize=Mathf.Clamp(Mathf.RoundToInt(16*scale),8,18);
         hexNumber.fontSize=fontSize;
         hexNumberShadow.fontSize=fontSize;
-        float width=Mathf.Max(34,53*scale),height=fontSize+3;
+        // The printed board places each four-digit coordinate vertically at the right of its hex.
+        // Leave enough unrotated width for all four digits before rotating the label.
+        float width=fontSize*3.4f,height=fontSize+4;
         foreach(var h in board.data.hexes)
         {
             float x=pan.x+h.x*scale,y=pan.y+h.y*scale;
             if(x<-60||x>region.width+60||y<-60||y>region.height+60)continue;
-            var label=new Rect(x-width/2,y-32.5f*scale-height-2,width,height);
+            float rightOffset=Mathf.Min(36*scale,50*scale-height*.5f-2);
+            var pivot=new Vector2(x+rightOffset,y);
+            var label=new Rect(pivot.x-width*.5f,pivot.y-height*.5f,width,height);
+            var old=GUI.matrix;
+            GUIUtility.RotateAroundPivot(90,pivot);
             GUI.Label(new Rect(label.x+1,label.y+1,label.width,label.height),h.id,hexNumberShadow);
             GUI.Label(label,h.id,hexNumber);
+            GUI.matrix=old;
         }
     }
     private Texture2D CounterTexture(UnitState unit)
