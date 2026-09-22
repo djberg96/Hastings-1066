@@ -240,11 +240,37 @@ public sealed class HastingsGame : MonoBehaviour
         {fullMapMode=false;pan+=e.delta;e.Use();}
         else if(e.type==EventType.MouseDown && e.button==0 && game!=null)
         {
-            float x=(e.mousePosition.x-pan.x)/scale;
-            float y=(e.mousePosition.y-pan.y)/scale;
-            string hex=board.Nearest(x,y);
-            if(hex!=null)ClickHex(hex,e.shift,e.alt);e.Use();
+            string hex=HexAtPointer(e.mousePosition);
+            if(hex!=null)ClickHex(hex,e.shift,e.alt||PointerOnSplayedLeader(hex,e.mousePosition));
+            e.Use();
         }
+    }
+    private Rect CounterRect(UnitState unit,bool splayed)
+    {
+        var h=board.Hex(unit.hex);
+        return CounterLayout.RectFor(new Vector2(pan.x+h.x*scale,pan.y+h.y*scale),
+            scale,UnitTypes.Get(unit).leader,splayed);
+    }
+    private bool LeaderStackAt(string hex)
+    {
+        if(game==null || string.IsNullOrEmpty(hex))return false;
+        var stack=game.state.units.Where(u=>u.hex==hex && u.status!=Status.Eliminated);
+        return stack.Any(u=>UnitTypes.Get(u).leader) &&
+            stack.Any(u=>!UnitTypes.Get(u).leader);
+    }
+    private string HexAtPointer(Vector2 point)
+    {
+        // Keep the stack open while the pointer moves onto a spread counter.
+        if(LeaderStackAt(hoveredHex) && game.state.units.Any(u=>
+            u.hex==hoveredHex && u.status!=Status.Eliminated &&
+            CounterRect(u,true).Contains(point)))return hoveredHex;
+        return board.Nearest((point.x-pan.x)/scale,(point.y-pan.y)/scale);
+    }
+    private bool PointerOnSplayedLeader(string hex,Vector2 point)
+    {
+        return LeaderStackAt(hex) && game.state.units.Any(u=>u.hex==hex &&
+            u.status!=Status.Eliminated && UnitTypes.Get(u).leader &&
+            CounterRect(u,true).Contains(point));
     }
     private void ClickHex(string hex,bool add,bool preferLeader)
     {
@@ -294,6 +320,9 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.DrawTexture(new Rect(pan.x,pan.y,board.data.width*scale,board.data.height*scale),map,ScaleMode.StretchToFill);
         if(game!=null)
         {
+            var e=Event.current;
+            hoveredHex=!showMenu && chart=="" && region.Contains(e.mousePosition)?
+                HexAtPointer(e.mousePosition):"";
             var unit=SelectedUnits().FirstOrDefault();
             if(unit!=null && (game.state.phase==Phase.NormanMove || game.state.phase==Phase.NormanReaction))
             {
@@ -308,13 +337,14 @@ public sealed class HastingsGame : MonoBehaviour
                 GUI.color=Color.white;
             }
             DrawHexNumbers(region);
-            foreach(var u in game.state.units.Where(u=>u.status!=Status.Eliminated && board.Has(u.hex)))
+            bool splayed=LeaderStackAt(hoveredHex);
+            // Paint every leader after combat counters so it stays on top.
+            foreach(var u in game.state.units.Where(u=>u.status!=Status.Eliminated && board.Has(u.hex))
+                .OrderBy(u=>UnitTypes.Get(u).leader?1:0)
+                .ThenBy(u=>u.hex==hoveredHex?1:0))
             {
-                var h=board.Hex(u.hex);var type=UnitTypes.Get(u);
-                float size=(type.leader?45:65)*scale;
-                float xx=pan.x+h.x*scale-size/2+(type.leader?26*scale:0);
-                float yy=pan.y+h.y*scale-size/2+(type.leader?25*scale:0);
-                var rect=new Rect(xx,yy,size,size);
+                var type=UnitTypes.Get(u);
+                var rect=CounterRect(u,splayed && u.hex==hoveredHex);
                 var texture=CounterTexture(u);
                 if(texture!=null)
                 {
@@ -324,17 +354,13 @@ public sealed class HastingsGame : MonoBehaviour
                     GUI.matrix=old;
                 }
                 if(selected.Contains(u.id))
-                {GUI.color=Color.yellow;GUI.Box(new Rect(xx-2,yy-2,size+4,size+4),GUIContent.none);GUI.color=Color.white;}
+                {GUI.color=Color.yellow;GUI.Box(new Rect(rect.x-2,rect.y-2,rect.width+4,rect.height+4),GUIContent.none);GUI.color=Color.white;}
                 if(u.status==Status.Disrupted||u.status==Status.Routed)
                 {
                     GUI.color=u.status==Status.Routed?Color.red:Color.yellow;
-                    GUI.Label(new Rect(xx+size-10,yy-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
+                    GUI.Label(new Rect(rect.xMax-10,rect.y-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
                 }
             }
-            hoveredHex="";
-            var e=Event.current;
-            if(region.Contains(e.mousePosition))
-                hoveredHex=board.Nearest((e.mousePosition.x-pan.x)/scale,(e.mousePosition.y-pan.y)/scale);
         }
         GUI.EndGroup();
     }
@@ -490,7 +516,7 @@ public sealed class HastingsGame : MonoBehaviour
             Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
         if(GUILayout.Button(showHelp?"Hide controls":"Controls",panelLink,GUILayout.Height(38*p)))showHelp=!showHelp;
         GUILayout.EndHorizontal();
-        if(showHelp)GUILayout.Label("Select a Norman counter. Alt-click a stacked leader; Shift-click to add units or melee targets. Click a highlighted hex to move or an enemy to attack. WASD or right drag pans; the wheel zooms. Q/E changes facing. Space ends a segment.",panelMuted);
+        if(showHelp)GUILayout.Label("Hover over a stack to spread its counters, then click the unit or leader you want. Shift-click adds units or melee targets. Click a highlighted hex to move or an enemy to attack. WASD or right drag pans; the wheel zooms. Q/E changes facing. Space ends a segment.",panelMuted);
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("CASUALTIES",panelSection);

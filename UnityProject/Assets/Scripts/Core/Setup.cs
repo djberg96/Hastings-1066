@@ -40,7 +40,7 @@ namespace Hastings
                 foreach (var hex in parts[1].Split(',')) add(parts[0],hex,type.nation,1);
             }
             foreach (var leader in new[] {("William","1906"),("Alan","1523"),
-                                            ("Odo","1222"),("Eustace","1209")})
+                                            ("Odo","1215"),("Eustace","1209")})
                 add(leader.Item1,leader.Item2,UnitTypes.Get(leader.Item1).nation,1);
             foreach (var leader in new[] {("Harold","0514","Center"),
                                             ("Gyrth","0721","Left"),

@@ -70,6 +70,23 @@ public static class ProjectChecks
         Check(!state.units.Any(u=>u.hex=="1307"),"Errata setup hex 1307 used");
         Check(state.units.Where(u=>!UnitTypes.Get(u).leader && u.hex!="")
             .GroupBy(u=>u.hex).All(g=>g.Count()==1),"Combat units stacked at setup");
+        var odo=state.units.Single(u=>u.type=="Odo");
+        Check(odo.group=="Norman" && UnitTypes.Get(odo).nation=="Norman" &&
+            state.units.Any(u=>u.hex==odo.hex && !UnitTypes.Get(u).leader &&
+                UnitTypes.Get(u).nation=="Norman"),
+            "Odo must share a hex with a Norman unit and command Normans");
+        foreach(float counterScale in new[]{1f,2.5f,4f})
+        {
+            var center=new Vector2(300,200);
+            var stackedUnit=CounterLayout.RectFor(center,counterScale,false,false);
+            var stackedLeader=CounterLayout.RectFor(center,counterScale,true,false);
+            Check(stackedUnit.center==center && stackedLeader.center==center,
+                "Stacked counters are not centered on their hex");
+            var spreadUnit=CounterLayout.RectFor(center,counterScale,false,true);
+            var spreadLeader=CounterLayout.RectFor(center,counterScale,true,true);
+            Check(!spreadUnit.Overlaps(spreadLeader),
+                "Hover spread still overlaps counters at scale "+counterScale);
+        }
         var engine=new GameEngine(board,state);engine.Begin();engine.ResolveOrders();
         Check(state.phase==Phase.NormanFire,"Opening order phase did not advance");
         var json=JsonUtility.ToJson(state);

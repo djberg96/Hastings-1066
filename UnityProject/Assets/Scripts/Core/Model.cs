@@ -114,7 +114,7 @@ namespace Hastings
             Add(new UnitType("SL", Side.Saxon, "Saxon", "Slingers", 1, 2, 1, 2, 'E', "S"));
             Add(new UnitType("William", Side.Norman, "Norman", "William", 0, 0, 0, 0, 'A', leader:true, command:7, rally:2));
             Add(new UnitType("Alan", Side.Norman, "Breton", "Alan", 0, 0, 0, 0, 'B', leader:true, command:3, rally:0));
-            Add(new UnitType("Odo", Side.Norman, "Breton", "Odo", 0, 0, 0, 0, 'B', leader:true, command:6, rally:1));
+            Add(new UnitType("Odo", Side.Norman, "Norman", "Odo", 0, 0, 0, 0, 'B', leader:true, command:6, rally:1));
             Add(new UnitType("Eustace", Side.Norman, "Franco-Flemish", "Eustace", 0, 0, 0, 0, 'B', leader:true, command:4, rally:0));
             Add(new UnitType("Harold", Side.Saxon, "Saxon", "Harold", 0, 0, 0, 0, 'A', leader:true, command:6, rally:2));
             Add(new UnitType("Gyrth", Side.Saxon, "Saxon", "Gyrth", 0, 0, 0, 0, 'B', leader:true, command:5, rally:0));
