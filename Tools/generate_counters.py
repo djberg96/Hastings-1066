@@ -6,7 +6,7 @@ import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps, ImageStat
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,10 +14,32 @@ SOURCE = ROOT / "Images/Counters"
 DESTINATION = ROOT / "UnityProject/Assets/Resources/Art/Counters"
 
 
+def improve_ink_contrast(image):
+    """Lift the darker faction inks before applying the shared paper finish."""
+    median = ImageStat.Stat(image).median
+    red = median[0] > median[1] * 2 and median[0] > median[2] * 2
+    green = median[1] > median[0] * 1.5 and median[1] > median[2] * 1.5
+    if not red and not green:
+        return image
+
+    red_channel, green_channel, blue_channel = image.split()
+    if red:
+        dominance = ImageChops.subtract(red_channel,
+                                        ImageChops.lighter(green_channel, blue_channel))
+        ink = Image.new("RGB", image.size, (235, 78, 62))
+    else:
+        dominance = ImageChops.subtract(green_channel,
+                                        ImageChops.lighter(red_channel, blue_channel))
+        # The supplied green is only half intensity, so normalize its mask.
+        dominance = ImageEnhance.Brightness(dominance).enhance(2)
+        ink = Image.new("RGB", image.size, (70, 162, 58))
+    return Image.composite(ink, image, dominance)
+
+
 def style_counter(path):
     source = Image.open(path).convert("RGBA")
     alpha = source.getchannel("A")
-    image = source.convert("RGB")
+    image = improve_ink_contrast(source.convert("RGB"))
 
     # Replace flat screen primaries with the quieter ink colors of a printed
     # counter while retaining the strong faction distinctions and black type.
