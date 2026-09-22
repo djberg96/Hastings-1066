@@ -133,15 +133,17 @@ DEST.write_text(json.dumps({"width": 2950, "height": 2400,
                             "hexes": sorted(hexes.values(), key=lambda h: h["id"]),
                             "edges": edges}, separators=(",", ":")))
 
-# SVG turbulence filters make rasterization extremely slow on this Mac. Render
-# a filter-free copy, then add the original board's soft, speckled ridge style
-# from the SVG's marked hex sides. The source SVG remains untouched.
+# The paper and ridge turbulence filters make rasterization extremely slow on
+# this Mac. Keep the much cheaper stream displacement filter so the water has
+# the irregular banks specified by the SVG. Add the ridge texture with Pillow
+# after rendering. The source SVG remains untouched.
 for parent in root.iter():
     for child in list(parent):
         if re.match(r"^\d{4}_ridge(?:_|$)", child.get("id", "")):
             parent.remove(child)
 for element in root.iter():
-    element.attrib.pop("filter", None)
+    if element.get("filter") != "url(#stream)":
+        element.attrib.pop("filter", None)
 with tempfile.TemporaryDirectory() as temporary:
     clean = Path(temporary) / "map.svg"
     ET.ElementTree(root).write(clean, encoding="utf-8", xml_declaration=True)
