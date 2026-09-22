@@ -17,6 +17,30 @@ public static class ProjectChecks
         Check(board.data.hexes.Select(h=>h.id).Distinct().Count()==703,"Duplicate hex ids");
         Check(board.Has("0116")&&board.Has("0811")&&board.Has("1420"),"Key hex missing");
         Check(board.Distance("0116","0811")>0,"Hex distance broken");
+        for(int rowNumber=1;rowNumber<=25;rowNumber++)
+        {
+            var row=board.data.hexes.Where(h=>int.Parse(h.id.Substring(0,2))==rowNumber)
+                .OrderByDescending(h=>h.x).ToArray();
+            Check(row.Length>0,"Missing numbered hex row "+rowNumber);
+            for(int i=1;i<row.Length;i++)
+                Check(int.Parse(row[i].id.Substring(2,2))==
+                    int.Parse(row[i-1].id.Substring(2,2))+1,
+                    "Hex numbers do not increase from right to left in row "+rowNumber);
+        }
+        Check(board.Hex("0101").x>board.Hex("0102").x &&
+            board.Hex("0102").x>board.Hex("0103").x,"Upper-right hex numbering reversed");
+        float viewScale=0;Vector2 viewPan=Vector2.zero;
+        BoardViewMath.Resize(ref viewScale,ref viewPan,0,0,1500,1000,board.data.width);
+        float firstScale=viewScale;
+        float centerX=(750-viewPan.x)/viewScale;
+        float centerY=(500-viewPan.y)/viewScale;
+        BoardViewMath.Resize(ref viewScale,ref viewPan,1500,1000,3200,1400,board.data.width);
+        Check(viewScale>firstScale*2 && Mathf.Abs((1600-viewPan.x)/viewScale-centerX)<.01f &&
+            Mathf.Abs((700-viewPan.y)/viewScale-centerY)<.01f,
+            "Map did not enlarge and preserve its center after window resize");
+        float fullScale=BoardViewMath.FitWhole(3200,1400,board.data.width,board.data.height);
+        Check(board.data.width*fullScale<=3200 && board.data.height*fullScale<=1400,
+            "Full-map view does not fit the window");
         foreach(Strategy strategy in Enum.GetValues(typeof(Strategy)))
             for(int dice=2;dice<=12;dice++)
             {

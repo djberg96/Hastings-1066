@@ -10,6 +10,7 @@ The first release is a solo desktop game. The Norman player chooses strategies, 
 - Shift-click additional Norman counters to combine fire or melee. During melee, Shift-click enemy counters to select several defenders, then use **Resolve selected melee**.
 - Click a highlighted hex to move, or click an enemy counter to fire or melee. The panel shows the current phase and available decisions.
 - Press Q/E to turn a selected counter, Space to finish a segment, and Escape for the menu. Right drag pans; the wheel zooms.
+- Hex numbers are drawn over the map from the SVG's hex IDs. The upper-right hex is `0101`, and numbers increase to the left in each row. The map grows with the game window. **Battle view** centers the fighting area; **Full map** fits the entire board.
 
 The bundled PDF is available through **Open rulebook PDF**. Chart buttons show the combat and morale tables. The SVG map is converted into `Assets/Resources/Art/Map/hex_map.png`, and its terrain data into `Assets/Resources/Data/Map.json`, by `../Tools/generate_assets.py`. That script uses `rsvg-convert` and leaves the SVG untouched. It does not use Inkscape. The map texture and data are checked in, so rebuilding them is unnecessary for normal Unity use.
 

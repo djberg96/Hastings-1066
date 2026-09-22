@@ -14,11 +14,12 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly List<string> selected=new List<string>();
     private readonly List<string> selectedTargets=new List<string>();
     private Vector2 pan;
-    private float scale;
-    private bool showMenu=true, showHigh;
+    private float scale, lastMapWidth, lastMapHeight;
+    private bool showMenu=true, showHigh, showHelp, fullMapMode;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
     private Vector2 logScroll, chartScroll, menuScroll;
-    private GUIStyle heading, small, menuTitle, menuSubtitle, menuButton, menuTextField;
+    private GUIStyle heading, small, hexNumber, hexNumberShadow,
+        menuTitle, menuSubtitle, menuButton, menuTextField;
     private string hoveredHex="";
 
     private void Awake()
@@ -28,11 +29,8 @@ public sealed class HastingsGame : MonoBehaviour
         board=new Board(JsonUtility.FromJson<MapData>(asset.text));
         map=Resources.Load<Texture2D>("Art/Map/hex_map");
         titleBackground=Resources.Load<Texture2D>("Art/Menu/title_tapestry");
-        scale=Mathf.Min((Screen.width-PanelWidth())/board.data.width,
-            Screen.height/(float)board.data.height)*.94f;
-        pan=new Vector2(12,12);
     }
-    private static float PanelWidth() { return Mathf.Clamp(Screen.width*.225f,440f,720f); }
+    private static float PanelWidth() { return Mathf.Clamp(Screen.width*.21f,390f,600f); }
     private void OnGUI()
     {
         if(board==null||map==null){GUI.Label(new Rect(20,20,700,40),"Hastings assets are missing. Run Tools/generate_assets.py.");return;}
@@ -46,6 +44,11 @@ public sealed class HastingsGame : MonoBehaviour
         {
             heading=new GUIStyle(GUI.skin.label){fontSize=body+8,fontStyle=FontStyle.Bold,wordWrap=true};
             small=new GUIStyle(GUI.skin.label){fontSize=body-3,wordWrap=true};
+            hexNumber=new GUIStyle(GUI.skin.label){alignment=TextAnchor.MiddleCenter,
+                fontStyle=FontStyle.Bold,clipping=TextClipping.Overflow};
+            hexNumber.normal.textColor=new Color(.20f,.13f,.09f,.95f);
+            hexNumberShadow=new GUIStyle(hexNumber);
+            hexNumberShadow.normal.textColor=new Color(.99f,.95f,.80f,.95f);
             menuTitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.055f),42,76),
                 fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleCenter};
             menuSubtitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.024f),21,34),
@@ -72,11 +75,27 @@ public sealed class HastingsGame : MonoBehaviour
             return;
         }
         Rect mapRect=new Rect(0,0,Mathf.Max(100,Screen.width-PanelWidth()),Screen.height);
+        ResizeMapView(mapRect);
         HandleInput(mapRect);
         DrawMap(mapRect);
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
         if(showMenu)DrawMenu();
         if(chart!="")DrawChart();
+    }
+    private void ResizeMapView(Rect region)
+    {
+        if(Mathf.Approximately(lastMapWidth,region.width) &&
+           Mathf.Approximately(lastMapHeight,region.height))return;
+        if(fullMapMode)
+        {
+            scale=BoardViewMath.FitWhole(region.width,region.height,
+                board.data.width,board.data.height);
+            pan=new Vector2((region.width-board.data.width*scale)/2f,
+                (region.height-board.data.height*scale)/2f);
+        }
+        else BoardViewMath.Resize(ref scale,ref pan,lastMapWidth,lastMapHeight,
+            region.width,region.height,board.data.width);
+        lastMapWidth=region.width;lastMapHeight=region.height;
     }
     private static Texture2D SolidTexture(Color color)
     {
@@ -110,11 +129,12 @@ public sealed class HastingsGame : MonoBehaviour
         if(showMenu||chart!=""||!region.Contains(e.mousePosition))return;
         if(e.type==EventType.ScrollWheel)
         {
-            float old=scale;scale=Mathf.Clamp(scale*(e.delta.y>0?.88f:1.12f),.12f,1.25f);
+            fullMapMode=false;
+            float old=scale;scale=Mathf.Clamp(scale*(e.delta.y>0?.88f:1.12f),.12f,4f);
             pan=e.mousePosition-(e.mousePosition-pan)*(scale/old);e.Use();
         }
         else if(e.type==EventType.MouseDrag && (e.button==1||e.button==2))
-        {pan+=e.delta;e.Use();}
+        {fullMapMode=false;pan+=e.delta;e.Use();}
         else if(e.type==EventType.MouseDown && e.button==0 && game!=null)
         {
             float x=(e.mousePosition.x-pan.x)/scale;
@@ -164,7 +184,9 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawMap(Rect region)
     {
-        GUI.Box(region,GUIContent.none);
+        GUI.color=new Color(.11f,.14f,.15f);
+        GUI.DrawTexture(region,Texture2D.whiteTexture);
+        GUI.color=Color.white;
         GUI.BeginGroup(region);
         GUI.DrawTexture(new Rect(pan.x,pan.y,board.data.width*scale,board.data.height*scale),map,ScaleMode.StretchToFill);
         if(game!=null)
@@ -205,6 +227,7 @@ public sealed class HastingsGame : MonoBehaviour
                     GUI.Label(new Rect(xx+size-10,yy-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
                 }
             }
+            DrawHexNumbers(region);
             var e=Event.current;
             if(region.Contains(e.mousePosition))
             {
@@ -219,6 +242,21 @@ public sealed class HastingsGame : MonoBehaviour
             }
         }
         GUI.EndGroup();
+    }
+    private void DrawHexNumbers(Rect region)
+    {
+        int fontSize=Mathf.Clamp(Mathf.RoundToInt(24*scale),12,24);
+        hexNumber.fontSize=fontSize;
+        hexNumberShadow.fontSize=fontSize;
+        float width=Mathf.Max(34,53*scale),height=fontSize+3;
+        foreach(var h in board.data.hexes)
+        {
+            float x=pan.x+h.x*scale,y=pan.y+h.y*scale;
+            if(x<-60||x>region.width+60||y<-60||y>region.height+60)continue;
+            var label=new Rect(x-width/2,y-32.5f*scale-height-2,width,height);
+            GUI.Label(new Rect(label.x+1,label.y+1,label.width,label.height),h.id,hexNumberShadow);
+            GUI.Label(label,h.id,hexNumber);
+        }
     }
     private Texture2D CounterTexture(UnitState unit)
     {
@@ -237,14 +275,22 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawPanel(Rect region)
     {
-        GUI.Box(region,GUIContent.none);
-        GUILayout.BeginArea(new Rect(region.x+8,8,region.width-16,region.height-16));
+        GUI.color=new Color(.13f,.17f,.18f);
+        GUI.DrawTexture(region,Texture2D.whiteTexture);
+        GUI.color=Color.white;
+        GUILayout.BeginArea(new Rect(region.x+14,14,region.width-28,region.height-28));
         GUILayout.Label("HASTINGS 1066",heading);
         if(game==null){GUILayout.Label("Choose New Game or Load Game from the menu.");
             if(GUILayout.Button("Menu"))showMenu=true;GUILayout.EndArea();return;}
         var s=game.state;
         GUILayout.Label(s.phase==Phase.GameOver?s.result:$"Assault {s.period} · Turn {s.turn} · {s.phase}",heading);
-        if(GUILayout.Button("Menu / Save / Load"))showMenu=true;
+        GUILayout.BeginHorizontal();
+        if(GUILayout.Button("Menu"))showMenu=true;
+        if(GUILayout.Button("Battle view"))
+        {fullMapMode=false;lastMapWidth=0;scale=0;}
+        if(GUILayout.Button("Full map"))
+        {fullMapMode=true;lastMapWidth=0;}
+        GUILayout.EndHorizontal();
         GUILayout.Space(8);
         if(s.phase==Phase.Orders)
         {
@@ -309,7 +355,6 @@ public sealed class HastingsGame : MonoBehaviour
             }
             if(GUILayout.Button("Clear targets"))selectedTargets.Clear();
         }
-        GUILayout.Label("Click a counter to select; Alt-click a stacked leader. Shift-click to select a firing group or add a melee target. Click a highlighted hex to move, or an enemy to attack. Right drag to pan; wheel to zoom.",small);
         if(notice!="")GUILayout.Label(notice,small);
         GUILayout.Space(8);
         if(s.phase!=Phase.GameOver)
@@ -325,6 +370,8 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndHorizontal();
         if(GUILayout.Button("Open rulebook PDF"))
             Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
+        if(GUILayout.Button(showHelp?"Hide controls":"Controls"))showHelp=!showHelp;
+        if(showHelp)GUILayout.Label("Click a Norman counter to select it. Alt-click a stacked leader. Shift-click to add units or melee targets. Click a highlighted hex to move or an enemy to attack. Right drag to pan; wheel to zoom. Battle view refocuses the armies; Full map shows the whole board.",small);
         GUILayout.Space(8);
         GUILayout.Label($"Casualties: Norman {s.normanCasualties} · Saxon {s.saxonCasualties}");
         GUILayout.Label("Recent events",heading);
@@ -403,6 +450,7 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
+                        lastMapWidth=0;scale=0;fullMapMode=false;
                     }
                     catch(Exception ex){notice="Load failed: "+ex.Message;}
                 }
@@ -444,6 +492,7 @@ public sealed class HastingsGame : MonoBehaviour
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
+        lastMapWidth=0;scale=0;fullMapMode=false;
     }
     private void DrawChart()
     {
