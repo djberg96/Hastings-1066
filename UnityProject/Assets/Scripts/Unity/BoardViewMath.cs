@@ -16,6 +16,20 @@ public static class BoardViewMath
             (viewportHeight-24f)/boardHeight));
     }
 
+    public static Vector2 ClampPan(Vector2 pan,float scale,float viewportWidth,
+        float viewportHeight,float boardWidth,float boardHeight)
+    {
+        return new Vector2(
+            ClampAxis(pan.x,viewportWidth,boardWidth*scale),
+            ClampAxis(pan.y,viewportHeight,boardHeight*scale));
+    }
+
+    private static float ClampAxis(float offset,float viewportSize,float boardSize)
+    {
+        if(boardSize<=viewportSize)return (viewportSize-boardSize)/2f;
+        return Mathf.Clamp(offset,viewportSize-boardSize,0);
+    }
+
     public static void Resize(ref float scale,ref Vector2 pan,
         float oldWidth,float oldHeight,float newWidth,float newHeight,float boardWidth)
     {

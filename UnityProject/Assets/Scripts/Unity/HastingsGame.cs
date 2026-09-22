@@ -30,6 +30,16 @@ public sealed class HastingsGame : MonoBehaviour
         map=Resources.Load<Texture2D>("Art/Map/hex_map");
         titleBackground=Resources.Load<Texture2D>("Art/Menu/title_tapestry");
     }
+    private void Update()
+    {
+        if(game==null||showMenu||chart!=""||!Application.isFocused)return;
+        var viewDirection=new Vector2(
+            (Input.GetKey(KeyCode.D)?1:0)-(Input.GetKey(KeyCode.A)?1:0),
+            (Input.GetKey(KeyCode.S)?1:0)-(Input.GetKey(KeyCode.W)?1:0));
+        if(viewDirection.sqrMagnitude==0)return;
+        fullMapMode=false;
+        pan-=viewDirection.normalized*Mathf.Max(360f,Screen.height*.65f)*Time.unscaledDeltaTime;
+    }
     private static float PanelWidth() { return Mathf.Clamp(Screen.width*.21f,390f,600f); }
     private void OnGUI()
     {
@@ -78,6 +88,8 @@ public sealed class HastingsGame : MonoBehaviour
         Rect mapRect=new Rect(0,0,Mathf.Max(100,Screen.width-PanelWidth()),Screen.height);
         ResizeMapView(mapRect);
         HandleInput(mapRect);
+        pan=BoardViewMath.ClampPan(pan,scale,mapRect.width,mapRect.height,
+            board.data.width,board.data.height);
         DrawMap(mapRect);
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
         if(showMenu)DrawMenu();
@@ -379,7 +391,7 @@ public sealed class HastingsGame : MonoBehaviour
         if(GUILayout.Button("Open rulebook PDF"))
             Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
         if(GUILayout.Button(showHelp?"Hide controls":"Controls"))showHelp=!showHelp;
-        if(showHelp)GUILayout.Label("Click a Norman counter to select it. Alt-click a stacked leader. Shift-click to add units or melee targets. Click a highlighted hex to move or an enemy to attack. Right drag to pan; wheel to zoom. Battle view refocuses the armies; Full map shows the whole board.",small);
+        if(showHelp)GUILayout.Label("Click a Norman counter to select it. Alt-click a stacked leader. Shift-click to add units or melee targets. Click a highlighted hex to move or an enemy to attack. Use WASD or right drag to pan; wheel to zoom. Battle view refocuses the armies; Full map shows the whole board.",small);
         GUILayout.Space(8);
         GUILayout.Label($"Casualties: Norman {s.normanCasualties} · Saxon {s.saxonCasualties}");
         GUILayout.Label("Recent events",heading);

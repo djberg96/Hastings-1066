@@ -41,6 +41,10 @@ public static class ProjectChecks
         float fullScale=BoardViewMath.FitWhole(3200,1400,board.data.width,board.data.height);
         Check(board.data.width*fullScale<=3200 && board.data.height*fullScale<=1400,
             "Full-map view does not fit the window");
+        var edgePan=BoardViewMath.ClampPan(new Vector2(100,-10000),2,800,600,500,400);
+        Check(edgePan==new Vector2(0,-200),"Map pan escaped a board edge");
+        var centeredPan=BoardViewMath.ClampPan(new Vector2(999,-999),.5f,1000,800,500,400);
+        Check(centeredPan==new Vector2(375,300),"Small map was not centered");
         foreach(Strategy strategy in Enum.GetValues(typeof(Strategy)))
             for(int dice=2;dice<=12;dice++)
             {
