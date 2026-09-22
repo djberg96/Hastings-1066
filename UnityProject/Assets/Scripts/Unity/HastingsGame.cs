@@ -9,7 +9,7 @@ public sealed class HastingsGame : MonoBehaviour
 {
     private Board board;
     private GameEngine game;
-    private Texture2D map, titleBackground;
+    private Texture2D map, titleBackground, assaultPeriodMarker, battleTurnMarker;
     private readonly Dictionary<string,Texture2D> counters=new Dictionary<string,Texture2D>();
     private readonly Dictionary<string,float> stackSpread=new Dictionary<string,float>();
     private readonly List<string> selected=new List<string>();
@@ -37,6 +37,8 @@ public sealed class HastingsGame : MonoBehaviour
         board=new Board(JsonUtility.FromJson<MapData>(asset.text));
         map=Resources.Load<Texture2D>("Art/Map/hex_map");
         titleBackground=Resources.Load<Texture2D>("Art/Menu/title_tapestry");
+        assaultPeriodMarker=Resources.Load<Texture2D>("Art/Counters/Markers/Assault_Period");
+        battleTurnMarker=Resources.Load<Texture2D>("Art/Counters/Markers/Battle_Turn");
     }
     private void Update()
     {
@@ -386,6 +388,7 @@ public sealed class HastingsGame : MonoBehaviour
                 GUI.color=Color.white;
             }
             DrawHexNumbers(region);
+            DrawTrackMarkers();
             if(showUnits)
             {
                 // Paint every leader after combat counters so it stays on top.
@@ -410,6 +413,32 @@ public sealed class HastingsGame : MonoBehaviour
             }
         }
         GUI.EndGroup();
+    }
+    private void DrawTrackMarkers()
+    {
+        var state=game.state;
+        int displayedTurn=state.turn;
+        // Reform and game-over states are entered just after the final turn is
+        // advanced. Leave the marker on the turn that was actually completed.
+        if(state.phase==Phase.Reform ||
+           (state.phase==Phase.GameOver && state.period==2 && state.turn>8 &&
+            state.result=="Saxon strategic victory"))displayedTurn--;
+        displayedTurn=Mathf.Clamp(displayedTurn,1,11);
+        DrawTrackMarker(assaultPeriodMarker,new Vector2(state.period==1?200:300,2292));
+        DrawTrackMarker(battleTurnMarker,new Vector2(600+(displayedTurn-1)*100,2292));
+    }
+    private void DrawTrackMarker(Texture2D texture,Vector2 mapCenter)
+    {
+        if(texture==null)return;
+        float size=60*scale;
+        var rect=new Rect(pan.x+mapCenter.x*scale-size/2,
+            pan.y+mapCenter.y*scale-size/2,size,size);
+        float shadowOffset=Mathf.Max(1f,3f*scale);
+        GUI.color=new Color(0,0,0,.30f);
+        GUI.DrawTexture(new Rect(rect.x+shadowOffset,rect.y+shadowOffset,rect.width,rect.height),
+            Texture2D.whiteTexture);
+        GUI.color=Color.white;
+        GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
     }
     private void DrawSelectionOutline(Rect rect)
     {

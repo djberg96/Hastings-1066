@@ -16,6 +16,10 @@ public static class ProjectChecks
         Check(mapTexture!=null && mapTexture.width==5900 && mapTexture.height==4800,
             "Map texture was downsampled during import: "+
             (mapTexture==null?"missing":mapTexture.width+"x"+mapTexture.height));
+        Check(Resources.Load<Texture2D>("Art/Counters/Markers/Assault_Period")!=null,
+            "Assault period marker art missing");
+        Check(Resources.Load<Texture2D>("Art/Counters/Markers/Battle_Turn")!=null,
+            "Battle turn marker art missing");
         var board=new Board(JsonUtility.FromJson<MapData>(source.text));
         Check(board.data.hexes.Length==703,"Expected 703 playable hexes");
         Check(board.data.hexes.Select(h=>h.id).Distinct().Count()==703,"Duplicate hex ids");
