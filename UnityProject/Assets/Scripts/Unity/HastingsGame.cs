@@ -16,13 +16,13 @@ public sealed class HastingsGame : MonoBehaviour
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
     private float panelScale=1f, chartScale=1f;
-    private bool showMenu=true, showHigh, showHelp, fullMapMode;
+    private bool showMenu=true, showUnits=true, showHigh, showHelp, fullMapMode;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
     private Vector2 panelScroll, chartScroll, menuScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
         menuTitle, menuSubtitle, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
-        panelCard, panelButton, panelPrimary, panelLink,
+        panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
         chartTitle, chartSection, chartHeader, chartRowHeader, chartCell, chartMuted, chartNote,
         chartTab, chartTabSelected, chartClose;
     private string hoveredHex="";
@@ -37,6 +37,13 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void Update()
     {
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            if(game==null){showMenu=true;menuPage="main";}
+            else if(!showMenu){chart="";showMenu=true;menuPage="main";}
+            else if(menuPage!="main")menuPage="main";
+            else showMenu=false;
+        }
         if(game==null||showMenu||chart!=""||!Application.isFocused)return;
         var viewDirection=new Vector2(
             (Input.GetKey(KeyCode.D)?1:0)-(Input.GetKey(KeyCode.A)?1:0),
@@ -96,6 +103,7 @@ public sealed class HastingsGame : MonoBehaviour
             panelCard.normal.background=SolidTexture(new Color(.98f,.965f,.91f));
             panelButton=ButtonStyle(15,new Color(.82f,.75f,.62f),new Color(.91f,.82f,.67f),
                 new Color(.19f,.14f,.11f));
+            panelNavButton=new GUIStyle(panelButton){margin=new RectOffset(0,0,0,0)};
             panelPrimary=ButtonStyle(18,new Color(.60f,.21f,.16f),new Color(.73f,.27f,.20f),
                 new Color(.99f,.97f,.90f));
             panelPrimary.fontStyle=FontStyle.Bold;
@@ -190,6 +198,7 @@ public sealed class HastingsGame : MonoBehaviour
         panelMuted.fontSize=Mathf.RoundToInt(14*p);
         panelValue.fontSize=Mathf.RoundToInt(22*p);
         panelButton.fontSize=Mathf.RoundToInt(15*p);
+        panelNavButton.fontSize=panelButton.fontSize;
         panelPrimary.fontSize=Mathf.RoundToInt(18*p);
         panelLink.fontSize=Mathf.RoundToInt(14*p);
         int side=Mathf.RoundToInt(15*p),top=Mathf.RoundToInt(13*p);
@@ -219,11 +228,9 @@ public sealed class HastingsGame : MonoBehaviour
         Event e=Event.current;
         if(e.type==EventType.KeyDown)
         {
-            if(e.keyCode==KeyCode.Escape)
-            {if(chart!="")chart="";else if(showMenu && menuPage!="main")menuPage="main";
-                else showMenu=!showMenu;e.Use();}
-            else if(e.keyCode==KeyCode.Space && !showMenu){Advance();e.Use();}
-            else if((e.keyCode==KeyCode.Q||e.keyCode==KeyCode.E) && game!=null && selected.Count==1)
+            if(e.keyCode==KeyCode.Space && !showMenu && chart==""){Advance();e.Use();}
+            else if(showUnits && !showMenu && chart=="" &&
+                    (e.keyCode==KeyCode.Q||e.keyCode==KeyCode.E) && selected.Count==1)
             {
                 var unit=SelectedUnits().FirstOrDefault();
                 if(unit!=null)game.Face(unit,unit.facing+(e.keyCode==KeyCode.E?1:-1));e.Use();
@@ -238,7 +245,7 @@ public sealed class HastingsGame : MonoBehaviour
         }
         else if(e.type==EventType.MouseDrag && (e.button==1||e.button==2))
         {fullMapMode=false;pan+=e.delta;e.Use();}
-        else if(e.type==EventType.MouseDown && e.button==0 && game!=null)
+        else if(e.type==EventType.MouseDown && e.button==0 && game!=null && showUnits)
         {
             string hex=HexAtPointer(e.mousePosition);
             if(hex!=null)ClickHex(hex,e.shift,e.alt||PointerOnSplayedLeader(hex,e.mousePosition));
@@ -261,7 +268,7 @@ public sealed class HastingsGame : MonoBehaviour
     private string HexAtPointer(Vector2 point)
     {
         // Keep the stack open while the pointer moves onto a spread counter.
-        if(LeaderStackAt(hoveredHex) && game.state.units.Any(u=>
+        if(showUnits && LeaderStackAt(hoveredHex) && game.state.units.Any(u=>
             u.hex==hoveredHex && u.status!=Status.Eliminated &&
             CounterRect(u,true).Contains(point)))return hoveredHex;
         return board.Nearest((point.x-pan.x)/scale,(point.y-pan.y)/scale);
@@ -324,7 +331,8 @@ public sealed class HastingsGame : MonoBehaviour
             hoveredHex=!showMenu && chart=="" && region.Contains(e.mousePosition)?
                 HexAtPointer(e.mousePosition):"";
             var unit=SelectedUnits().FirstOrDefault();
-            if(unit!=null && (game.state.phase==Phase.NormanMove || game.state.phase==Phase.NormanReaction))
+            if(showUnits && unit!=null &&
+               (game.state.phase==Phase.NormanMove || game.state.phase==Phase.NormanReaction))
             {
                 bool reaction=game.state.phase==Phase.NormanReaction;
                 foreach(var move in game.LegalMoves(unit,reaction).Values)
@@ -337,24 +345,27 @@ public sealed class HastingsGame : MonoBehaviour
                 GUI.color=Color.white;
             }
             DrawHexNumbers(region);
-            bool splayed=LeaderStackAt(hoveredHex);
-            // Paint every leader after combat counters so it stays on top.
-            foreach(var u in game.state.units.Where(u=>u.status!=Status.Eliminated && board.Has(u.hex))
-                .OrderBy(u=>UnitTypes.Get(u).leader?1:0)
-                .ThenBy(u=>u.hex==hoveredHex?1:0))
+            if(showUnits)
             {
-                var type=UnitTypes.Get(u);
-                var rect=CounterRect(u,splayed && u.hex==hoveredHex);
-                var texture=CounterTexture(u);
-                var old=GUI.matrix;
-                if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60,rect.center);
-                if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
-                if(selected.Contains(u.id))DrawSelectionOutline(rect);
-                GUI.matrix=old;
-                if(u.status==Status.Disrupted||u.status==Status.Routed)
+                bool splayed=LeaderStackAt(hoveredHex);
+                // Paint every leader after combat counters so it stays on top.
+                foreach(var u in game.state.units.Where(u=>u.status!=Status.Eliminated && board.Has(u.hex))
+                    .OrderBy(u=>UnitTypes.Get(u).leader?1:0)
+                    .ThenBy(u=>u.hex==hoveredHex?1:0))
                 {
-                    GUI.color=u.status==Status.Routed?Color.red:Color.yellow;
-                    GUI.Label(new Rect(rect.xMax-10,rect.y-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
+                    var type=UnitTypes.Get(u);
+                    var rect=CounterRect(u,splayed && u.hex==hoveredHex);
+                    var texture=CounterTexture(u);
+                    var old=GUI.matrix;
+                    if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60,rect.center);
+                    if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
+                    if(selected.Contains(u.id))DrawSelectionOutline(rect);
+                    GUI.matrix=old;
+                    if(u.status==Status.Disrupted||u.status==Status.Routed)
+                    {
+                        GUI.color=u.status==Status.Routed?Color.red:Color.yellow;
+                        GUI.Label(new Rect(rect.xMax-10,rect.y-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
+                    }
                 }
             }
         }
@@ -419,11 +430,22 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label(s.phase==Phase.GameOver?s.result:
             $"ASSAULT {s.period}   ·   TURN {s.turn}",panelStatus,GUILayout.Height(28*p));
         GUILayout.Space(8*p);
+        float controlGap=6*p;
+        float controlWidth=(region.width-40*p-controlGap)/2f;
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Menu",panelButton,GUILayout.Height(42*p)))showMenu=true;
-        if(GUILayout.Button("Focus battle",panelButton,GUILayout.Height(42*p)))
+        if(GUILayout.Button("Menu",panelNavButton,GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
+        {showMenu=true;menuPage="main";chart="";}
+        GUILayout.Space(controlGap);
+        if(GUILayout.Button(showUnits?"Hide units":"Show units",panelNavButton,
+            GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
+        {showUnits=!showUnits;selected.Clear();selectedTargets.Clear();}
+        GUILayout.EndHorizontal();
+        GUILayout.Space(5*p);
+        GUILayout.BeginHorizontal();
+        if(GUILayout.Button("Focus battle",panelNavButton,GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
         {fullMapMode=false;lastMapWidth=0;scale=0;}
-        if(GUILayout.Button("Fit map",panelButton,GUILayout.Height(42*p)))
+        GUILayout.Space(controlGap);
+        if(GUILayout.Button("Fit map",panelNavButton,GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
         {fullMapMode=true;lastMapWidth=0;}
         GUILayout.EndHorizontal();
         GUILayout.Space(8*p);
@@ -522,7 +544,7 @@ public sealed class HastingsGame : MonoBehaviour
             Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
         if(GUILayout.Button(showHelp?"Hide controls":"Controls",panelLink,GUILayout.Height(38*p)))showHelp=!showHelp;
         GUILayout.EndHorizontal();
-        if(showHelp)GUILayout.Label("Hover over a stack to spread its counters, then click the unit or leader you want. Shift-click adds units or melee targets. Click a highlighted hex to move or an enemy to attack. WASD or right drag pans; the wheel zooms. Q/E changes facing. Space ends a segment.",panelMuted);
+        if(showHelp)GUILayout.Label("Hover over a stack to spread its counters, then click the unit or leader you want. Shift-click adds units or melee targets. Click a highlighted hex to move or an enemy to attack. Hide units to inspect the map. WASD or right drag pans; the wheel zooms. Q/E changes facing. Space ends a segment. Esc opens the menu.",panelMuted);
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("CASUALTIES",panelSection);
@@ -660,6 +682,7 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
+                        showUnits=true;chart="";
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
                     catch(Exception ex){notice="Load failed: "+ex.Message;}
@@ -702,6 +725,7 @@ public sealed class HastingsGame : MonoBehaviour
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
+        showUnits=true;chart="";
         lastMapWidth=0;scale=0;fullMapMode=false;
     }
     private void DrawChart()
