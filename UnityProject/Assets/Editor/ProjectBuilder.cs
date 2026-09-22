@@ -50,8 +50,27 @@ public static class ProjectBuilder
     private static void ConfigureTextures()
     {
         var map=AssetImporter.GetAtPath("Assets/Resources/Art/Map/hex_map.png") as TextureImporter;
-        if(map!=null && map.maxTextureSize!=8192)
-        {map.maxTextureSize=8192;map.mipmapEnabled=false;map.SaveAndReimport();}
+        if(map!=null)
+        {
+            var standalone=map.GetPlatformTextureSettings("Standalone");
+            bool changed=map.maxTextureSize!=8192 || map.mipmapEnabled ||
+                map.npotScale!=TextureImporterNPOTScale.None ||
+                map.textureCompression!=TextureImporterCompression.Uncompressed ||
+                !standalone.overridden || standalone.maxTextureSize!=8192 ||
+                standalone.format!=TextureImporterFormat.RGBA32;
+            if(changed)
+            {
+                map.maxTextureSize=8192;
+                map.mipmapEnabled=false;
+                map.npotScale=TextureImporterNPOTScale.None;
+                map.textureCompression=TextureImporterCompression.Uncompressed;
+                standalone.overridden=true;
+                standalone.maxTextureSize=8192;
+                standalone.format=TextureImporterFormat.RGBA32;
+                map.SetPlatformTextureSettings(standalone);
+                map.SaveAndReimport();
+            }
+        }
         foreach(var guid in AssetDatabase.FindAssets("t:Texture2D",new[]{"Assets/Resources/Art/Counters"}))
         {
             var path=AssetDatabase.GUIDToAssetPath(guid);

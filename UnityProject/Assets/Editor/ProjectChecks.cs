@@ -12,6 +12,10 @@ public static class ProjectChecks
     {
         var source=Resources.Load<TextAsset>("Data/Map");
         Check(source!=null,"Map data missing");
+        var mapTexture=Resources.Load<Texture2D>("Art/Map/hex_map");
+        Check(mapTexture!=null && mapTexture.width==5900 && mapTexture.height==4800,
+            "Map texture was downsampled during import: "+
+            (mapTexture==null?"missing":mapTexture.width+"x"+mapTexture.height));
         var board=new Board(JsonUtility.FromJson<MapData>(source.text));
         Check(board.data.hexes.Length==703,"Expected 703 playable hexes");
         Check(board.data.hexes.Select(h=>h.id).Distinct().Count()==703,"Duplicate hex ids");
@@ -29,6 +33,10 @@ public static class ProjectChecks
         }
         Check(board.Hex("0101").x>board.Hex("0102").x &&
             board.Hex("0102").x>board.Hex("0103").x,"Upper-right hex numbering reversed");
+        Check(board.Edge("0823","0923")!=null && board.Edge("0823","0923").ridge,
+            "Senlac Hill ridge edge missing");
+        Check(board.Edge("0923","1023")!=null && !board.Edge("0923","1023").ridge,
+            "Gentle slope incorrectly marked as a ridge");
         float viewScale=0;Vector2 viewPan=Vector2.zero;
         BoardViewMath.Resize(ref viewScale,ref viewPan,0,0,1500,1000,board.data.width);
         float firstScale=viewScale;
