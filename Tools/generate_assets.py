@@ -285,6 +285,59 @@ def ridge_polygon(start, end, inward, depth, rng):
             (end[0] * 2, end[1] * 2)] + list(reversed(inner))
 
 
+def apply_paper_finish(image):
+    """Give the rendered board the restrained grain of a printed paper map."""
+    base = image.convert("RGB")
+    width, height = base.size
+    rng = random.Random(1066)
+
+    # Take a little of the digital edge off the SVG without making labels or
+    # hex boundaries fuzzy. At the final display size this reads as ink on
+    # paper instead of perfectly sharp vector artwork.
+    softened = base.filter(ImageFilter.GaussianBlur(.65))
+    base = Image.blend(base, softened, .14)
+
+    # Combine broad, cloudy variation with a fine tooth. Keeping both masks
+    # close to white makes this a subtle multiplicative print texture rather
+    # than visible dirt or a repeated pattern.
+    coarse_size = (max(2, width // 24), max(2, height // 24))
+    coarse = Image.frombytes("L", coarse_size,
+                             rng.randbytes(coarse_size[0] * coarse_size[1]))
+    coarse = ImageOps.autocontrast(coarse.filter(ImageFilter.GaussianBlur(3.5)))
+    coarse = coarse.point(lambda value: 247 + value * 8 // 255)
+    coarse = coarse.resize((width, height), Image.Resampling.BICUBIC)
+
+    grain_size = (max(2, width // 4), max(2, height // 4))
+    grain = Image.frombytes("L", grain_size,
+                            rng.randbytes(grain_size[0] * grain_size[1]))
+    grain = grain.filter(ImageFilter.GaussianBlur(.35))
+    grain = grain.point(lambda value: 249 + value * 6 // 255)
+    grain = grain.resize((width, height), Image.Resampling.BILINEAR)
+
+    paper_value = ImageChops.multiply(coarse, grain)
+    red = paper_value.point(lambda value: min(255, value + 6))
+    green = paper_value.point(lambda value: min(255, value + 2))
+    blue = paper_value.point(lambda value: max(0, value - 3))
+    base = ImageChops.multiply(base, Image.merge("RGB", (red, green, blue)))
+
+    # Sparse fibers break up large flat areas. They are intentionally faint;
+    # the board should feel tactile without looking stained or distressed.
+    fibers = Image.new("RGBA", (width, height))
+    draw = ImageDraw.Draw(fibers)
+    for _ in range(2600):
+        x, y = rng.randrange(width), rng.randrange(height)
+        length = rng.randint(16, 72)
+        angle = rng.uniform(-math.pi, math.pi)
+        end = (x + math.cos(angle) * length, y + math.sin(angle) * length)
+        if rng.random() < .72:
+            color = (82, 63, 40, rng.randint(5, 11))
+        else:
+            color = (255, 249, 228, rng.randint(7, 14))
+        draw.line((x, y, *end), fill=color, width=rng.choice((1, 1, 2)))
+    fibers = fibers.filter(ImageFilter.GaussianBlur(.35))
+    return Image.alpha_composite(base.convert("RGBA"), fibers)
+
+
 base = Image.open(TEXTURE).convert("RGBA")
 shade = Image.new("RGBA", base.size)
 flecks = Image.new("RGBA", base.size)
@@ -321,6 +374,7 @@ for ident, ox, oy, side in sorted(ridge_drawings):
 shade = shade.filter(ImageFilter.GaussianBlur(3))
 base = Image.alpha_composite(base, shade)
 base = Image.alpha_composite(base, flecks)
+base = apply_paper_finish(base)
 base.convert("RGB").save(TEXTURE, optimize=True)
 
 print(f"Generated {len(hexes)} hexes, {len(edges)} edges, and {TEXTURE.name}")
