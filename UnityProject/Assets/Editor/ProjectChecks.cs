@@ -75,6 +75,14 @@ public static class ProjectChecks
             state.units.Any(u=>u.hex==odo.hex && !UnitTypes.Get(u).leader &&
                 UnitTypes.Get(u).nation=="Norman"),
             "Odo must share a hex with a Norman unit and command Normans");
+        var unitLabels=UnitDisplayNames.Build(state);
+        var flemishBowmen=state.units.Where(u=>u.type=="FB").ToList();
+        Check(flemishBowmen.Count==3 &&
+            flemishBowmen.Select(u=>unitLabels[u.id]).SequenceEqual(new[]{
+                "Flemish Bowman 1","Flemish Bowman 2","Flemish Bowman 3"}),
+            "Flemish bowmen must have per-type display numbers");
+        Check(UnitDisplayNames.InEvent("T1: "+flemishBowmen[0].id+" faces 0",unitLabels)==
+            "T1: Flemish Bowman 1 faces 0","Event log still shows a raw unit id");
         foreach(float counterScale in new[]{1f,2.5f,4f})
         {
             var center=new Vector2(300,200);

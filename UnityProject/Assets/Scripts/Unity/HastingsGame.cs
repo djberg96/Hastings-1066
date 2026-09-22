@@ -346,15 +346,11 @@ public sealed class HastingsGame : MonoBehaviour
                 var type=UnitTypes.Get(u);
                 var rect=CounterRect(u,splayed && u.hex==hoveredHex);
                 var texture=CounterTexture(u);
-                if(texture!=null)
-                {
-                    var old=GUI.matrix;
-                    if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60,rect.center);
-                    GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
-                    GUI.matrix=old;
-                }
-                if(selected.Contains(u.id))
-                {GUI.color=Color.yellow;GUI.Box(new Rect(rect.x-2,rect.y-2,rect.width+4,rect.height+4),GUIContent.none);GUI.color=Color.white;}
+                var old=GUI.matrix;
+                if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60,rect.center);
+                if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
+                if(selected.Contains(u.id))DrawSelectionOutline(rect);
+                GUI.matrix=old;
                 if(u.status==Status.Disrupted||u.status==Status.Routed)
                 {
                     GUI.color=u.status==Status.Routed?Color.red:Color.yellow;
@@ -363,6 +359,16 @@ public sealed class HastingsGame : MonoBehaviour
             }
         }
         GUI.EndGroup();
+    }
+    private void DrawSelectionOutline(Rect rect)
+    {
+        float line=Mathf.Clamp(1.5f*scale,1.5f,6f);
+        GUI.color=new Color(1f,.83f,.22f);
+        GUI.DrawTexture(new Rect(rect.x-line,rect.y-line,rect.width+2*line,line),Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x-line,rect.yMax,rect.width+2*line,line),Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x-line,rect.y,line,rect.height),Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.xMax,rect.y,line,rect.height),Texture2D.whiteTexture);
+        GUI.color=Color.white;
     }
     private void DrawHexNumbers(Rect region)
     {
@@ -409,6 +415,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.BeginArea(new Rect(region.x+20*p,16*p,region.width-40*p,region.height-32*p));
         GUILayout.Label("HASTINGS 1066",panelTitle,GUILayout.Height(36*p));
         var s=game.state;
+        var unitLabels=UnitDisplayNames.Build(s);
         GUILayout.Label(s.phase==Phase.GameOver?s.result:
             $"ASSAULT {s.period}   ·   TURN {s.turn}",panelStatus,GUILayout.Height(28*p));
         GUILayout.Space(8*p);
@@ -477,11 +484,10 @@ public sealed class HastingsGame : MonoBehaviour
         {
             GUILayout.BeginVertical(panelCard);
             GUILayout.Label("SELECTED UNITS",panelSection);
-            if(units.Count>0)GUILayout.Label(string.Join(", ",units.Select(u=>u.id).ToArray()),panelBody);
+            if(units.Count>0)GUILayout.Label(string.Join(", ",units.Select(u=>unitLabels[u.id]).ToArray()),panelBody);
             foreach(var u in units.Take(3))
             {
-                var t=UnitTypes.Get(u);
-                GUILayout.Label($"{t.art}: {u.hex} · {u.status} · {(u.reduced?"Reduced":"Full")} · {game.OrderFor(u)}",panelMuted);
+                GUILayout.Label($"Hex {u.hex} · {u.status} · {(u.reduced?"Reduced":"Full")} · {game.OrderFor(u)}",panelMuted);
             }
             if(units.Count==1 && game.CanFace(units[0]) && !UnitTypes.Get(units[0]).leader)
             {
@@ -492,7 +498,7 @@ public sealed class HastingsGame : MonoBehaviour
             }
             if(s.phase==Phase.NormanMelee && selectedTargets.Count>0)
             {
-                GUILayout.Label("Targets: "+string.Join(", ",selectedTargets.ToArray()),panelMuted);
+                GUILayout.Label("Targets: "+string.Join(", ",selectedTargets.Select(id=>unitLabels[id]).ToArray()),panelMuted);
                 if(GUILayout.Button("Resolve selected melee",panelPrimary,GUILayout.Height(45*p)))
                 {
                     var targets=s.units.Where(u=>selectedTargets.Contains(u.id)).ToList();
@@ -529,7 +535,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label("RECENT EVENTS",panelSection);
         foreach(var line in s.log.Skip(Math.Max(0,s.log.Count-25)).Reverse())
         {
-            GUILayout.Label("•  "+line,panelMuted);
+            GUILayout.Label("•  "+UnitDisplayNames.InEvent(line,unitLabels),panelMuted);
             GUILayout.Space(4);
         }
         GUILayout.EndVertical();
