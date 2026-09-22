@@ -48,6 +48,7 @@ def distance_to_segment(px, py, ax, ay, bx, by):
 root = ET.parse(SOURCE).getroot()
 hexes = {}
 ridge_drawings = []
+ridge_key_drawings = []
 wood_points = []
 marsh_points = []
 streams = []
@@ -64,6 +65,8 @@ def visit(element, parent_x=0.0, parent_y=0.0, parent_id=""):
                                "level": int(href[-1])})
     if re.match(r"^\d{4}_ridge(?:_|$)", ident) and href.startswith("#ridge_line_"):
         ridge_drawings.append((ident, x, y, href[len("#ridge_line_"):]))
+    if ident in ("ridge_top_left", "ridge_top_right") and href.startswith("#ridge_line_"):
+        ridge_key_drawings.append((ident, x, y, href[len("#ridge_line_"):]))
     if ident.startswith("trees_") and href == "#trees":
         wood_points.append((x + 40, y + 39))
     if ident.startswith("reeds_") and href == "#reeds":
@@ -229,17 +232,64 @@ root.insert(stream_index, ET.Element(SVG + "image", {
     XLINK: png_uri(overlay),
 }))
 grid = ET.Element(SVG + "g", {"fill": "none", "stroke": "#444444", "stroke-width": "1"})
-for h in hexes.values():
-    if not any(math.hypot(h["x"] - hexes[ident]["x"],
-                          h["y"] - hexes[ident]["y"]) < 120
-               for ident in woods | marshes):
+affected_grid = {
+    h["id"] for h in hexes.values()
+    if any(math.hypot(h["x"] - hexes[ident]["x"],
+                      h["y"] - hexes[ident]["y"]) < 120
+           for ident in woods | marshes)
+}
+hex_points = (
+    (50.24, .25), (100.23, 29.112), (100.23, 86.835),
+    (50.24, 115.697), (.25, 86.835), (.25, 29.112),
+)
+draw_order = {ident: index for index, ident in enumerate(ids)}
+used_sides = {ident: set() for ident in affected_grid}
+
+
+def side_toward(source, target):
+    """Return the source hex side whose midpoint faces the target hex."""
+    x, y = source["x"] - 50, source["y"] - 58
+    points = [(x + dx, y + dy) for dx, dy in hex_points]
+    target_midpoint = ((source["x"] + target["x"]) / 2,
+                       (source["y"] + target["y"]) / 2)
+    index = min(range(6), key=lambda side: math.hypot(
+        (points[side][0] + points[(side + 1) % 6][0]) / 2 - target_midpoint[0],
+        (points[side][1] + points[(side + 1) % 6][1]) / 2 - target_midpoint[1]))
+    return index, points[index], points[(index + 1) % 6]
+
+
+# Adjacent SVG hexes overlap slightly. Filled hexes hide the earlier outline,
+# but drawing whole outline polygons again reveals both parallel borders. Draw
+# only the side belonging to the later painted hex so every shared border is
+# restored exactly once.
+for edge in edges:
+    if edge["a"] not in affected_grid and edge["b"] not in affected_grid:
         continue
+    a, b = hexes[edge["a"]], hexes[edge["b"]]
+    a_side, _, _ = side_toward(a, b)
+    b_side, _, _ = side_toward(b, a)
+    if a["id"] in affected_grid:
+        used_sides[a["id"]].add(a_side)
+    if b["id"] in affected_grid:
+        used_sides[b["id"]].add(b_side)
+    later, other = (a, b) if draw_order[a["id"]] > draw_order[b["id"]] else (b, a)
+    _, start, end = side_toward(later, other)
+    ET.SubElement(grid, SVG + "line", {
+        "x1": f"{start[0]:.3f}", "y1": f"{start[1]:.3f}",
+        "x2": f"{end[0]:.3f}", "y2": f"{end[1]:.3f}",
+    })
+
+# Restore exposed map-edge sides, which have no neighboring hex entry.
+for ident in affected_grid:
+    h = hexes[ident]
     x, y = h["x"] - 50, h["y"] - 58
-    points = " ".join(f"{x + dx:.2f},{y + dy:.2f}" for dx, dy in (
-        (50.24, .25), (100.23, 29.112), (100.23, 86.835),
-        (50.24, 115.697), (.25, 86.835), (.25, 29.112),
-    ))
-    ET.SubElement(grid, SVG + "polygon", {"points": points})
+    points = [(x + dx, y + dy) for dx, dy in hex_points]
+    for side in set(range(6)) - used_sides[ident]:
+        start, end = points[side], points[(side + 1) % 6]
+        ET.SubElement(grid, SVG + "line", {
+            "x1": f"{start[0]:.3f}", "y1": f"{start[1]:.3f}",
+            "x2": f"{end[0]:.3f}", "y2": f"{end[1]:.3f}",
+        })
 root.insert(stream_index + 1, grid)
 
 # The paper and ridge turbulence filters make rasterization extremely slow on
@@ -248,7 +298,8 @@ root.insert(stream_index + 1, grid)
 # after rendering. The source SVG remains untouched.
 for parent in root.iter():
     for child in list(parent):
-        if re.match(r"^\d{4}_ridge(?:_|$)", child.get("id", "")):
+        if (re.match(r"^\d{4}_ridge(?:_|$)", child.get("id", "")) or
+                child.get("id", "") in ("ridge_top_left", "ridge_top_right")):
             parent.remove(child)
 for element in root.iter():
     if element.get("filter") != "url(#stream)":
@@ -344,9 +395,11 @@ flecks = Image.new("RGBA", base.size)
 shade_draw = ImageDraw.Draw(shade)
 fleck_draw = ImageDraw.Draw(flecks)
 seen_sides = set()
-for ident, ox, oy, side in sorted(ridge_drawings):
+for ident, ox, oy, side in sorted(ridge_drawings + ridge_key_drawings):
     for start_local, end_local in RIDGE_SIDES.get(side, []):
-        side_key = (ident[:4], start_local, end_local)
+        numbered_owner = re.match(r"^\d{4}", ident)
+        owner = numbered_owner.group(0) if numbered_owner else ident
+        side_key = (owner, start_local, end_local)
         if side_key in seen_sides:
             continue
         seen_sides.add(side_key)
@@ -356,7 +409,9 @@ for ident, ox, oy, side in sorted(ridge_drawings):
         toward_center = (ox + 50.24 - midpoint[0], oy + 57.97 - midpoint[1])
         length = math.hypot(*toward_center)
         inward = (toward_center[0] / length, toward_center[1] / length)
-        rng = random.Random(int(ident[:4]) * 17 + len(seen_sides) * 101)
+        owner_seed = int(owner) if owner.isdigit() else sum(
+            (index + 1) * ord(character) for index, character in enumerate(owner))
+        rng = random.Random(owner_seed * 17 + len(seen_sides) * 101)
         for depth, alpha in ((28, 12), (20, 27), (11, 49)):
             shade_draw.polygon(ridge_polygon(start, end, inward, depth, rng),
                                fill=(47, 58, 32, alpha))
