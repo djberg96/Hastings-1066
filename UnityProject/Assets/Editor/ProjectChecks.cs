@@ -90,6 +90,12 @@ public static class ProjectChecks
         Check(!state.units.Any(u=>u.hex=="1307"),"Errata setup hex 1307 used");
         Check(state.units.Where(u=>!UnitTypes.Get(u).leader && u.hex!="")
             .GroupBy(u=>u.hex).All(g=>g.Count()==1),"Combat units stacked at setup");
+        foreach(var leaderType in new[]{"Harold","Gyrth","Leofwine"})
+        {
+            var leader=state.units.Single(u=>u.type==leaderType);
+            Check(state.units.Any(u=>u.hex==leader.hex && !UnitTypes.Get(u).leader),
+                leaderType+" must share its setup hex with a combat unit");
+        }
         var odo=state.units.Single(u=>u.type=="Odo");
         Check(odo.group=="Norman" && UnitTypes.Get(odo).nation=="Norman" &&
             state.units.Any(u=>u.hex==odo.hex && !UnitTypes.Get(u).leader &&

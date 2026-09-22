@@ -293,6 +293,24 @@ for ident in affected_grid:
         })
 root.insert(stream_index + 1, grid)
 
+# The source road is a four-point polyline with two abrupt corners at Senlac
+# Hill. Replace only the rendered copy with connected Bezier curves that pass
+# through the same bend and retain the original map-edge endpoints. Road hex
+# ownership above continues to use the source centerline.
+for element in root.iter():
+    if element.get("id") != "road":
+        continue
+    for child in element:
+        if not child.tag.endswith("polyline"):
+            continue
+        child.tag = SVG + "path"
+        child.attrib.pop("points", None)
+        child.set("d", "M 1375,17 "
+                       "C 1435,116 1510,265 1560,320 "
+                       "C 1580,344 1620,322 1660,328 "
+                       "C 1780,346 2200,1300 2520,1820")
+        child.set("stroke-linecap", "round")
+
 # The paper and ridge turbulence filters make rasterization extremely slow on
 # this Mac. Keep the much cheaper stream displacement filter so the water has
 # the irregular banks specified by the SVG. Add the ridge texture with Pillow
