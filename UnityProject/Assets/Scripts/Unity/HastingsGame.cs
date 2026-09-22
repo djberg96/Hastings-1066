@@ -11,6 +11,7 @@ public sealed class HastingsGame : MonoBehaviour
     private GameEngine game;
     private Texture2D map, titleBackground;
     private readonly Dictionary<string,Texture2D> counters=new Dictionary<string,Texture2D>();
+    private readonly Dictionary<string,float> stackSpread=new Dictionary<string,float>();
     private readonly List<string> selected=new List<string>();
     private readonly List<string> selectedTargets=new List<string>();
     private Vector2 pan;
@@ -26,6 +27,7 @@ public sealed class HastingsGame : MonoBehaviour
         chartTitle, chartSection, chartHeader, chartRowHeader, chartCell, chartMuted, chartNote,
         chartTab, chartTabSelected, chartClose;
     private string hoveredHex="";
+    private const float StackSpreadSeconds=.22f;
 
     private void Awake()
     {
@@ -44,6 +46,7 @@ public sealed class HastingsGame : MonoBehaviour
             else if(menuPage!="main")menuPage="main";
             else showMenu=false;
         }
+        UpdateStackSpread();
         if(game==null||showMenu||chart!=""||!Application.isFocused)return;
         var viewDirection=new Vector2(
             (Input.GetKey(KeyCode.D)?1:0)-(Input.GetKey(KeyCode.A)?1:0),
@@ -51,6 +54,23 @@ public sealed class HastingsGame : MonoBehaviour
         if(viewDirection.sqrMagnitude==0)return;
         fullMapMode=false;
         pan-=viewDirection.normalized*Mathf.Max(360f,Screen.height*.65f)*Time.unscaledDeltaTime;
+    }
+    private void UpdateStackSpread()
+    {
+        if(game==null || !showUnits){stackSpread.Clear();return;}
+        string opening=!showMenu && chart=="" && LeaderStackAt(hoveredHex)?hoveredHex:"";
+        if(opening!="" && !stackSpread.ContainsKey(opening))stackSpread[opening]=0f;
+        foreach(var hex in stackSpread.Keys.ToArray())
+        {
+            stackSpread[hex]=Mathf.MoveTowards(stackSpread[hex],hex==opening?1f:0f,
+                Time.unscaledDeltaTime/StackSpreadSeconds);
+            if(hex!=opening && stackSpread[hex]<=0f)stackSpread.Remove(hex);
+        }
+    }
+    private float SpreadFor(string hex)
+    {
+        float spread;
+        return stackSpread.TryGetValue(hex,out spread)?spread:0f;
     }
     private static float PanelWidth() { return Mathf.Clamp(Screen.width*.24f,500f,900f); }
     private static float PanelUiScale() { return Mathf.Clamp(Screen.height/900f,1.2f,1.8f); }
@@ -252,11 +272,11 @@ public sealed class HastingsGame : MonoBehaviour
             e.Use();
         }
     }
-    private Rect CounterRect(UnitState unit,bool splayed)
+    private Rect CounterRect(UnitState unit,float spread)
     {
         var h=board.Hex(unit.hex);
         return CounterLayout.RectFor(new Vector2(pan.x+h.x*scale,pan.y+h.y*scale),
-            scale,UnitTypes.Get(unit).leader,splayed);
+            scale,UnitTypes.Get(unit).leader,spread);
     }
     private bool LeaderStackAt(string hex)
     {
@@ -270,14 +290,14 @@ public sealed class HastingsGame : MonoBehaviour
         // Keep the stack open while the pointer moves onto a spread counter.
         if(showUnits && LeaderStackAt(hoveredHex) && game.state.units.Any(u=>
             u.hex==hoveredHex && u.status!=Status.Eliminated &&
-            CounterRect(u,true).Contains(point)))return hoveredHex;
+            CounterRect(u,1f).Contains(point)))return hoveredHex;
         return board.Nearest((point.x-pan.x)/scale,(point.y-pan.y)/scale);
     }
     private bool PointerOnSplayedLeader(string hex,Vector2 point)
     {
         return LeaderStackAt(hex) && game.state.units.Any(u=>u.hex==hex &&
             u.status!=Status.Eliminated && UnitTypes.Get(u).leader &&
-            CounterRect(u,true).Contains(point));
+            CounterRect(u,SpreadFor(hex)).Contains(point));
     }
     private void ClickHex(string hex,bool add,bool preferLeader)
     {
@@ -347,14 +367,13 @@ public sealed class HastingsGame : MonoBehaviour
             DrawHexNumbers(region);
             if(showUnits)
             {
-                bool splayed=LeaderStackAt(hoveredHex);
                 // Paint every leader after combat counters so it stays on top.
                 foreach(var u in game.state.units.Where(u=>u.status!=Status.Eliminated && board.Has(u.hex))
                     .OrderBy(u=>UnitTypes.Get(u).leader?1:0)
                     .ThenBy(u=>u.hex==hoveredHex?1:0))
                 {
                     var type=UnitTypes.Get(u);
-                    var rect=CounterRect(u,splayed && u.hex==hoveredHex);
+                    var rect=CounterRect(u,SpreadFor(u.hex));
                     var texture=CounterTexture(u);
                     var old=GUI.matrix;
                     if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60,rect.center);
@@ -682,7 +701,7 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-                        showUnits=true;chart="";
+                        showUnits=true;chart="";stackSpread.Clear();hoveredHex="";
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
                     catch(Exception ex){notice="Load failed: "+ex.Message;}
@@ -725,7 +744,7 @@ public sealed class HastingsGame : MonoBehaviour
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-        showUnits=true;chart="";
+        showUnits=true;chart="";stackSpread.Clear();hoveredHex="";
         lastMapWidth=0;scale=0;fullMapMode=false;
     }
     private void DrawChart()

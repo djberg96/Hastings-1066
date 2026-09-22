@@ -102,6 +102,13 @@ public static class ProjectChecks
             var spreadLeader=CounterLayout.RectFor(center,counterScale,true,true);
             Check(!spreadUnit.Overlaps(spreadLeader),
                 "Hover spread still overlaps counters at scale "+counterScale);
+            var movingUnit=CounterLayout.RectFor(center,counterScale,false,.5f);
+            var movingLeader=CounterLayout.RectFor(center,counterScale,true,.5f);
+            Check(movingUnit.center.x<stackedUnit.center.x &&
+                  movingUnit.center.x>spreadUnit.center.x &&
+                  movingLeader.center.x>stackedLeader.center.x &&
+                  movingLeader.center.x<spreadLeader.center.x,
+                "Stack spread does not interpolate between stacked and open positions");
         }
         var engine=new GameEngine(board,state);engine.Begin();engine.ResolveOrders();
         Check(state.phase==Phase.NormanFire,"Opening order phase did not advance");
