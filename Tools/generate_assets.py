@@ -294,9 +294,9 @@ for ident in affected_grid:
 root.insert(stream_index + 1, grid)
 
 # The source road is a four-point polyline with two abrupt corners at Senlac
-# Hill. Replace only the rendered copy with connected Bezier curves that pass
-# through the same bend and retain the original map-edge endpoints. Road hex
-# ownership above continues to use the source centerline.
+# Hill. Round only short sections beside those corners. The long approaches
+# remain on the original centerline so smoothing cannot move the road into
+# different hexes. Road ownership above also continues to use that centerline.
 for element in root.iter():
     if element.get("id") != "road":
         continue
@@ -306,9 +306,9 @@ for element in root.iter():
         child.tag = SVG + "path"
         child.attrib.pop("points", None)
         child.set("d", "M 1375,17 "
-                       "C 1435,116 1510,265 1560,320 "
-                       "C 1580,344 1620,322 1660,328 "
-                       "C 1780,346 2200,1300 2520,1820")
+                       "L 1537,286 Q 1560,325 1595,325 "
+                       "L 1625,325 Q 1660,325 1683,364 "
+                       "L 2520,1820")
         child.set("stroke-linecap", "round")
 
 # The paper and ridge turbulence filters make rasterization extremely slow on

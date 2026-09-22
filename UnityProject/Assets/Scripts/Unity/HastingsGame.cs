@@ -31,7 +31,7 @@ public sealed class HastingsGame : MonoBehaviour
         orderRoll, orderType, orderName, orderText, orderEffect,
         orderEffectHeading, orderEffectValue, orderEffectDetail, orderEffectWarning,
         chartTitle, chartSection, chartHeader, chartRowHeader, chartCell, chartMuted, chartNote,
-        chartTab, chartTabSelected, chartClose;
+        chartTab, chartTabSelected, chartClose, trackMarkerText, trackMarkerTextShadow;
     private string hoveredHex="";
     private const float StackSpreadSeconds=.22f;
 
@@ -198,6 +198,11 @@ public sealed class HastingsGame : MonoBehaviour
             chartTab=new GUIStyle(panelButton);
             chartTabSelected=new GUIStyle(panelPrimary);
             chartClose=new GUIStyle(panelLink);
+            trackMarkerText=LabelStyle(24,true,new Color(.99f,.96f,.88f));
+            trackMarkerText.alignment=TextAnchor.MiddleCenter;
+            trackMarkerText.padding=new RectOffset(0,0,0,0);
+            trackMarkerTextShadow=new GUIStyle(trackMarkerText);
+            trackMarkerTextShadow.normal.textColor=new Color(.10f,.06f,.04f,.70f);
         }
         panelScale=PanelUiScale();
         UpdatePanelStyles();
@@ -471,21 +476,35 @@ public sealed class HastingsGame : MonoBehaviour
            (state.phase==Phase.GameOver && state.period==2 && state.turn>8 &&
             state.result=="Saxon strategic victory"))displayedTurn--;
         displayedTurn=Mathf.Clamp(displayedTurn,1,11);
-        DrawTrackMarker(assaultPeriodMarker,new Vector2(state.period==1?200:300,2292));
-        DrawTrackMarker(battleTurnMarker,new Vector2(600+(displayedTurn-1)*100,2292));
+        DrawTrackMarker(assaultPeriodMarker,new Vector2(state.period==1?200:300,2292),
+            state.period==1?"I":"II");
+        DrawTrackMarker(battleTurnMarker,new Vector2(600+(displayedTurn-1)*100,2292),
+            displayedTurn.ToString());
     }
-    private void DrawTrackMarker(Texture2D texture,Vector2 mapCenter)
+    private void DrawTrackMarker(Texture2D texture,Vector2 mapCenter,string label)
     {
         if(texture==null)return;
-        float size=60*scale;
+        // Keep the marker value readable in a fitted map view. The original
+        // two-line counter captions collapse into noise at normal game scale.
+        float size=Mathf.Max(28f,60*scale);
         var rect=new Rect(pan.x+mapCenter.x*scale-size/2,
             pan.y+mapCenter.y*scale-size/2,size,size);
-        float shadowOffset=Mathf.Max(1f,3f*scale);
+        float shadowOffset=Mathf.Clamp(3f*scale,1f,3f);
         GUI.color=new Color(0,0,0,.30f);
         GUI.DrawTexture(new Rect(rect.x+shadowOffset,rect.y+shadowOffset,rect.width,rect.height),
             Texture2D.whiteTexture);
         GUI.color=Color.white;
         GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
+        float inset=Mathf.Clamp(size*.075f,2f,5f);
+        var face=new Rect(rect.x+inset,rect.y+inset,rect.width-2*inset,rect.height-2*inset);
+        GUI.color=new Color(.43f,.17f,.13f);
+        GUI.DrawTexture(face,Texture2D.whiteTexture);
+        GUI.color=Color.white;
+        int fontSize=Mathf.Clamp(Mathf.RoundToInt(size*.56f),15,36);
+        trackMarkerText.fontSize=fontSize;
+        trackMarkerTextShadow.fontSize=fontSize;
+        GUI.Label(new Rect(face.x+1,face.y+1,face.width,face.height),label,trackMarkerTextShadow);
+        GUI.Label(face,label,trackMarkerText);
     }
     private void DrawSelectionOutline(Rect rect)
     {
