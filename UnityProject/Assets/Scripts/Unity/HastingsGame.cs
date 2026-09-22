@@ -24,6 +24,7 @@ public sealed class HastingsGame : MonoBehaviour
         menuTitle, menuSubtitle, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
         panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
+        controlHeading, controlBadge, controlAction, controlRow,
         chartTitle, chartSection, chartHeader, chartRowHeader, chartCell, chartMuted, chartNote,
         chartTab, chartTabSelected, chartClose;
     private string hoveredHex="";
@@ -129,6 +130,17 @@ public sealed class HastingsGame : MonoBehaviour
             panelPrimary.fontStyle=FontStyle.Bold;
             panelLink=ButtonStyle(14,new Color(.92f,.88f,.78f),new Color(.83f,.76f,.62f),
                 new Color(.27f,.19f,.14f));
+            controlHeading=LabelStyle(12,true,new Color(.56f,.19f,.14f));
+            controlHeading.margin=new RectOffset(0,0,8,3);
+            controlBadge=LabelStyle(12,true,new Color(.99f,.96f,.88f));
+            controlBadge.alignment=TextAnchor.MiddleCenter;
+            controlBadge.normal.background=SolidTexture(new Color(.47f,.27f,.20f));
+            controlBadge.padding=new RectOffset(6,6,3,3);
+            controlAction=LabelStyle(13,false,new Color(.28f,.21f,.16f));
+            controlAction.alignment=TextAnchor.MiddleLeft;
+            controlRow=new GUIStyle(GUI.skin.box){padding=new RectOffset(5,7,4,4),
+                margin=new RectOffset(0,0,0,3)};
+            controlRow.normal.background=SolidTexture(new Color(.93f,.89f,.80f));
             chartTitle=LabelStyle(28,true,new Color(.99f,.96f,.88f));
             chartSection=LabelStyle(19,true,new Color(.54f,.20f,.15f));
             chartHeader=LabelStyle(15,true,new Color(.96f,.94f,.87f));
@@ -221,9 +233,18 @@ public sealed class HastingsGame : MonoBehaviour
         panelNavButton.fontSize=panelButton.fontSize;
         panelPrimary.fontSize=Mathf.RoundToInt(18*p);
         panelLink.fontSize=Mathf.RoundToInt(14*p);
+        controlHeading.fontSize=Mathf.RoundToInt(12*p);
+        controlBadge.fontSize=Mathf.RoundToInt(12*p);
+        controlAction.fontSize=Mathf.RoundToInt(13*p);
         int side=Mathf.RoundToInt(15*p),top=Mathf.RoundToInt(13*p);
         panelCard.padding=new RectOffset(side,side,top,Mathf.RoundToInt(15*p));
         panelCard.margin=new RectOffset(0,0,0,Mathf.RoundToInt(12*p));
+        controlHeading.margin=new RectOffset(0,0,Mathf.RoundToInt(8*p),Mathf.RoundToInt(3*p));
+        controlBadge.padding=new RectOffset(Mathf.RoundToInt(6*p),Mathf.RoundToInt(6*p),
+            Mathf.RoundToInt(3*p),Mathf.RoundToInt(3*p));
+        controlRow.padding=new RectOffset(Mathf.RoundToInt(5*p),Mathf.RoundToInt(7*p),
+            Mathf.RoundToInt(4*p),Mathf.RoundToInt(4*p));
+        controlRow.margin=new RectOffset(0,0,0,Mathf.RoundToInt(3*p));
         GUI.skin.toggle.fontSize=panelBody.fontSize;
     }
     private static void Fill(Rect rect,Color color)
@@ -552,18 +573,27 @@ public sealed class HastingsGame : MonoBehaviour
         }
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("REFERENCE",panelSection);
+        float referenceWidth=Mathf.Max(120f,(region.width-85*p-controlGap)/2f);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Melee",panelButton,GUILayout.Height(42*p)))OpenChart("melee");
-        if(GUILayout.Button("Missile",panelButton,GUILayout.Height(42*p)))OpenChart("missile");
-        if(GUILayout.Button("Morale",panelButton,GUILayout.Height(42*p)))OpenChart("morale");
+        if(GUILayout.Button("Melee",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("melee");
+        GUILayout.Space(controlGap);
+        if(GUILayout.Button("Missile",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("missile");
         GUILayout.EndHorizontal();
         GUILayout.Space(5*p);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Rulebook PDF",panelLink,GUILayout.Height(38*p)))
-            Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
-        if(GUILayout.Button(showHelp?"Hide controls":"Controls",panelLink,GUILayout.Height(38*p)))showHelp=!showHelp;
+        if(GUILayout.Button("Morale",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("morale");
+        GUILayout.Space(controlGap);
+        if(GUILayout.Button("Terrain",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("terrain");
         GUILayout.EndHorizontal();
-        if(showHelp)GUILayout.Label("Hover over a stack to spread its counters, then click the unit or leader you want. Shift-click adds units or melee targets. Click a highlighted hex to move or an enemy to attack. Hide units to inspect the map. WASD or right drag pans; the wheel zooms. Q/E changes facing. Space ends a segment. Esc opens the menu.",panelMuted);
+        GUILayout.Space(5*p);
+        GUILayout.BeginHorizontal();
+        if(GUILayout.Button("Rulebook PDF",panelLink,GUILayout.Width(referenceWidth),GUILayout.Height(38*p)))
+            Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
+        GUILayout.Space(controlGap);
+        if(GUILayout.Button(showHelp?"Hide guide":"Controls",panelLink,
+            GUILayout.Width(referenceWidth),GUILayout.Height(38*p)))showHelp=!showHelp;
+        GUILayout.EndHorizontal();
+        if(showHelp)DrawControlsGuide();
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("CASUALTIES",panelSection);
@@ -582,6 +612,33 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+    private void DrawControlsGuide()
+    {
+        GUILayout.Label("MAP VIEW",controlHeading);
+        DrawControlRow("W A S D", "Pan the map");
+        DrawControlRow("RIGHT DRAG", "Pan freely");
+        DrawControlRow("WHEEL", "Zoom in or out");
+        DrawControlRow("HIDE UNITS", "Inspect terrain beneath counters");
+
+        GUILayout.Label("COMMAND UNITS",controlHeading);
+        DrawControlRow("CLICK", "Select · move to a highlight · attack an enemy");
+        DrawControlRow("SHIFT + CLICK", "Add units or melee targets");
+        DrawControlRow("HOVER STACK", "Spread counters in the same hex");
+        DrawControlRow("Q  /  E", "Turn the selected unit");
+
+        GUILayout.Label("GAME FLOW",controlHeading);
+        DrawControlRow("SPACE", "Finish the current segment");
+        DrawControlRow("ESC", "Open or close the game menu");
+    }
+    private void DrawControlRow(string control,string action)
+    {
+        float p=panelScale;
+        GUILayout.BeginHorizontal(controlRow,GUILayout.MinHeight(42*p));
+        GUILayout.Label(control,controlBadge,GUILayout.Width(118*p),GUILayout.Height(34*p));
+        GUILayout.Space(7*p);
+        GUILayout.Label(action,controlAction,GUILayout.MinHeight(34*p));
+        GUILayout.EndHorizontal();
     }
     private string HoverDescription()
     {
@@ -773,16 +830,18 @@ public sealed class HastingsGame : MonoBehaviour
         {chart="";GUI.EndGroup();return;}
         GUI.Label(new Rect(27*u,59*u,width-54*u,26*u),
             "Tables shown here match the results used by the game engine.",chartNote);
-        string[] names={"melee","missile","morale"};
+        string[] names={"melee","missile","morale","terrain"};
         for(int i=0;i<names.Length;i++)
         {
-            float tabWidth=(width-52*u)/3f;
+            float tabWidth=(width-52*u)/names.Length;
             var tab=new Rect(26*u+i*tabWidth,91*u,tabWidth-5*u,37*u);
             if(GUI.Button(tab,UpperFirst(names[i]),chart==names[i]?chartTabSelected:chartTab))
                 OpenChart(names[i]);
         }
-        float contentWidth=Mathf.Max(width-70*u,(chart=="melee"?900:chart=="missile"?830:620)*u);
-        float contentHeight=(chart=="melee"?540:chart=="missile"?820:720)*u;
+        float contentWidth=Mathf.Max(width-70*u,
+            (chart=="melee"?900:chart=="missile"?830:chart=="terrain"?900:620)*u);
+        float contentHeight=(chart=="melee"?540:chart=="missile"?820:
+            chart=="terrain"?1120:720)*u;
         var viewport=new Rect(25*u,144*u,width-50*u,height-165*u);
         chartScroll=GUI.BeginScrollView(viewport,chartScroll,new Rect(0,0,contentWidth,contentHeight));
         switch(chart)
@@ -790,6 +849,7 @@ public sealed class HastingsGame : MonoBehaviour
             case "melee":DrawMeleeChart(contentWidth);break;
             case "missile":DrawMissileChart(contentWidth);break;
             case "morale":DrawMoraleChart(contentWidth);break;
+            case "terrain":DrawTerrainChart(contentWidth);break;
         }
         GUI.EndScrollView();
         GUI.EndGroup();
@@ -875,5 +935,63 @@ public sealed class HastingsGame : MonoBehaviour
                 return result==Status.Ready?"—":result==Status.Disrupted?"D":"R";
             });
         ChartNote(y,width,"RESULT KEY   —  No effect     D  Disrupted     R  Routed. A successful rally removes disruption. A routed unit within a friendly leader's rally range automatically loses its rout marker during rally.");
+    }
+    private float TerrainRow(float y,float width,int index,string terrain,string movement,
+        string combat,string other,Color accent)
+    {
+        float u=chartScale,h=80*u;
+        float terrainWidth=160*u,movementWidth=170*u,combatWidth=305*u;
+        Fill(new Rect(0,y,width,h),index%2==0?
+            new Color(.99f,.975f,.93f):new Color(.93f,.90f,.83f));
+        Fill(new Rect(0,y,7*u,h),accent);
+        foreach(float x in new[]{terrainWidth,terrainWidth+movementWidth,
+                 terrainWidth+movementWidth+combatWidth})
+            Fill(new Rect(x,y,1*u,h),new Color(.80f,.74f,.64f));
+        GUI.Label(new Rect(13*u,y+8*u,terrainWidth-20*u,h-16*u),terrain,chartRowHeader);
+        GUI.Label(new Rect(terrainWidth+9*u,y+8*u,movementWidth-18*u,h-16*u),movement,chartCell);
+        GUI.Label(new Rect(terrainWidth+movementWidth+12*u,y+8*u,
+            combatWidth-24*u,h-16*u),combat,chartNote);
+        GUI.Label(new Rect(terrainWidth+movementWidth+combatWidth+12*u,y+8*u,
+            width-terrainWidth-movementWidth-combatWidth-24*u,h-16*u),other,chartNote);
+        return y+h;
+    }
+    private void DrawTerrainChart(float width)
+    {
+        float u=chartScale;
+        GUI.Label(new Rect(0,0,width,36*u),"TERRAIN EFFECTS",chartSection);
+        float y=42*u,terrainWidth=160*u,movementWidth=170*u,combatWidth=305*u;
+        Fill(new Rect(0,y,width,46*u),new Color(.55f,.23f,.17f));
+        GUI.Label(new Rect(0,y,terrainWidth,46*u),"TERRAIN",chartHeader);
+        GUI.Label(new Rect(terrainWidth,y,movementWidth,46*u),"MOVEMENT",chartHeader);
+        GUI.Label(new Rect(terrainWidth+movementWidth,y,combatWidth,46*u),"COMBAT",chartHeader);
+        GUI.Label(new Rect(terrainWidth+movementWidth+combatWidth,y,
+            width-terrainWidth-movementWidth-combatWidth,46*u),"OTHER EFFECT",chartHeader);
+        y+=46*u;
+        y=TerrainRow(y,width,0,"Clear","1 MP","None","Normal terrain",
+            new Color(.66f,.77f,.48f));
+        y=TerrainRow(y,width,1,"Ridge uphill","No extra MP",
+            "Foot −1 melee; knight −2 melee","Knight morale check on crossing",
+            new Color(.47f,.43f,.30f));
+        y=TerrainRow(y,width,2,"Ridge downhill","No extra MP",
+            "Foot +1 melee; knight: no ridge modifier","Knight morale check on crossing",
+            new Color(.63f,.53f,.35f));
+        y=TerrainRow(y,width,3,"Moving downhill","No extra MP",
+            "Foot: none; knight +1 melee","Downhill charge adds +2 more",
+            new Color(.78f,.63f,.38f));
+        y=TerrainRow(y,width,4,"Marsh","Foot 2 MP; knight 3 MP",
+            "Defender −1","Knight morale check on entry",
+            new Color(.33f,.59f,.55f));
+        y=TerrainRow(y,width,5,"Stream","+1 MP to cross","None",
+            "Charges cannot cross streams",new Color(.20f,.43f,.70f));
+        y=TerrainRow(y,width,6,"Woods","Foot 2 MP; knight 3 MP",
+            "Defender +2 in melee; +1 vs bow fire",
+            "Fire into woods is allowed; fire through is blocked",
+            new Color(.29f,.54f,.36f));
+        y=TerrainRow(y,width,7,"Road","1 MP","None","Road control affects victory",
+            new Color(.57f,.47f,.31f));
+        y+=18*u;
+        y=ChartNote(y,width,"KNIGHT MORALE   Crossing a ridge or entering marsh triggers a morale check. Treat a rout result as disruption. Ridge checks occur before crossing.");
+        y=ChartNote(y,width,"CHARGE LIMITS   A charge cannot cross a ridge or stream, enter woods or marsh, or move uphill during its last two hexes. Reaction ignores terrain movement costs.");
+        ChartNote(y,width,"FIRE & ELEVATION   Woods can be fired into, but not through. Higher intervening terrain also blocks fire. High trajectory does not bypass either obstruction.");
     }
 }
