@@ -9,4 +9,8 @@ https://boardgamegeek.com/boardgame/6021/hastings-1066
 
 I've uploaded a PDF, but there's a chance it's out of date. To generate the rules PDF from source run the command `pdflatex --jobname=Hastings_1066 main.tex`, which will generate a "Hastings_1066.pdf" file. You can, of course, change the name to whatever you like.
 
+## Computer game
+
+The solo Norman-versus-Saxon Unity implementation is in [UnityProject](UnityProject/README.md). Open that project with Unity 6000.3.6f1; its main scene is `Assets/Scenes/Hastings.unity`. The generated Mac app is in `Builds/Mac/Hastings 1066.app` in this workspace.
+
 Installing pdflatex will depend on your operating system. I leave that as an exercise to the reader.

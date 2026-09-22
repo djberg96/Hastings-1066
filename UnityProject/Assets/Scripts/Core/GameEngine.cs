@@ -1,0 +1,367 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Hastings
+{
+    public sealed class MoveOption
+    {
+        public string destination;
+        public int cost;
+        public List<string> path;
+        public bool charge;
+    }
+
+    public sealed partial class GameEngine
+    {
+        public readonly Board board;
+        public GameState state;
+        public GameEngine(Board board, GameState state) { this.board=board; this.state=state; }
+        public IEnumerable<UnitState> Living(Side side) { return state.units.Where(u=>u.side==side && u.status!=Status.Eliminated && board.Has(u.hex)); }
+        public UnitState UnitAt(string hex, Side? side=null, bool leader=false)
+        {
+            return state.units.FirstOrDefault(u=>u.hex==hex && u.status!=Status.Eliminated &&
+                (!side.HasValue || u.side==side.Value) && UnitTypes.Get(u).leader==leader);
+        }
+        public GroupState Group(UnitState unit) { return state.groups.First(g=>g.id==unit.group); }
+        public Order OrderFor(UnitState unit)
+        {
+            var type=UnitTypes.Get(unit);
+            if(type.leader)return Order.Advance;
+            if(unit.side==Side.Saxon && unit.reserveOrder)return Order.Advance;
+            if(type.guard && Living(Side.Norman).Any(u=>u.type=="William")) return Order.Advance;
+            return type.knight?Group(unit).knightOrder:Group(unit).footOrder;
+        }
+        public int Die()
+        {
+            uint x=state.randomState; if(x==0)x=1;
+            x^=x<<13; x^=x>>17; x^=x<<5; state.randomState=x;
+            return (int)(x%6)+1;
+        }
+        public void Log(string message)
+        {
+            state.log.Add($"I{state.period} T{state.turn}: {message}");
+            if(state.log.Count>250)state.log.RemoveAt(0);
+        }
+        public void Begin()
+        {
+            if(state.phase!=Phase.Setup) return;
+            state.phase=Phase.Orders; Log("Choose Norman strategies.");
+        }
+        public void SetStrategy(string group, Strategy strategy)
+        {
+            if(state.phase!=Phase.Orders || !new[]{"Norman","Breton","Franco-Flemish"}.Contains(group))return;
+            state.groups.First(g=>g.id==group).strategy=strategy;
+        }
+        public bool OptionsPending() { return state.groups.Any(g=>g.footOptional||g.knightOptional); }
+        public void ResolveOrders()
+        {
+            if(state.phase!=Phase.Orders)return;
+            ReassignSaxonWings();
+            foreach(var group in state.groups)
+            {
+                if((group.id=="Left"||group.id=="Center"||group.id=="Right") &&
+                    !Living(Side.Saxon).Any(u=>u.group==group.id && !UnitTypes.Get(u).leader))continue;
+                if(group.id=="Left" || group.id=="Center" || group.id=="Right")
+                    group.strategy=ChooseSaxonStrategy(group.id);
+                int roll=Die()+Die();
+                int footDuration=1, knightDuration=1, footEffect=0, knightEffect=0;
+                bool footOptional=false, knightOptional=false;
+                var side=group.id=="Left"||group.id=="Center"||group.id=="Right"?Side.Saxon:Side.Norman;
+                if(group.footDuration>1){group.footDuration--;footEffect=group.footPendingEffect;}
+                else
+                {
+                    group.footOrder=RuleTables.RollOrder(side,false,group.strategy,roll,
+                        out footDuration,out footEffect,out footOptional);
+                    group.footPendingEffect=footDuration>1?footEffect:0;
+                }
+                if(side==Side.Norman)
+                {
+                    if(group.knightDuration>1){group.knightDuration--;knightEffect=group.knightPendingEffect;}
+                    else
+                    {
+                        group.knightOrder=RuleTables.RollOrder(side,true,group.strategy,roll,
+                            out knightDuration,out knightEffect,out knightOptional);
+                        group.knightPendingEffect=knightDuration>1?knightEffect:0;
+                    }
+                }
+                group.footDuration=Math.Max(group.footDuration,footDuration);
+                group.knightDuration=Math.Max(group.knightDuration,knightDuration);
+                group.footOptional=footOptional && side==Side.Norman;
+                group.knightOptional=knightOptional && side==Side.Norman;
+                if(footOptional && side==Side.Saxon)
+                    group.footOrder=group.strategy==Strategy.Defensive?Order.ShieldWall:Order.Advance;
+                group.effect+=footEffect+knightEffect;
+                Log(group.id+" chooses "+group.strategy+", rolls "+roll+": "+group.footOrder+
+                    (side==Side.Norman?" / "+group.knightOrder:"")+"; effect "+group.effect);
+            }
+            Rally(Side.Norman);
+            state.phase=Phase.NormanFire;
+        }
+        public bool SetOptionalOrder(string groupId,bool knight,Order order)
+        {
+            if(state.phase!=Phase.NormanFire)return false;
+            var group=state.groups.FirstOrDefault(g=>g.id==groupId);
+            if(group==null)return false;
+            if(knight)
+            {
+                if(!group.knightOptional || (order!=Order.Hold && order!=Order.Advance && order!=Order.Charge))return false;
+                group.knightOrder=order;group.knightOptional=false;
+            }
+            else
+            {
+                if(!group.footOptional || (order!=Order.ShieldWall && order!=Order.FireInPlace && order!=Order.Advance))return false;
+                group.footOrder=order;group.footOptional=false;
+            }
+            Log(groupId+" chooses optional "+(knight?"knight":"foot")+" order: "+order);return true;
+        }
+        private Strategy ChooseSaxonStrategy(string wing)
+        {
+            var units=Living(Side.Saxon).Where(u=>u.group==wing && !UnitTypes.Get(u).leader).ToList();
+            int threats=units.Count(u=>Living(Side.Norman).Any(n=>board.Distance(u.hex,n.hex)<=2));
+            if(threats>units.Count/3)return Strategy.Defensive;
+            return state.turn<4?Strategy.Cautious:Strategy.Moderate;
+        }
+        private void ReassignSaxonWings()
+        {
+            var leaders=Living(Side.Saxon).Where(u=>UnitTypes.Get(u).leader && u.leaderCondition==0).ToList();
+            var units=Living(Side.Saxon).Where(u=>!UnitTypes.Get(u).leader).ToList();
+            if(leaders.Count==0)
+            {foreach(var unit in units){unit.group="Center";unit.reserveOrder=false;}return;}
+            foreach(var unit in units)
+            {
+                var near=leaders.OrderBy(l=>board.Distance(l.hex,unit.hex)).First();
+                bool commanded=board.Distance(near.hex,unit.hex)<=Math.Max(0,UnitTypes.Get(near).command-near.leaderPenalty);
+                if(unit.reserveOrder && !commanded)continue;
+                unit.reserveOrder=false;unit.group=near.group;
+            }
+            int minimum=(int)Math.Ceiling(units.Count*(leaders.Count<3?1.0/3:1.0/5));
+            foreach(var leader in leaders)
+            {
+                int count=units.Count(u=>u.group==leader.group);
+                if(count>=minimum)continue;
+                var donors=units.Where(u=>!u.reserveOrder && u.group!=leader.group &&
+                    units.Count(v=>v.group==u.group)>minimum)
+                    .OrderBy(u=>board.Distance(u.hex,leader.hex)).ToList();
+                foreach(var donor in donors)
+                {donor.group=leader.group;count++;if(count>=minimum)break;}
+            }
+        }
+        public bool CanFace(UnitState unit)
+        {
+            return state.phase==Phase.Setup || state.phase==Phase.NormanMove || state.phase==Phase.Reform;
+        }
+        public bool Face(UnitState unit,int direction)
+        {
+            if(unit.side!=Side.Norman || UnitTypes.Get(unit).leader || !CanFace(unit))return false;
+            unit.facing=((direction%6)+6)%6; Log(unit.id+" faces "+unit.facing);return true;
+        }
+        public bool Controls(UnitState unit,string hex)
+        {
+            if(unit.status!=Status.Ready || UnitTypes.Get(unit).leader || !board.Has(unit.hex) || !board.Adjacent(unit.hex).Contains(hex))return false;
+            int dir=board.Direction(unit.hex,hex);
+            return dir==unit.facing || dir==(unit.facing+1)%6;
+        }
+        public bool InEnemyZoc(Side side,string hex)
+        {
+            return Living(side==Side.Norman?Side.Saxon:Side.Norman).Any(u=>Controls(u,hex));
+        }
+        public int MovementAllowance(UnitState unit)
+        {
+            var type=UnitTypes.Get(unit);
+            if(type.leader)return unit.leaderCondition>0?2:6;
+            if(unit.status!=Status.Ready)return 0;
+            var order=OrderFor(unit);
+            if(order==Order.ShieldWall || order==Order.Hold || order==Order.FireInPlace)return 1;
+            int result=type.knight?(order==Order.Charge?6:4):3;
+            if(Group(unit).effect>=5)result--;
+            if(Group(unit).effect>=11)result--;
+            return Math.Max(0,result-unit.entrySpent);
+        }
+        private int MoveCost(UnitState unit,string from,string to)
+        {
+            var type=UnitTypes.Get(unit);var hex=board.Hex(to);var edge=board.Edge(from,to);
+            int cost=hex.woods||hex.marsh?(type.knight?3:2):1;
+            if(edge!=null && edge.stream)cost++;
+            return cost;
+        }
+        public Dictionary<string,MoveOption> LegalMoves(UnitState unit,bool reaction=false)
+        {
+            var result=new Dictionary<string,MoveOption>();
+            if(!board.Has(unit.hex)||unit.status==Status.Eliminated)return result;
+            if(reaction)
+            {
+                if(unit.reacted || unit.status==Status.Routed || !InCommand(unit))return result;
+                if(unit.status==Status.Disrupted && !InEnemyZoc(unit.side,unit.hex))return result;
+                var order=OrderFor(unit);
+                if(order==Order.ShieldWall||order==Order.AttackPursue||order==Order.Charge)return result;
+                if(unit.side==Side.Saxon && !UnitTypes.Get(unit).knight &&
+                   Living(Side.Norman).Any(n=>UnitTypes.Get(n).knight && Controls(n,unit.hex)))return result;
+                int before=NearestEnemyDistance(unit.side,unit.hex);
+                foreach(var to in board.Adjacent(unit.hex))
+                    if(UnitAt(to,unit.side)==null && UnitAt(to,Opposite(unit.side))==null &&
+                       !InEnemyZoc(unit.side,to) && NearestEnemyDistance(unit.side,to)>before)
+                        result[to]=new MoveOption{destination=to,cost=0,path=new List<string>{unit.hex,to}};
+                return result;
+            }
+            if(unit.moved || unit.status!=Status.Ready)return result;
+            int allowance=MovementAllowance(unit);var initial=OrderFor(unit);
+            var open=new Queue<MoveOption>();open.Enqueue(new MoveOption{destination=unit.hex,cost=0,path=new List<string>{unit.hex}});
+            var best=new Dictionary<string,int>{{unit.hex,0}};
+            while(open.Count>0)
+            {
+                var current=open.Dequeue();
+                foreach(var to in board.Adjacent(current.destination))
+                {
+                    if(UnitAt(to,Opposite(unit.side))!=null)continue;
+                    if(current.path.Contains(to))continue;
+                    if(InEnemyZoc(unit.side,current.destination)&&current.destination!=unit.hex)continue;
+                    if(InEnemyZoc(unit.side,current.destination)&&InEnemyZoc(unit.side,to))continue;
+                    bool zoc=InEnemyZoc(unit.side,to);
+                    if(zoc && (!UnitTypes.Get(unit).leader && UnitTypes.Get(unit).missile=="B"))continue;
+                    if(zoc && UnitAt(to,unit.side)!=null)continue;
+                    var crossing=board.Edge(current.destination,to);
+                    if(UnitTypes.Get(unit).knight && UnitAt(to,unit.side)!=null &&
+                        ((crossing!=null && crossing.ridge)||board.Hex(to).marsh))continue;
+                    if(UnitTypes.Get(unit).leader && zoc && UnitAt(to,unit.side)==null)continue;
+                    int cost=(initial==Order.ShieldWall||initial==Order.Hold||initial==Order.FireInPlace)?
+                        1:MoveCost(unit,current.destination,to)+current.cost;
+                    if(cost>allowance)continue;
+                    if(initial==Order.ShieldWall || initial==Order.Hold || initial==Order.FireInPlace)
+                    {
+                        if(current.path.Count>1)continue;
+                        if(zoc)continue;
+                        int before=NearestEnemyDistance(unit.side,unit.hex),after=NearestEnemyDistance(unit.side,to);
+                        if((initial==Order.ShieldWall||initial==Order.Hold) && after<=before)continue;
+                        if(initial==Order.FireInPlace && after==before)continue;
+                    }
+                    if(initial==Order.AttackPursue && NearestEnemyDistance(unit.side,to)>NearestEnemyDistance(unit.side,unit.hex))continue;
+                    if(best.ContainsKey(to) && best[to]<=cost)continue;
+                    best[to]=cost;
+                    var path=new List<string>(current.path){to};
+                    var option=new MoveOption{destination=to,cost=cost,path=path,
+                        charge=UnitTypes.Get(unit).knight && (initial==Order.Charge || UnitTypes.Get(unit).guard) && ChargePath(path)};
+                    if(UnitAt(to,unit.side)==null || UnitTypes.Get(unit).leader)result[to]=option;
+                    if(!zoc)open.Enqueue(option);
+                }
+            }
+            return result;
+        }
+        private bool ChargePath(List<string> path)
+        {
+            if(path.Count<2 || !Living(Side.Saxon).Any(s=>board.Adjacent(path[path.Count-1]).Contains(s.hex)))return false;
+            for(int i=1;i<path.Count;i++)
+            {
+                var e=board.Edge(path[i-1],path[i]);var h=board.Hex(path[i]);
+                if((e!=null && (e.ridge||e.stream))||h.woods||h.marsh)return false;
+                if(i>=path.Count-2 && IsUphill(path[i-1],path[i]))return false;
+            }
+            return true;
+        }
+        private bool IsUphill(string from,string to)
+        {
+            var origin=board.Hex(from);var target=board.Hex(to);
+            if(target.level>origin.level)return true;
+            foreach(var hill in board.data.hexes)
+            {
+                if(hill.level<=origin.level || board.Distance(from,hill.id)>2)continue;
+                if(hill.id=="1419" || hill.level==5)continue;
+                if(board.Distance(to,hill.id)<board.Distance(from,hill.id))return true;
+            }
+            return false;
+        }
+        private bool IsDownhill(string from,string to) { return IsUphill(to,from); }
+        public bool Move(UnitState unit,string destination,bool reaction=false)
+        {
+            if(!board.Has(destination) || (unit.side!=Side.Norman && !reaction))return false;
+            if(reaction && state.phase!=Phase.NormanReaction)return false;
+            if(!reaction && state.phase!=Phase.NormanMove)return false;
+            MoveOption option;
+            if(!LegalMoves(unit,reaction).TryGetValue(destination,out option))return false;
+            MoveCore(unit,option,reaction);return true;
+        }
+        private void MoveCore(UnitState unit,MoveOption option,bool reaction)
+        {
+            string origin=unit.hex;
+            string lastOpenHex=origin;
+            foreach(var step in option.path.Skip(1))
+            {
+                var e=board.Edge(unit.hex,step);
+                if(UnitTypes.Get(unit).knight && e!=null && e.ridge)
+                {
+                    CheckMorale(unit,true);
+                    if(unit.status!=Status.Ready){unit.hex=lastOpenHex;break;}
+                }
+                unit.hex=step;
+                if(UnitTypes.Get(unit).knight && board.Hex(step).marsh)
+                {
+                    CheckMorale(unit,true);
+                    if(unit.status!=Status.Ready)
+                    {
+                        if(Living(unit.side).Any(other=>other!=unit &&
+                            !UnitTypes.Get(other).leader && other.hex==step))unit.hex=lastOpenHex;
+                        TouchRoad(unit);break;
+                    }
+                }
+                if(!Living(unit.side).Any(other=>other!=unit &&
+                    !UnitTypes.Get(other).leader && other.hex==step))lastOpenHex=step;
+                TouchRoad(unit);
+                if(InEnemyZoc(unit.side,unit.hex))break;
+            }
+            unit.charged=!reaction && unit.status==Status.Ready && option.charge && unit.hex==option.destination;
+            if(reaction){unit.reacted=true;CheckMorale(unit,false);}
+            else unit.moved=true;
+            if(unit.side==Side.Saxon && unit.reserveOrder)
+            {
+                var commander=Living(Side.Saxon).Where(u=>UnitTypes.Get(u).leader &&
+                    u.leaderCondition==0 && board.Distance(u.hex,unit.hex)<=
+                    Math.Max(0,UnitTypes.Get(u).command-u.leaderPenalty))
+                    .OrderBy(u=>board.Distance(u.hex,unit.hex)).FirstOrDefault();
+                if(commander!=null){unit.reserveOrder=false;unit.group=commander.group;}
+            }
+            Log(unit.id+" moves "+origin+" → "+unit.hex+(unit.charged?" (charge)":""));
+            CheckExposedLeaders();
+            CheckVictory();
+        }
+        private void TouchRoad(UnitState unit)
+        {
+            var road=state.road.FirstOrDefault(r=>r.hex==unit.hex);
+            if(road!=null)road.owner=unit.side;
+        }
+        public int NearestEnemyDistance(Side side,string hex)
+        {
+            var enemies=Living(Opposite(side)).Where(u=>!UnitTypes.Get(u).leader).ToList();
+            return enemies.Count==0?999:enemies.Min(u=>board.Distance(hex,u.hex));
+        }
+        public static Side Opposite(Side side) { return side==Side.Norman?Side.Saxon:Side.Norman; }
+        private bool InCommand(UnitState unit)
+        {
+            return Living(unit.side).Any(l=>UnitTypes.Get(l).leader && l.leaderCondition==0 &&
+                (l.side==Side.Saxon || l.type=="William" || UnitTypes.Get(l).nation==UnitTypes.Get(unit).nation) &&
+                board.Distance(l.hex,unit.hex)<=Math.Max(0,UnitTypes.Get(l).command-l.leaderPenalty));
+        }
+        private void CheckExposedLeaders()
+        {
+            foreach(var leader in state.units.Where(u=>u.status!=Status.Eliminated &&
+                UnitTypes.Get(u).leader && board.Has(u.hex)).ToList())
+            {
+                if(UnitAt(leader.hex,leader.side)!=null)continue;
+                if(!Living(Opposite(leader.side)).Any(e=>!UnitTypes.Get(e).leader &&
+                    board.Distance(e.hex,leader.hex)==1))continue;
+                var visited=new HashSet<string>{leader.hex};
+                bool escaped=true;
+                for(int i=0;i<3;i++)
+                {
+                    var next=board.Adjacent(leader.hex).Where(h=>!visited.Contains(h) &&
+                        UnitAt(h,Opposite(leader.side))==null &&
+                        (!InEnemyZoc(leader.side,h)||UnitAt(h,leader.side)!=null))
+                        .OrderByDescending(h=>NearestEnemyDistance(leader.side,h)).ThenBy(h=>h).FirstOrDefault();
+                    if(next==null){escaped=false;break;}
+                    leader.hex=next;visited.Add(next);
+                }
+                if(!escaped)Eliminate(leader);
+                else Log(leader.id+" retreats to "+leader.hex);
+            }
+        }
+    }
+}

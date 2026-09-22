@@ -5,3 +5,11 @@
 *.fls
 *.fdb*
 main.pdf
+UnityProject/Library/
+UnityProject/Temp/
+UnityProject/Obj/
+UnityProject/Logs/
+UnityProject/UserSettings/
+UnityProject/.vs/
+Builds/
+.DS_Store
