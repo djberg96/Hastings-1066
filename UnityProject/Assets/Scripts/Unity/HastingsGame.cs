@@ -246,22 +246,22 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawHexNumbers(Rect region)
     {
-        int fontSize=Mathf.Clamp(Mathf.RoundToInt(16*scale),8,18);
+        int fontSize=Mathf.Max(1,Mathf.RoundToInt(16*scale));
         hexNumber.fontSize=fontSize;
         hexNumberShadow.fontSize=fontSize;
         // The printed board places each four-digit coordinate vertically at the right of its hex.
         // Leave enough unrotated width for all four digits before rotating the label.
-        float width=fontSize*3.4f,height=fontSize+4;
+        float width=54.4f*scale,height=20*scale;
+        float margin=Mathf.Max(60,50*scale);
         foreach(var h in board.data.hexes)
         {
             float x=pan.x+h.x*scale,y=pan.y+h.y*scale;
-            if(x<-60||x>region.width+60||y<-60||y>region.height+60)continue;
-            float rightOffset=Mathf.Min(36*scale,50*scale-height*.5f-2);
-            var pivot=new Vector2(x+rightOffset,y);
+            if(x<-margin||x>region.width+margin||y<-margin||y>region.height+margin)continue;
+            var pivot=new Vector2(x+36*scale,y);
             var label=new Rect(pivot.x-width*.5f,pivot.y-height*.5f,width,height);
             var old=GUI.matrix;
             GUIUtility.RotateAroundPivot(90,pivot);
-            GUI.Label(new Rect(label.x+1,label.y+1,label.width,label.height),h.id,hexNumberShadow);
+            GUI.Label(new Rect(label.x+scale,label.y+scale,label.width,label.height),h.id,hexNumberShadow);
             GUI.Label(label,h.id,hexNumber);
             GUI.matrix=old;
         }
