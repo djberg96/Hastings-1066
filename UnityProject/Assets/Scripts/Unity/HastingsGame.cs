@@ -307,6 +307,7 @@ public sealed class HastingsGame : MonoBehaviour
                 }
                 GUI.color=Color.white;
             }
+            DrawHexNumbers(region);
             foreach(var u in game.state.units.Where(u=>u.status!=Status.Eliminated && board.Has(u.hex)))
             {
                 var h=board.Hex(u.hex);var type=UnitTypes.Get(u);
@@ -330,19 +331,10 @@ public sealed class HastingsGame : MonoBehaviour
                     GUI.Label(new Rect(xx+size-10,yy-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
                 }
             }
-            DrawHexNumbers(region);
+            hoveredHex="";
             var e=Event.current;
             if(region.Contains(e.mousePosition))
-            {
                 hoveredHex=board.Nearest((e.mousePosition.x-pan.x)/scale,(e.mousePosition.y-pan.y)/scale);
-                if(hoveredHex!=null)
-                {
-                    var h=board.Hex(hoveredHex);
-                    string label=hoveredHex+"  Level "+h.level+
-                        (h.road?"  Road":"")+(h.woods?"  Woods":"")+(h.marsh?"  Marsh":"");
-                    GUI.Box(new Rect(Mathf.Max(4,e.mousePosition.x-75),Mathf.Max(4,e.mousePosition.y-25),205,24),label);
-                }
-            }
         }
         GUI.EndGroup();
     }
@@ -353,13 +345,13 @@ public sealed class HastingsGame : MonoBehaviour
         hexNumberShadow.fontSize=fontSize;
         // The printed board places each four-digit coordinate vertically at the right of its hex.
         // Leave enough unrotated width for all four digits before rotating the label.
-        float width=54.4f*scale,height=20*scale;
+        float width=54.4f*scale,height=16*scale;
         float margin=Mathf.Max(60,50*scale);
         foreach(var h in board.data.hexes)
         {
             float x=pan.x+h.x*scale,y=pan.y+h.y*scale;
             if(x<-margin||x>region.width+margin||y<-margin||y>region.height+margin)continue;
-            var pivot=new Vector2(x+36*scale,y);
+            var pivot=new Vector2(x+42*scale,y);
             var label=new Rect(pivot.x-width*.5f,pivot.y-height*.5f,width,height);
             var old=GUI.matrix;
             GUIUtility.RotateAroundPivot(90,pivot);
@@ -401,7 +393,9 @@ public sealed class HastingsGame : MonoBehaviour
         if(GUILayout.Button("Fit map",panelButton,GUILayout.Height(42*p)))
         {fullMapMode=true;lastMapWidth=0;}
         GUILayout.EndHorizontal();
-        GUILayout.Space(15*p);
+        GUILayout.Space(8*p);
+        GUILayout.Label(HoverDescription(),panelStatus,GUILayout.Height(28*p));
+        GUILayout.Space(7*p);
         panelScroll=GUILayout.BeginScrollView(panelScroll);
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("YOUR NEXT ACTION",panelSection);
@@ -515,6 +509,16 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+    private string HoverDescription()
+    {
+        if(string.IsNullOrEmpty(hoveredHex) || !board.Has(hoveredHex))
+            return "Hover over the map for hex details";
+        var h=board.Hex(hoveredHex);
+        return "HEX "+hoveredHex+"  ·  LEVEL "+h.level+
+            (h.road?"  ·  ROAD":"")+
+            (h.woods?"  ·  WOODS":"")+
+            (h.marsh?"  ·  MARSH":"");
     }
     private static string PhaseLabel(Phase phase)
     {
