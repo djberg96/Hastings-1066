@@ -16,15 +16,19 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly List<string> selectedTargets=new List<string>();
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
-    private float panelScale=1f, chartScale=1f;
-    private bool showMenu=true, showUnits=true, showHigh, showHelp, fullMapMode;
+    private float panelScale=1f, chartScale=1f, orderScale=1f;
+    private bool showMenu=true, showUnits=true, showHigh, showHelp, showOrderResults, fullMapMode;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
-    private Vector2 panelScroll, chartScroll, menuScroll;
+    private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
         menuTitle, menuSubtitle, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
         panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
+        panelBretonButton, panelNormanButton, panelFlemishButton,
         controlHeading, controlBadge, controlAction, controlRow,
+        orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
+        orderRoll, orderType, orderName, orderText, orderEffect,
+        orderEffectHeading, orderEffectValue, orderEffectDetail, orderEffectWarning,
         chartTitle, chartSection, chartHeader, chartRowHeader, chartCell, chartMuted, chartNote,
         chartTab, chartTabSelected, chartClose;
     private string hoveredHex="";
@@ -44,13 +48,15 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Escape))
         {
+            if(showOrderResults){showOrderResults=false;return;}
+            if(chart!=""){chart="";return;}
             if(game==null){showMenu=true;menuPage="main";}
-            else if(!showMenu){chart="";showMenu=true;menuPage="main";}
+            else if(!showMenu){showMenu=true;menuPage="main";}
             else if(menuPage!="main")menuPage="main";
             else showMenu=false;
         }
         UpdateStackSpread();
-        if(game==null||showMenu||chart!=""||!Application.isFocused)return;
+        if(game==null||showMenu||chart!=""||showOrderResults||!Application.isFocused)return;
         var viewDirection=new Vector2(
             (Input.GetKey(KeyCode.D)?1:0)-(Input.GetKey(KeyCode.A)?1:0),
             (Input.GetKey(KeyCode.S)?1:0)-(Input.GetKey(KeyCode.W)?1:0));
@@ -61,7 +67,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void UpdateStackSpread()
     {
         if(game==null || !showUnits){stackSpread.Clear();return;}
-        string opening=!showMenu && chart=="" && LeaderStackAt(hoveredHex)?hoveredHex:"";
+        string opening=!showMenu && chart=="" && !showOrderResults && LeaderStackAt(hoveredHex)?hoveredHex:"";
         if(opening!="" && !stackSpread.ContainsKey(opening))stackSpread[opening]=0f;
         foreach(var hex in stackSpread.Keys.ToArray())
         {
@@ -132,6 +138,12 @@ public sealed class HastingsGame : MonoBehaviour
             panelPrimary.fontStyle=FontStyle.Bold;
             panelLink=ButtonStyle(14,new Color(.92f,.88f,.78f),new Color(.83f,.76f,.62f),
                 new Color(.27f,.19f,.14f));
+            panelBretonButton=ButtonStyle(15,new Color(.72f,.81f,.64f),new Color(.80f,.88f,.71f),
+                new Color(.15f,.25f,.13f));
+            panelNormanButton=ButtonStyle(15,new Color(.85f,.70f,.63f),new Color(.91f,.77f,.69f),
+                new Color(.31f,.13f,.10f));
+            panelFlemishButton=ButtonStyle(15,new Color(.68f,.79f,.86f),new Color(.76f,.86f,.92f),
+                new Color(.12f,.22f,.30f));
             controlHeading=LabelStyle(12,true,new Color(.56f,.19f,.14f));
             controlHeading.margin=new RectOffset(0,0,8,3);
             controlBadge=LabelStyle(12,true,new Color(.99f,.96f,.88f));
@@ -143,6 +155,32 @@ public sealed class HastingsGame : MonoBehaviour
             controlRow=new GUIStyle(GUI.skin.box){padding=new RectOffset(5,7,4,4),
                 margin=new RectOffset(0,0,0,3)};
             controlRow.normal.background=SolidTexture(new Color(.93f,.89f,.80f));
+            orderTitle=LabelStyle(28,true,new Color(.99f,.96f,.88f));
+            orderSubtitle=LabelStyle(16,false,new Color(.40f,.31f,.23f));
+            orderSection=LabelStyle(17,true,new Color(.56f,.19f,.14f));
+            orderCard=new GUIStyle(GUI.skin.box){padding=new RectOffset(18,18,14,16),
+                margin=new RectOffset(0,0,0,10)};
+            orderCard.normal.background=SolidTexture(new Color(.98f,.965f,.91f));
+            orderCardTitle=LabelStyle(20,true,new Color(.27f,.16f,.11f));
+            orderRoll=LabelStyle(13,true,new Color(.99f,.96f,.88f));
+            orderRoll.alignment=TextAnchor.MiddleCenter;
+            orderRoll.normal.background=SolidTexture(new Color(.55f,.23f,.17f));
+            orderRoll.padding=new RectOffset(10,10,5,5);
+            orderType=LabelStyle(11,true,new Color(.56f,.19f,.14f));
+            orderName=LabelStyle(17,true,new Color(.25f,.15f,.11f));
+            orderText=LabelStyle(13,false,new Color(.34f,.27f,.21f));
+            orderEffect=new GUIStyle(GUI.skin.box){padding=new RectOffset(11,11,9,9)};
+            orderEffect.normal.background=SolidTexture(new Color(.90f,.85f,.73f));
+            orderEffectHeading=LabelStyle(12,true,new Color(.51f,.20f,.15f));
+            orderEffectHeading.alignment=TextAnchor.MiddleLeft;
+            orderEffectValue=LabelStyle(12,true,new Color(.27f,.18f,.13f));
+            orderEffectValue.alignment=TextAnchor.MiddleCenter;
+            orderEffectValue.normal.background=SolidTexture(new Color(.82f,.75f,.62f));
+            orderEffectValue.padding=new RectOffset(8,8,4,4);
+            orderEffectDetail=LabelStyle(12,false,new Color(.35f,.28f,.21f));
+            orderEffectWarning=new GUIStyle(orderEffectDetail);
+            orderEffectWarning.fontStyle=FontStyle.Bold;
+            orderEffectWarning.normal.textColor=new Color(.55f,.19f,.14f);
             chartTitle=LabelStyle(28,true,new Color(.99f,.96f,.88f));
             chartSection=LabelStyle(19,true,new Color(.54f,.20f,.15f));
             chartHeader=LabelStyle(15,true,new Color(.96f,.94f,.87f));
@@ -179,9 +217,12 @@ public sealed class HastingsGame : MonoBehaviour
         pan=BoardViewMath.ClampPan(pan,scale,mapRect.width,mapRect.height,
             board.data.width,board.data.height);
         DrawMap(mapRect);
+        if(showOrderResults)GUI.enabled=false;
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
+        GUI.enabled=true;
         if(showMenu)DrawMenu();
         if(chart!="")DrawChart();
+        if(showOrderResults && !showMenu && chart=="")DrawOrderResults();
     }
     private void ResizeMapView(Rect region)
     {
@@ -235,6 +276,9 @@ public sealed class HastingsGame : MonoBehaviour
         panelNavButton.fontSize=panelButton.fontSize;
         panelPrimary.fontSize=Mathf.RoundToInt(18*p);
         panelLink.fontSize=Mathf.RoundToInt(14*p);
+        panelBretonButton.fontSize=panelButton.fontSize;
+        panelNormanButton.fontSize=panelButton.fontSize;
+        panelFlemishButton.fontSize=panelButton.fontSize;
         controlHeading.fontSize=Mathf.RoundToInt(12*p);
         controlBadge.fontSize=Mathf.RoundToInt(12*p);
         controlAction.fontSize=Mathf.RoundToInt(13*p);
@@ -271,15 +315,15 @@ public sealed class HastingsGame : MonoBehaviour
         Event e=Event.current;
         if(e.type==EventType.KeyDown)
         {
-            if(e.keyCode==KeyCode.Space && !showMenu && chart==""){Advance();e.Use();}
-            else if(showUnits && !showMenu && chart=="" &&
+            if(e.keyCode==KeyCode.Space && !showMenu && chart=="" && !showOrderResults){Advance();e.Use();}
+            else if(showUnits && !showMenu && chart=="" && !showOrderResults &&
                     (e.keyCode==KeyCode.Q||e.keyCode==KeyCode.E) && selected.Count==1)
             {
                 var unit=SelectedUnits().FirstOrDefault();
                 if(unit!=null)game.Face(unit,unit.facing+(e.keyCode==KeyCode.E?1:-1));e.Use();
             }
         }
-        if(showMenu||chart!=""||!region.Contains(e.mousePosition))return;
+        if(showMenu||chart!=""||showOrderResults||!region.Contains(e.mousePosition))return;
         if(e.type==EventType.ScrollWheel)
         {
             fullMapMode=false;
@@ -371,7 +415,7 @@ public sealed class HastingsGame : MonoBehaviour
         if(game!=null)
         {
             var e=Event.current;
-            hoveredHex=!showMenu && chart=="" && region.Contains(e.mousePosition)?
+            hoveredHex=!showMenu && chart=="" && !showOrderResults && region.Contains(e.mousePosition)?
                 HexAtPointer(e.mousePosition):"";
             var unit=SelectedUnits().FirstOrDefault();
             if(showUnits && unit!=null &&
@@ -525,15 +569,26 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label("YOUR NEXT ACTION",panelSection);
         GUILayout.Label(PhaseLabel(s.phase),panelValue);
         GUILayout.Label(PhasePrompt(s.phase),panelMuted);
+        if(s.phase!=Phase.Orders && s.orderResults!=null && s.orderResults.Count>0)
+        {
+            GUILayout.Space(5*p);
+            if(GUILayout.Button("Review battle orders",panelLink,GUILayout.Height(38*p)))
+            {showOrderResults=true;orderScroll=Vector2.zero;}
+        }
         if(s.phase==Phase.Orders)
         {
             GUILayout.Space(5*p);
             foreach(var id in new[]{"Breton","Norman","Franco-Flemish"})
             {
                 var group=s.groups.First(g=>g.id==id);
-                if(GUILayout.Button(id+"  ·  "+group.strategy,panelButton,GUILayout.Height(40*p)))
+                var content=new GUIContent(id+"  ·  "+group.strategy,StrategyOverview(group.strategy));
+                if(GUILayout.Button(content,FactionButton(id),GUILayout.Height(40*p)))
                     game.SetStrategy(id,(Strategy)(((int)group.strategy+1)%4));
             }
+            GUILayout.Space(4*p);
+            GUILayout.Label(string.IsNullOrEmpty(GUI.tooltip)?
+                "Click a contingent to cycle its strategy. Hover for a short overview.":GUI.tooltip,
+                panelMuted,GUILayout.MinHeight(40*p));
         }
         if(game.OptionsPending())
         {
@@ -709,6 +764,26 @@ public sealed class HastingsGame : MonoBehaviour
             default:return "Resolve any available actions, then finish this segment.";
         }
     }
+    private GUIStyle FactionButton(string group)
+    {
+        if(group=="Breton")return panelBretonButton;
+        if(group=="Franco-Flemish")return panelFlemishButton;
+        return panelNormanButton;
+    }
+    private static string StrategyOverview(Strategy strategy)
+    {
+        switch(strategy)
+        {
+            case Strategy.Defensive:
+                return "Defensive favors holding ground, Shield Wall, and Fire in Place results.";
+            case Strategy.Cautious:
+                return "Cautious favors controlled advances while retaining a good chance of stationary orders.";
+            case Strategy.Moderate:
+                return "Moderate balances Advance results with a chance of defensive or aggressive orders.";
+            default:
+                return "Aggressive makes Charge and other forward-driving orders more likely, increasing fatigue risk over time.";
+        }
+    }
     private void OpenChart(string name)
     {
         chart=name;
@@ -721,7 +796,11 @@ public sealed class HastingsGame : MonoBehaviour
         switch(game.state.phase)
         {
             case Phase.Setup:game.Begin();break;
-            case Phase.Orders:game.ResolveOrders();break;
+            case Phase.Orders:
+                game.ResolveOrders();
+                showOrderResults=game.state.orderResults!=null && game.state.orderResults.Count>0;
+                orderScroll=Vector2.zero;
+                break;
             case Phase.Reform:if(!game.FinishReform())notice="Move every Norman unit to a legal reform hex first.";break;
             default:game.Advance();break;
         }
@@ -787,7 +866,7 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-                        showUnits=true;chart="";stackSpread.Clear();hoveredHex="";
+                        showUnits=true;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
                     catch(Exception ex){notice="Load failed: "+ex.Message;}
@@ -830,9 +909,206 @@ public sealed class HastingsGame : MonoBehaviour
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-        showUnits=true;chart="";stackSpread.Clear();hoveredHex="";
+        showUnits=true;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
         lastMapWidth=0;scale=0;fullMapMode=false;
     }
+    private void DrawOrderResults()
+    {
+        if(game==null || game.state.orderResults==null || game.state.orderResults.Count==0)
+        {showOrderResults=false;return;}
+        orderScale=Mathf.Clamp(Screen.height/1000f,1f,1.55f);
+        float u=orderScale;
+        orderTitle.fontSize=Mathf.RoundToInt(28*u);
+        orderSubtitle.fontSize=Mathf.RoundToInt(15*u);
+        orderSection.fontSize=Mathf.RoundToInt(17*u);
+        orderCardTitle.fontSize=Mathf.RoundToInt(20*u);
+        orderRoll.fontSize=Mathf.RoundToInt(13*u);
+        orderType.fontSize=Mathf.RoundToInt(11*u);
+        orderName.fontSize=Mathf.RoundToInt(17*u);
+        orderText.fontSize=Mathf.RoundToInt(13*u);
+        orderEffectHeading.fontSize=Mathf.RoundToInt(12*u);
+        orderEffectValue.fontSize=Mathf.RoundToInt(12*u);
+        orderEffectDetail.fontSize=Mathf.RoundToInt(12*u);
+        orderEffectWarning.fontSize=orderEffectDetail.fontSize;
+        orderCard.padding=new RectOffset(Mathf.RoundToInt(18*u),Mathf.RoundToInt(18*u),
+            Mathf.RoundToInt(14*u),Mathf.RoundToInt(16*u));
+        orderCard.margin=new RectOffset(0,0,0,Mathf.RoundToInt(10*u));
+        orderRoll.padding=new RectOffset(Mathf.RoundToInt(10*u),Mathf.RoundToInt(10*u),
+            Mathf.RoundToInt(5*u),Mathf.RoundToInt(5*u));
+        orderEffect.padding=new RectOffset(Mathf.RoundToInt(11*u),Mathf.RoundToInt(11*u),
+            Mathf.RoundToInt(9*u),Mathf.RoundToInt(9*u));
+        orderEffectValue.padding=new RectOffset(Mathf.RoundToInt(8*u),Mathf.RoundToInt(8*u),
+            Mathf.RoundToInt(4*u),Mathf.RoundToInt(4*u));
+
+        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.12f,.09f,.06f,.68f));
+        float width=Mathf.Min(Screen.width-40f,1240f*u);
+        float height=Mathf.Min(Screen.height-40f,900f*u);
+        var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
+        Fill(rect,new Color(.94f,.90f,.81f));
+        Fill(new Rect(rect.x,rect.y,rect.width,66*u),new Color(.60f,.21f,.16f));
+        GUI.BeginGroup(rect);
+        GUI.Label(new Rect(27*u,17*u,width-210*u,42*u),"BATTLE ORDERS",orderTitle);
+        if(GUI.Button(new Rect(width-120*u,18*u,94*u,34*u),"Close  ×",panelLink))
+        {showOrderResults=false;GUI.EndGroup();return;}
+        GUI.Label(new Rect(30*u,76*u,width-60*u,48*u),
+            "Each contingent rolled 2d6 under its chosen strategy. Orders govern how its units act; strategy effects accumulate for the assault, and either extreme can impose penalties.",
+            orderSubtitle);
+
+        var contentRect=new Rect(27*u,128*u,width-54*u,height-210*u);
+        GUILayout.BeginArea(contentRect);
+        orderScroll=GUILayout.BeginScrollView(orderScroll);
+        DrawOrderSide("YOUR NORMAN ORDERS",Side.Norman,contentRect.width-22*u);
+        GUILayout.Space(9*u);
+        DrawOrderSide("SAXON ORDERS",Side.Saxon,contentRect.width-22*u);
+        GUILayout.EndScrollView();
+        GUILayout.EndArea();
+
+        string buttonText=game.OptionsPending()?"Choose optional orders":"Continue to Norman fire";
+        if(GUI.Button(new Rect(27*u,height-68*u,width-54*u,48*u),buttonText,panelPrimary))
+            showOrderResults=false;
+        GUI.EndGroup();
+    }
+    private void DrawOrderSide(string heading,Side side,float contentWidth)
+    {
+        float u=orderScale;
+        var results=game.state.orderResults.Where(result=>result.side==side).ToList();
+        if(results.Count==0)return;
+        GUILayout.Label(heading,orderSection,GUILayout.Height(27*u));
+        foreach(var result in results)DrawOrderResultCard(result,contentWidth);
+    }
+    private void DrawOrderResultCard(OrderRollResult result,float contentWidth)
+    {
+        float u=orderScale;
+        var group=game.state.groups.First(g=>g.id==result.group);
+        GUILayout.BeginVertical(orderCard,GUILayout.Width(contentWidth));
+        GUILayout.BeginHorizontal();
+        var oldTitleColor=orderCardTitle.normal.textColor;
+        orderCardTitle.normal.textColor=FactionColor(result.group,result.side);
+        GUILayout.Label(result.group.ToUpperInvariant(),orderCardTitle,GUILayout.Height(31*u));
+        orderCardTitle.normal.textColor=oldTitleColor;
+        GUILayout.FlexibleSpace();
+        GUILayout.Label(result.strategy.ToString().ToUpperInvariant()+"   ·   2D6: "+result.roll,
+            orderRoll,GUILayout.Height(31*u));
+        GUILayout.EndHorizontal();
+        GUILayout.Space(5*u);
+        GUILayout.BeginHorizontal();
+        float columnWidth=(contentWidth-58*u)/(result.hasKnights?2f:1f);
+        DrawOrderColumn(result,"FOOT",false,group.footOptional,columnWidth);
+        if(result.hasKnights)
+        {
+            GUILayout.Space(12*u);
+            DrawOrderColumn(result,"KNIGHTS",true,group.knightOptional,columnWidth);
+        }
+        GUILayout.EndHorizontal();
+        GUILayout.Space(8*u);
+        GUILayout.BeginVertical(orderEffect);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("STRATEGY EFFECT",orderEffectHeading,GUILayout.Height(30*u));
+        GUILayout.FlexibleSpace();
+        GUILayout.Label(Signed(result.effectChange)+"  THIS TURN",orderEffectValue,
+            GUILayout.Width(128*u),GUILayout.Height(30*u));
+        GUILayout.Space(7*u);
+        GUILayout.Label(Signed(result.totalEffect)+"  TOTAL",orderEffectValue,
+            GUILayout.Width(108*u),GUILayout.Height(30*u));
+        GUILayout.EndHorizontal();
+        GUILayout.Space(5*u);
+        bool penalty=result.totalEffect<=-7 || result.totalEffect>=5;
+        GUILayout.Label(EffectExplanation(result.totalEffect),
+            penalty?orderEffectWarning:orderEffectDetail);
+        GUILayout.EndVertical();
+        GUILayout.EndVertical();
+    }
+    private void DrawOrderColumn(OrderRollResult result,string unitKind,bool knight,
+        bool choicePending,float width)
+    {
+        float u=orderScale;
+        bool optional=knight?result.knightOptional:result.footOptional;
+        bool continued=knight?result.knightContinued:result.footContinued;
+        int duration=knight?result.knightDuration:result.footDuration;
+        Order order=knight?result.knightOrder:result.footOrder;
+        GUILayout.BeginHorizontal(GUILayout.Width(width));
+        var counter=OrderCounterTexture(result,knight);
+        if(counter!=null)
+        {
+            GUILayout.Label(counter,GUILayout.Width(76*u),GUILayout.Height(76*u));
+            GUILayout.Space(10*u);
+        }
+        GUILayout.BeginVertical();
+        GUILayout.Label(unitKind,orderType,GUILayout.Height(18*u));
+        GUILayout.Label(choicePending?"CHOOSE AN ORDER":OrderDisplay(order),orderName,
+            GUILayout.Height(27*u));
+        string timing=choicePending?"Optional result · your choice is required":
+            optional?(result.side==Side.Norman?"Optional result · your selected order":
+                "Optional result · Saxon AI selected this order"):
+            continued?"Continues from last turn · "+duration+" turn remaining":
+            duration>1?"Remains in effect for "+duration+" turns":"Applies this turn";
+        GUILayout.Label(timing,orderText);
+        GUILayout.Space(3*u);
+        GUILayout.Label(choicePending?
+            (knight?"Choose Hold, Advance, or Charge in the side panel.":
+                "Choose Shield Wall, Fire in Place, or Advance in the side panel."):
+            OrderDescription(order),orderText);
+        GUILayout.EndVertical();
+        GUILayout.EndHorizontal();
+    }
+    private Texture2D OrderCounterTexture(OrderRollResult result,bool knight)
+    {
+        string path;
+        if(result.side==Side.Norman)
+            path="Art/Counters/Normans/"+result.group+"_"+(knight?"Cavalry":"Infantry");
+        else
+        {
+            var unit=game.state.units.FirstOrDefault(candidate=>candidate.side==Side.Saxon &&
+                candidate.group==result.group && candidate.status!=Status.Eliminated &&
+                !UnitTypes.Get(candidate).leader);
+            if(unit==null)return null;
+            path="Art/Counters/Saxons/"+UnitTypes.Get(unit).art;
+        }
+        Texture2D texture;
+        if(!counters.TryGetValue(path,out texture))
+        {texture=Resources.Load<Texture2D>(path);counters[path]=texture;}
+        return texture;
+    }
+    private static Color FactionColor(string group,Side side)
+    {
+        if(side==Side.Saxon)return new Color(.48f,.31f,.08f);
+        if(group=="Breton")return new Color(.18f,.40f,.20f);
+        if(group=="Franco-Flemish")return new Color(.13f,.34f,.52f);
+        return new Color(.60f,.16f,.12f);
+    }
+    private static string OrderDisplay(Order order)
+    {
+        switch(order)
+        {
+            case Order.ShieldWall:return "SHIELD WALL";
+            case Order.FireInPlace:return "FIRE IN PLACE";
+            case Order.AttackPursue:return "ATTACK & PURSUE";
+            default:return order.ToString().ToUpperInvariant();
+        }
+    }
+    private static string OrderDescription(Order order)
+    {
+        switch(order)
+        {
+            case Order.ShieldWall:return "Uses shield-wall combat values; may retreat one hex; cannot react. Bowmen fire in place.";
+            case Order.FireInPlace:return "May fire and fight normally; may advance or retreat one hex; reaction is allowed.";
+            case Order.Advance:return "Normal movement and combat. Movement is voluntary.";
+            case Order.AttackPursue:return "Must close with the enemy; cannot react; disruptions inflicted become routs; must pursue.";
+            case Order.Hold:return "Uses normal knight combat strength; may retreat one hex; reaction is allowed.";
+            case Order.Charge:return "6 MP and must close with the enemy. A legal charge gains +1 attack (+2 downhill), turns disruption into rout, and requires pursuit and a morale check.";
+            default:return "";
+        }
+    }
+    private static string EffectExplanation(int effect)
+    {
+        if(effect<=-8)return "Morale rating worsens one level, and all morale rolls receive +1.";
+        if(effect<=-7)return "All morale rolls receive +1.";
+        if(effect>=11)return "Movement is reduced by 2 MP, with a one-column penalty in melee and missile combat.";
+        if(effect>=5)return "Movement is reduced by 1 MP.";
+        return "No penalty at this level.";
+    }
+    private static string Signed(int value)
+    {return value>0?"+"+value:value.ToString();}
     private void DrawChart()
     {
         chartScale=Mathf.Clamp(Screen.height/1080f,1f,1.8f);

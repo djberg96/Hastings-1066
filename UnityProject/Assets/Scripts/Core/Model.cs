@@ -56,6 +56,18 @@ namespace Hastings
         public string hex;
         public Side owner;
     }
+    [Serializable] public class OrderRollResult
+    {
+        public string group;
+        public Side side;
+        public Strategy strategy;
+        public int roll;
+        public Order footOrder, knightOrder;
+        public int footDuration, knightDuration;
+        public int effectChange, totalEffect;
+        public bool hasKnights, footOptional, knightOptional;
+        public bool footContinued, knightContinued;
+    }
     [Serializable] public class GameState
     {
         public int saveVersion = 1;
@@ -65,6 +77,7 @@ namespace Hastings
         public List<UnitState> units = new List<UnitState>();
         public List<GroupState> groups = new List<GroupState>();
         public List<RoadState> road = new List<RoadState>();
+        public List<OrderRollResult> orderResults = new List<OrderRollResult>();
         public int normanCasualties, saxonCasualties;
         public string result = "";
         public List<string> log = new List<string>();

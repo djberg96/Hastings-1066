@@ -116,10 +116,15 @@ public static class ProjectChecks
         }
         var engine=new GameEngine(board,state);engine.Begin();engine.ResolveOrders();
         Check(state.phase==Phase.NormanFire,"Opening order phase did not advance");
+        Check(state.orderResults.Count==6 &&
+            state.orderResults.Count(r=>r.side==Side.Norman)==3 &&
+            state.orderResults.All(r=>r.roll>=2 && r.roll<=12),
+            "Order roll results were not retained for the player summary");
         var json=JsonUtility.ToJson(state);
         var restored=JsonUtility.FromJson<GameState>(json);
         Check(restored.randomState==state.randomState && restored.units.Count==state.units.Count &&
-              restored.phase==state.phase,"Save state round trip failed");
+              restored.phase==state.phase && restored.orderResults.Count==state.orderResults.Count,
+              "Save state round trip failed");
         var restoredEngine=new GameEngine(board,restored);
         var originalMoves=engine.LegalMoves(state.units.First(u=>u.type=="BK"))
             .Keys.OrderBy(x=>x).ToArray();

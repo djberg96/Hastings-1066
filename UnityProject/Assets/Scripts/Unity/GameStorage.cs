@@ -38,6 +38,7 @@ public static class GameStorage
     {
         var path=PathFor(slot);var state=JsonUtility.FromJson<GameState>(File.ReadAllText(path));
         if(state==null||state.saveVersion!=1)throw new InvalidDataException("Unsupported save version");
+        if(state.orderResults==null)state.orderResults=new System.Collections.Generic.List<OrderRollResult>();
         return state;
     }
 }
