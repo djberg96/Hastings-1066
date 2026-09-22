@@ -15,15 +15,15 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly List<string> selectedTargets=new List<string>();
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
-    private float chartScale=1f;
+    private float panelScale=1f, chartScale=1f;
     private bool showMenu=true, showHigh, showHelp, fullMapMode;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
     private Vector2 panelScroll, chartScroll, menuScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
-        menuTitle, menuSubtitle, menuButton, menuTextField,
+        menuTitle, menuSubtitle, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
         panelCard, panelButton, panelPrimary, panelLink,
-        chartTitle, chartSection, chartHeader, chartCell, chartMuted, chartNote,
+        chartTitle, chartSection, chartHeader, chartRowHeader, chartCell, chartMuted, chartNote,
         chartTab, chartTabSelected, chartClose;
     private string hoveredHex="";
 
@@ -45,7 +45,8 @@ public sealed class HastingsGame : MonoBehaviour
         fullMapMode=false;
         pan-=viewDirection.normalized*Mathf.Max(360f,Screen.height*.65f)*Time.unscaledDeltaTime;
     }
-    private static float PanelWidth() { return Mathf.Clamp(Screen.width*.21f,390f,600f); }
+    private static float PanelWidth() { return Mathf.Clamp(Screen.width*.24f,500f,900f); }
+    private static float PanelUiScale() { return Mathf.Clamp(Screen.height/900f,1.2f,1.8f); }
     private void OnGUI()
     {
         if(board==null||map==null){GUI.Label(new Rect(20,20,700,40),"Hastings assets are missing. Run Tools/generate_assets.py.");return;}
@@ -70,46 +71,59 @@ public sealed class HastingsGame : MonoBehaviour
                 alignment=TextAnchor.MiddleCenter};
             menuTitle.normal.textColor=new Color(.25f,.12f,.08f);
             menuSubtitle.normal.textColor=new Color(.35f,.21f,.13f);
-            menuButton=new GUIStyle(GUI.skin.button){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.026f),23,37),
+            menuButton=new GUIStyle(GUI.skin.button){fontSize=30,
                 fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleCenter,
                 padding=new RectOffset(18,18,10,10)};
-            menuButton.normal.background=SolidTexture(new Color(.27f,.12f,.09f));
-            menuButton.hover.background=SolidTexture(new Color(.43f,.20f,.13f));
-            menuButton.active.background=SolidTexture(new Color(.17f,.08f,.06f));
-            menuButton.normal.textColor=new Color(.99f,.93f,.77f);
-            menuButton.hover.textColor=Color.white;
-            menuButton.active.textColor=Color.white;
+            menuButton.normal.background=SolidTexture(new Color(.82f,.73f,.59f));
+            menuButton.hover.background=SolidTexture(new Color(.91f,.81f,.64f));
+            menuButton.active.background=SolidTexture(new Color(.74f,.63f,.49f));
+            menuButton.normal.textColor=new Color(.21f,.15f,.11f);
+            menuButton.hover.textColor=menuButton.normal.textColor;
+            menuButton.active.textColor=menuButton.normal.textColor;
+            menuPrimary=ButtonStyle(30,new Color(.60f,.21f,.16f),new Color(.73f,.27f,.20f),
+                new Color(.99f,.96f,.88f));
+            menuPrimary.fontStyle=FontStyle.Bold;
             menuTextField=new GUIStyle(GUI.skin.textField){fontSize=menuButton.fontSize,
                 alignment=TextAnchor.MiddleCenter};
-            panelTitle=LabelStyle(27,true,new Color(.96f,.94f,.87f));
-            panelStatus=LabelStyle(17,false,new Color(.78f,.82f,.79f));
-            panelSection=LabelStyle(13,true,new Color(.89f,.67f,.38f));
-            panelBody=LabelStyle(16,false,new Color(.91f,.93f,.88f));
-            panelMuted=LabelStyle(14,false,new Color(.69f,.75f,.73f));
-            panelValue=LabelStyle(22,true,new Color(.96f,.94f,.87f));
+            panelTitle=LabelStyle(27,true,new Color(.18f,.13f,.10f));
+            panelStatus=LabelStyle(17,false,new Color(.38f,.30f,.23f));
+            panelSection=LabelStyle(13,true,new Color(.56f,.19f,.14f));
+            panelBody=LabelStyle(16,false,new Color(.20f,.16f,.12f));
+            panelMuted=LabelStyle(14,false,new Color(.36f,.30f,.24f));
+            panelValue=LabelStyle(22,true,new Color(.29f,.18f,.13f));
             panelCard=new GUIStyle(GUI.skin.box){padding=new RectOffset(15,15,13,15),
                 margin=new RectOffset(0,0,0,12)};
-            panelCard.normal.background=SolidTexture(new Color(.15f,.20f,.21f));
-            panelButton=ButtonStyle(15,new Color(.23f,.30f,.31f),new Color(.30f,.39f,.39f),
-                new Color(.93f,.95f,.90f));
-            panelPrimary=ButtonStyle(18,new Color(.84f,.62f,.34f),new Color(.97f,.74f,.42f),
-                new Color(.16f,.12f,.09f));
+            panelCard.normal.background=SolidTexture(new Color(.98f,.965f,.91f));
+            panelButton=ButtonStyle(15,new Color(.82f,.75f,.62f),new Color(.91f,.82f,.67f),
+                new Color(.19f,.14f,.11f));
+            panelPrimary=ButtonStyle(18,new Color(.60f,.21f,.16f),new Color(.73f,.27f,.20f),
+                new Color(.99f,.97f,.90f));
             panelPrimary.fontStyle=FontStyle.Bold;
-            panelLink=ButtonStyle(14,new Color(.18f,.25f,.26f),new Color(.25f,.34f,.35f),
-                new Color(.83f,.87f,.83f));
-            chartTitle=LabelStyle(28,true,new Color(.96f,.94f,.87f));
-            chartSection=LabelStyle(19,true,new Color(.89f,.67f,.38f));
+            panelLink=ButtonStyle(14,new Color(.92f,.88f,.78f),new Color(.83f,.76f,.62f),
+                new Color(.27f,.19f,.14f));
+            chartTitle=LabelStyle(28,true,new Color(.99f,.96f,.88f));
+            chartSection=LabelStyle(19,true,new Color(.54f,.20f,.15f));
             chartHeader=LabelStyle(15,true,new Color(.96f,.94f,.87f));
             chartHeader.alignment=TextAnchor.MiddleCenter;
-            chartCell=LabelStyle(16,false,new Color(.94f,.96f,.91f));
+            chartRowHeader=LabelStyle(15,true,new Color(.27f,.19f,.14f));
+            chartRowHeader.alignment=TextAnchor.MiddleCenter;
+            chartCell=LabelStyle(16,false,new Color(.23f,.17f,.13f));
             chartCell.alignment=TextAnchor.MiddleCenter;
             chartMuted=new GUIStyle(chartCell);
-            chartMuted.normal.textColor=new Color(.60f,.68f,.66f);
-            chartNote=LabelStyle(16,false,new Color(.78f,.84f,.80f));
+            chartMuted.normal.textColor=new Color(.59f,.53f,.43f);
+            chartNote=LabelStyle(16,false,new Color(.32f,.25f,.19f));
             chartTab=new GUIStyle(panelButton);
             chartTabSelected=new GUIStyle(panelPrimary);
             chartClose=new GUIStyle(panelLink);
         }
+        panelScale=PanelUiScale();
+        UpdatePanelStyles();
+        float menuScale=Mathf.Clamp(Screen.height/900f,1.1f,1.8f);
+        menuTitle.fontSize=Mathf.RoundToInt(52*menuScale);
+        menuSubtitle.fontSize=Mathf.RoundToInt(22*menuScale);
+        menuButton.fontSize=Mathf.RoundToInt(24*menuScale);
+        menuPrimary.fontSize=menuButton.fontSize;
+        menuTextField.fontSize=menuButton.fontSize;
         if(game==null)
         {
             showMenu=true;
@@ -165,6 +179,23 @@ public sealed class HastingsGame : MonoBehaviour
         style.hover.textColor=textColor;
         style.active.textColor=textColor;
         return style;
+    }
+    private void UpdatePanelStyles()
+    {
+        float p=panelScale;
+        panelTitle.fontSize=Mathf.RoundToInt(27*p);
+        panelStatus.fontSize=Mathf.RoundToInt(17*p);
+        panelSection.fontSize=Mathf.RoundToInt(13*p);
+        panelBody.fontSize=Mathf.RoundToInt(16*p);
+        panelMuted.fontSize=Mathf.RoundToInt(14*p);
+        panelValue.fontSize=Mathf.RoundToInt(22*p);
+        panelButton.fontSize=Mathf.RoundToInt(15*p);
+        panelPrimary.fontSize=Mathf.RoundToInt(18*p);
+        panelLink.fontSize=Mathf.RoundToInt(14*p);
+        int side=Mathf.RoundToInt(15*p),top=Mathf.RoundToInt(13*p);
+        panelCard.padding=new RectOffset(side,side,top,Mathf.RoundToInt(15*p));
+        panelCard.margin=new RectOffset(0,0,0,Mathf.RoundToInt(12*p));
+        GUI.skin.toggle.fontSize=panelBody.fontSize;
     }
     private static void Fill(Rect rect,Color color)
     {
@@ -354,39 +385,41 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawPanel(Rect region)
     {
-        Fill(region,new Color(.095f,.13f,.14f));
-        Fill(new Rect(region.x,region.y,4,region.height),new Color(.84f,.62f,.34f));
-        GUILayout.BeginArea(new Rect(region.x+18,14,region.width-36,region.height-28));
-        GUILayout.Label("HASTINGS 1066",panelTitle,GUILayout.Height(34));
+        float p=panelScale;
+        Fill(region,new Color(.90f,.86f,.76f));
+        Fill(new Rect(region.x,region.y,5*p,region.height),new Color(.59f,.22f,.17f));
+        GUILayout.BeginArea(new Rect(region.x+20*p,16*p,region.width-40*p,region.height-32*p));
+        GUILayout.Label("HASTINGS 1066",panelTitle,GUILayout.Height(36*p));
         var s=game.state;
         GUILayout.Label(s.phase==Phase.GameOver?s.result:
-            $"ASSAULT {s.period}   /   TURN {s.turn}   /   {s.phase}",panelStatus,GUILayout.Height(28));
-        GUILayout.Space(7);
+            $"ASSAULT {s.period}   ·   TURN {s.turn}",panelStatus,GUILayout.Height(28*p));
+        GUILayout.Space(8*p);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Menu",panelButton,GUILayout.Height(34)))showMenu=true;
-        if(GUILayout.Button("Focus battle",panelButton,GUILayout.Height(34)))
+        if(GUILayout.Button("Menu",panelButton,GUILayout.Height(42*p)))showMenu=true;
+        if(GUILayout.Button("Focus battle",panelButton,GUILayout.Height(42*p)))
         {fullMapMode=false;lastMapWidth=0;scale=0;}
-        if(GUILayout.Button("Fit map",panelButton,GUILayout.Height(34)))
+        if(GUILayout.Button("Fit map",panelButton,GUILayout.Height(42*p)))
         {fullMapMode=true;lastMapWidth=0;}
         GUILayout.EndHorizontal();
-        GUILayout.Space(14);
+        GUILayout.Space(15*p);
         panelScroll=GUILayout.BeginScrollView(panelScroll);
         GUILayout.BeginVertical(panelCard);
-        GUILayout.Label("CURRENT PHASE",panelSection);
+        GUILayout.Label("YOUR NEXT ACTION",panelSection);
+        GUILayout.Label(PhaseLabel(s.phase),panelValue);
         GUILayout.Label(PhasePrompt(s.phase),panelMuted);
         if(s.phase==Phase.Orders)
         {
-            GUILayout.Space(5);
+            GUILayout.Space(5*p);
             foreach(var id in new[]{"Breton","Norman","Franco-Flemish"})
             {
                 var group=s.groups.First(g=>g.id==id);
-                if(GUILayout.Button(id+"  ·  "+group.strategy,panelButton,GUILayout.Height(34)))
+                if(GUILayout.Button(id+"  ·  "+group.strategy,panelButton,GUILayout.Height(40*p)))
                     game.SetStrategy(id,(Strategy)(((int)group.strategy+1)%4));
             }
         }
         if(game.OptionsPending())
         {
-            GUILayout.Space(6);
+            GUILayout.Space(6*p);
             GUILayout.Label("OPTIONAL ORDERS",panelSection);
             foreach(var g in s.groups.Where(g=>g.footOptional||g.knightOptional))
             {
@@ -415,8 +448,8 @@ public sealed class HastingsGame : MonoBehaviour
         {
             string caption=s.phase==Phase.Setup?"Begin battle":s.phase==Phase.Orders?"Roll orders":
                 s.phase==Phase.Reform?"Finish reform":"Finish segment  ·  Space";
-            GUILayout.Space(8);
-            if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(43)))Advance();
+            GUILayout.Space(9*p);
+            if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(54*p)))Advance();
         }
         GUILayout.EndVertical();
         var units=SelectedUnits();
@@ -440,7 +473,7 @@ public sealed class HastingsGame : MonoBehaviour
             if(s.phase==Phase.NormanMelee && selectedTargets.Count>0)
             {
                 GUILayout.Label("Targets: "+string.Join(", ",selectedTargets.ToArray()),panelMuted);
-                if(GUILayout.Button("Resolve selected melee",panelPrimary,GUILayout.Height(38)))
+                if(GUILayout.Button("Resolve selected melee",panelPrimary,GUILayout.Height(45*p)))
                 {
                     var targets=s.units.Where(u=>selectedTargets.Contains(u.id)).ToList();
                     if(!game.Melee(units,targets))notice="Illegal melee group or targets.";
@@ -453,15 +486,15 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("REFERENCE",panelSection);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Melee",panelButton,GUILayout.Height(34)))OpenChart("melee");
-        if(GUILayout.Button("Missile",panelButton,GUILayout.Height(34)))OpenChart("missile");
-        if(GUILayout.Button("Morale",panelButton,GUILayout.Height(34)))OpenChart("morale");
+        if(GUILayout.Button("Melee",panelButton,GUILayout.Height(42*p)))OpenChart("melee");
+        if(GUILayout.Button("Missile",panelButton,GUILayout.Height(42*p)))OpenChart("missile");
+        if(GUILayout.Button("Morale",panelButton,GUILayout.Height(42*p)))OpenChart("morale");
         GUILayout.EndHorizontal();
-        GUILayout.Space(4);
+        GUILayout.Space(5*p);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Rulebook PDF",panelLink,GUILayout.Height(31)))
+        if(GUILayout.Button("Rulebook PDF",panelLink,GUILayout.Height(38*p)))
             Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
-        if(GUILayout.Button(showHelp?"Hide controls":"Controls",panelLink,GUILayout.Height(31)))showHelp=!showHelp;
+        if(GUILayout.Button(showHelp?"Hide controls":"Controls",panelLink,GUILayout.Height(38*p)))showHelp=!showHelp;
         GUILayout.EndHorizontal();
         if(showHelp)GUILayout.Label("Select a Norman counter. Alt-click a stacked leader; Shift-click to add units or melee targets. Click a highlighted hex to move or an enemy to attack. WASD or right drag pans; the wheel zooms. Q/E changes facing. Space ends a segment.",panelMuted);
         GUILayout.EndVertical();
@@ -482,6 +515,21 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+    private static string PhaseLabel(Phase phase)
+    {
+        switch(phase)
+        {
+            case Phase.Setup:return "Setup";
+            case Phase.Orders:return "Choose orders";
+            case Phase.NormanMove:return "Norman movement";
+            case Phase.NormanFire:return "Norman missile fire";
+            case Phase.NormanDefenseFire:return "Norman defensive fire";
+            case Phase.NormanMelee:return "Norman melee";
+            case Phase.Reform:return "Reform";
+            case Phase.GameOver:return "Battle ended";
+            default:return UpperFirst(phase.ToString());
+        }
     }
     private static string PhasePrompt(Phase phase)
     {
@@ -525,8 +573,11 @@ public sealed class HastingsGame : MonoBehaviour
             GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);
             GUI.color=Color.white;
         }
-        float width=Mathf.Clamp(Screen.width*.50f,600f,920f);
-        float height=Mathf.Clamp(Screen.height*.78f,570f,920f);
+        float width=Mathf.Clamp(Screen.width*.47f,620f,1250f);
+        float preferredHeight=game==null && menuPage=="main"?
+            Mathf.Clamp(Screen.height*.45f,540f,760f):
+            Mathf.Clamp(Screen.height*.62f,650f,1060f);
+        float height=Mathf.Min(Screen.height-30f,preferredHeight);
         var rect=new Rect((Screen.width-width)/2,(Screen.height-height)/2,width,height);
         GUI.color=new Color(.22f,.10f,.07f,.98f);
         GUI.DrawTexture(rect,Texture2D.whiteTexture);
@@ -534,7 +585,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.DrawTexture(new Rect(rect.x+5,rect.y+5,rect.width-10,rect.height-10),Texture2D.whiteTexture);
         GUI.color=Color.white;
         float inset=Mathf.Clamp(width*.08f,35,80);
-        float buttonHeight=Mathf.Clamp(Screen.height*.055f,50,78);
+        float buttonHeight=Mathf.Clamp(Screen.height*.055f,54,96);
         GUILayout.BeginArea(new Rect(rect.x+inset,rect.y+25,rect.width-2*inset,rect.height-50));
         GUILayout.Label("HASTINGS 1066",menuTitle,GUILayout.Height(Mathf.Clamp(Screen.height*.10f,75,115)));
         GUILayout.Label(menuPage=="main"?"The Battle for Senlac Hill":
@@ -545,10 +596,10 @@ public sealed class HastingsGame : MonoBehaviour
         {
             if(game!=null)
             {
-                if(GUILayout.Button("Resume Battle",menuButton,GUILayout.Height(buttonHeight)))showMenu=false;
+                if(GUILayout.Button("Resume Battle",menuPrimary,GUILayout.Height(buttonHeight)))showMenu=false;
                 GUILayout.Space(12);
             }
-            if(GUILayout.Button("New Game",menuButton,GUILayout.Height(buttonHeight)))
+            if(GUILayout.Button("New Game",game==null?menuPrimary:menuButton,GUILayout.Height(buttonHeight)))
             {if(game==null)StartNewGame();else menuPage="newConfirm";}
             GUILayout.Space(12);
             if(game!=null)
@@ -604,7 +655,7 @@ public sealed class HastingsGame : MonoBehaviour
         {
             GUILayout.Label("Unsaved progress in the current battle will be lost.",menuSubtitle);
             GUILayout.FlexibleSpace();
-            if(GUILayout.Button("Start New Game",menuButton,GUILayout.Height(buttonHeight)))StartNewGame();
+            if(GUILayout.Button("Start New Game",menuPrimary,GUILayout.Height(buttonHeight)))StartNewGame();
             GUILayout.Space(12);
             if(GUILayout.Button("Cancel",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
@@ -623,6 +674,7 @@ public sealed class HastingsGame : MonoBehaviour
         chartTitle.fontSize=Mathf.RoundToInt(28*chartScale);
         chartSection.fontSize=Mathf.RoundToInt(19*chartScale);
         chartHeader.fontSize=Mathf.RoundToInt(15*chartScale);
+        chartRowHeader.fontSize=chartHeader.fontSize;
         chartCell.fontSize=Mathf.RoundToInt(16*chartScale);
         chartMuted.fontSize=chartCell.fontSize;
         chartNote.fontSize=chartCell.fontSize;
@@ -630,12 +682,12 @@ public sealed class HastingsGame : MonoBehaviour
         chartTabSelected.fontSize=Mathf.RoundToInt(18*chartScale);
         chartClose.fontSize=Mathf.RoundToInt(14*chartScale);
         float u=chartScale;
-        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.02f,.04f,.04f,.82f));
+        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.12f,.09f,.06f,.65f));
         float width=Mathf.Min(Screen.width-40f,1180f*u);
         float height=Mathf.Min(Screen.height-40f,720f*u);
         var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
-        Fill(rect,new Color(.105f,.15f,.16f));
-        Fill(new Rect(rect.x,rect.y,rect.width,4*u),new Color(.84f,.62f,.34f));
+        Fill(rect,new Color(.95f,.92f,.84f));
+        Fill(new Rect(rect.x,rect.y,rect.width,56*u),new Color(.60f,.21f,.16f));
         GUI.BeginGroup(rect);
         GUI.Label(new Rect(25*u,18*u,width-180*u,38*u),"BATTLE REFERENCE",chartTitle);
         if(GUI.Button(new Rect(width-116*u,20*u,90*u,32*u),"Close  ×",chartClose))
@@ -672,7 +724,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.Label(new Rect(0,y,width,32*u),title,chartSection);
         y+=38*u;
         float firstWidth=92*u,rowHeight=39*u,cellWidth=(width-firstWidth)/columns.Length;
-        Fill(new Rect(0,y,width,rowHeight),new Color(.24f,.33f,.34f));
+        Fill(new Rect(0,y,width,rowHeight),new Color(.55f,.23f,.17f));
         GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowHeading,chartHeader);
         for(int col=0;col<columns.Length;col++)
             GUI.Label(new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight),columns[col],chartHeader);
@@ -680,15 +732,15 @@ public sealed class HastingsGame : MonoBehaviour
         for(int row=0;row<rows;row++)
         {
             Fill(new Rect(0,y,width,rowHeight),row%2==0?
-                new Color(.17f,.23f,.24f):new Color(.14f,.19f,.20f));
-            GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowName(row),chartHeader);
+                new Color(.99f,.975f,.93f):new Color(.92f,.89f,.81f));
+            GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowName(row),chartRowHeader);
             for(int col=0;col<columns.Length;col++)
             {
                 string result=value(row,col);
                 var cell=new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight);
-                if(result=="R")Fill(cell,new Color(.39f,.19f,.18f));
-                else if(result=="D")Fill(cell,new Color(.39f,.29f,.17f));
-                else if(result=="M")Fill(cell,new Color(.18f,.34f,.35f));
+                if(result=="R")Fill(cell,new Color(.91f,.69f,.65f));
+                else if(result=="D")Fill(cell,new Color(.94f,.82f,.57f));
+                else if(result=="M")Fill(cell,new Color(.72f,.85f,.82f));
                 GUI.Label(cell,result,result=="-"||result=="—"?chartMuted:chartCell);
             }
             y+=rowHeight;
@@ -699,7 +751,7 @@ public sealed class HastingsGame : MonoBehaviour
     {
         float u=chartScale;
         float noteHeight=chartNote.CalcHeight(new GUIContent(text),width-28*u)+20*u;
-        Fill(new Rect(0,y,width,noteHeight),new Color(.19f,.26f,.27f));
+        Fill(new Rect(0,y,width,noteHeight),new Color(.88f,.83f,.71f));
         GUI.Label(new Rect(14*u,y+10*u,width-28*u,noteHeight-20*u),text,chartNote);
         return y+noteHeight+16*u;
     }
