@@ -15,11 +15,16 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly List<string> selectedTargets=new List<string>();
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
+    private float chartScale=1f;
     private bool showMenu=true, showHigh, showHelp, fullMapMode;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
-    private Vector2 logScroll, chartScroll, menuScroll;
-    private GUIStyle heading, small, hexNumber, hexNumberShadow,
-        menuTitle, menuSubtitle, menuButton, menuTextField;
+    private Vector2 panelScroll, chartScroll, menuScroll;
+    private GUIStyle small, hexNumber, hexNumberShadow,
+        menuTitle, menuSubtitle, menuButton, menuTextField,
+        panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
+        panelCard, panelButton, panelPrimary, panelLink,
+        chartTitle, chartSection, chartHeader, chartCell, chartMuted, chartNote,
+        chartTab, chartTabSelected, chartClose;
     private string hoveredHex="";
 
     private void Awake()
@@ -50,9 +55,8 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.skin.button.padding=new RectOffset(10,10,8,8);
         GUI.skin.toggle.fontSize=body;
         GUI.skin.textField.fontSize=body;
-        if(heading==null)
+        if(panelTitle==null)
         {
-            heading=new GUIStyle(GUI.skin.label){fontSize=body+8,fontStyle=FontStyle.Bold,wordWrap=true};
             small=new GUIStyle(GUI.skin.label){fontSize=body-3,wordWrap=true};
             hexNumber=new GUIStyle(GUI.skin.label){alignment=TextAnchor.MiddleCenter,
                 fontStyle=FontStyle.Normal,wordWrap=false,clipping=TextClipping.Clip,
@@ -77,6 +81,34 @@ public sealed class HastingsGame : MonoBehaviour
             menuButton.active.textColor=Color.white;
             menuTextField=new GUIStyle(GUI.skin.textField){fontSize=menuButton.fontSize,
                 alignment=TextAnchor.MiddleCenter};
+            panelTitle=LabelStyle(27,true,new Color(.96f,.94f,.87f));
+            panelStatus=LabelStyle(17,false,new Color(.78f,.82f,.79f));
+            panelSection=LabelStyle(13,true,new Color(.89f,.67f,.38f));
+            panelBody=LabelStyle(16,false,new Color(.91f,.93f,.88f));
+            panelMuted=LabelStyle(14,false,new Color(.69f,.75f,.73f));
+            panelValue=LabelStyle(22,true,new Color(.96f,.94f,.87f));
+            panelCard=new GUIStyle(GUI.skin.box){padding=new RectOffset(15,15,13,15),
+                margin=new RectOffset(0,0,0,12)};
+            panelCard.normal.background=SolidTexture(new Color(.15f,.20f,.21f));
+            panelButton=ButtonStyle(15,new Color(.23f,.30f,.31f),new Color(.30f,.39f,.39f),
+                new Color(.93f,.95f,.90f));
+            panelPrimary=ButtonStyle(18,new Color(.84f,.62f,.34f),new Color(.97f,.74f,.42f),
+                new Color(.16f,.12f,.09f));
+            panelPrimary.fontStyle=FontStyle.Bold;
+            panelLink=ButtonStyle(14,new Color(.18f,.25f,.26f),new Color(.25f,.34f,.35f),
+                new Color(.83f,.87f,.83f));
+            chartTitle=LabelStyle(28,true,new Color(.96f,.94f,.87f));
+            chartSection=LabelStyle(19,true,new Color(.89f,.67f,.38f));
+            chartHeader=LabelStyle(15,true,new Color(.96f,.94f,.87f));
+            chartHeader.alignment=TextAnchor.MiddleCenter;
+            chartCell=LabelStyle(16,false,new Color(.94f,.96f,.91f));
+            chartCell.alignment=TextAnchor.MiddleCenter;
+            chartMuted=new GUIStyle(chartCell);
+            chartMuted.normal.textColor=new Color(.60f,.68f,.66f);
+            chartNote=LabelStyle(16,false,new Color(.78f,.84f,.80f));
+            chartTab=new GUIStyle(panelButton);
+            chartTabSelected=new GUIStyle(panelPrimary);
+            chartClose=new GUIStyle(panelLink);
         }
         if(game==null)
         {
@@ -115,6 +147,32 @@ public sealed class HastingsGame : MonoBehaviour
         var result=new Texture2D(1,1,TextureFormat.RGBA32,false);
         result.SetPixel(0,0,color);result.Apply();return result;
     }
+    private static GUIStyle LabelStyle(int size,bool bold,Color color)
+    {
+        var style=new GUIStyle(GUI.skin.label){fontSize=size,fontStyle=bold?FontStyle.Bold:FontStyle.Normal,
+            wordWrap=true};
+        style.normal.textColor=color;
+        return style;
+    }
+    private static GUIStyle ButtonStyle(int size,Color background,Color hover,Color textColor)
+    {
+        var style=new GUIStyle(GUI.skin.button){fontSize=size,alignment=TextAnchor.MiddleCenter,
+            padding=new RectOffset(8,8,5,5)};
+        style.normal.background=SolidTexture(background);
+        style.hover.background=SolidTexture(hover);
+        style.active.background=SolidTexture(background*.85f);
+        style.normal.textColor=textColor;
+        style.hover.textColor=textColor;
+        style.active.textColor=textColor;
+        return style;
+    }
+    private static void Fill(Rect rect,Color color)
+    {
+        var old=GUI.color;
+        GUI.color=color;
+        GUI.DrawTexture(rect,Texture2D.whiteTexture);
+        GUI.color=old;
+    }
     private void DrawTitleBackground()
     {
         if(titleBackground!=null)
@@ -131,7 +189,8 @@ public sealed class HastingsGame : MonoBehaviour
         if(e.type==EventType.KeyDown)
         {
             if(e.keyCode==KeyCode.Escape)
-            {if(showMenu && menuPage!="main")menuPage="main";else showMenu=!showMenu;e.Use();}
+            {if(chart!="")chart="";else if(showMenu && menuPage!="main")menuPage="main";
+                else showMenu=!showMenu;e.Use();}
             else if(e.keyCode==KeyCode.Space && !showMenu){Advance();e.Use();}
             else if((e.keyCode==KeyCode.Q||e.keyCode==KeyCode.E) && game!=null && selected.Count==1)
             {
@@ -295,110 +354,154 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawPanel(Rect region)
     {
-        GUI.color=new Color(.13f,.17f,.18f);
-        GUI.DrawTexture(region,Texture2D.whiteTexture);
-        GUI.color=Color.white;
-        GUILayout.BeginArea(new Rect(region.x+14,14,region.width-28,region.height-28));
-        GUILayout.Label("HASTINGS 1066",heading);
-        if(game==null){GUILayout.Label("Choose New Game or Load Game from the menu.");
-            if(GUILayout.Button("Menu"))showMenu=true;GUILayout.EndArea();return;}
+        Fill(region,new Color(.095f,.13f,.14f));
+        Fill(new Rect(region.x,region.y,4,region.height),new Color(.84f,.62f,.34f));
+        GUILayout.BeginArea(new Rect(region.x+18,14,region.width-36,region.height-28));
+        GUILayout.Label("HASTINGS 1066",panelTitle,GUILayout.Height(34));
         var s=game.state;
-        GUILayout.Label(s.phase==Phase.GameOver?s.result:$"Assault {s.period} · Turn {s.turn} · {s.phase}",heading);
+        GUILayout.Label(s.phase==Phase.GameOver?s.result:
+            $"ASSAULT {s.period}   /   TURN {s.turn}   /   {s.phase}",panelStatus,GUILayout.Height(28));
+        GUILayout.Space(7);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Menu"))showMenu=true;
-        if(GUILayout.Button("Battle view"))
+        if(GUILayout.Button("Menu",panelButton,GUILayout.Height(34)))showMenu=true;
+        if(GUILayout.Button("Focus battle",panelButton,GUILayout.Height(34)))
         {fullMapMode=false;lastMapWidth=0;scale=0;}
-        if(GUILayout.Button("Full map"))
+        if(GUILayout.Button("Fit map",panelButton,GUILayout.Height(34)))
         {fullMapMode=true;lastMapWidth=0;}
         GUILayout.EndHorizontal();
-        GUILayout.Space(8);
+        GUILayout.Space(14);
+        panelScroll=GUILayout.BeginScrollView(panelScroll);
+        GUILayout.BeginVertical(panelCard);
+        GUILayout.Label("CURRENT PHASE",panelSection);
+        GUILayout.Label(PhasePrompt(s.phase),panelMuted);
         if(s.phase==Phase.Orders)
         {
-            GUILayout.Label("Choose a strategy for each Norman nationality:");
+            GUILayout.Space(5);
             foreach(var id in new[]{"Breton","Norman","Franco-Flemish"})
             {
                 var group=s.groups.First(g=>g.id==id);
-                if(GUILayout.Button(id+": "+group.strategy))
+                if(GUILayout.Button(id+"  ·  "+group.strategy,panelButton,GUILayout.Height(34)))
                     game.SetStrategy(id,(Strategy)(((int)group.strategy+1)%4));
             }
         }
         if(game.OptionsPending())
         {
-            GUILayout.Label("Choose orders for Optional results:");
+            GUILayout.Space(6);
+            GUILayout.Label("OPTIONAL ORDERS",panelSection);
             foreach(var g in s.groups.Where(g=>g.footOptional||g.knightOptional))
             {
                 if(g.footOptional)
                 {
-                    GUILayout.Label(g.id+" foot");GUILayout.BeginHorizontal();
-                    if(GUILayout.Button("Wall"))game.SetOptionalOrder(g.id,false,Order.ShieldWall);
-                    if(GUILayout.Button("Fire"))game.SetOptionalOrder(g.id,false,Order.FireInPlace);
-                    if(GUILayout.Button("Advance"))game.SetOptionalOrder(g.id,false,Order.Advance);
+                    GUILayout.Label(g.id+" foot",panelMuted);GUILayout.BeginHorizontal();
+                    if(GUILayout.Button("Wall",panelButton))game.SetOptionalOrder(g.id,false,Order.ShieldWall);
+                    if(GUILayout.Button("Fire",panelButton))game.SetOptionalOrder(g.id,false,Order.FireInPlace);
+                    if(GUILayout.Button("Advance",panelButton))game.SetOptionalOrder(g.id,false,Order.Advance);
                     GUILayout.EndHorizontal();
                 }
                 if(g.knightOptional)
                 {
-                    GUILayout.Label(g.id+" knights");GUILayout.BeginHorizontal();
-                    if(GUILayout.Button("Hold"))game.SetOptionalOrder(g.id,true,Order.Hold);
-                    if(GUILayout.Button("Advance"))game.SetOptionalOrder(g.id,true,Order.Advance);
-                    if(GUILayout.Button("Charge"))game.SetOptionalOrder(g.id,true,Order.Charge);
+                    GUILayout.Label(g.id+" knights",panelMuted);GUILayout.BeginHorizontal();
+                    if(GUILayout.Button("Hold",panelButton))game.SetOptionalOrder(g.id,true,Order.Hold);
+                    if(GUILayout.Button("Advance",panelButton))game.SetOptionalOrder(g.id,true,Order.Advance);
+                    if(GUILayout.Button("Charge",panelButton))game.SetOptionalOrder(g.id,true,Order.Charge);
                     GUILayout.EndHorizontal();
                 }
             }
         }
         if(s.phase==Phase.NormanFire||s.phase==Phase.NormanDefenseFire)
             showHigh=GUILayout.Toggle(showHigh,"High trajectory bow fire (period II)");
-        var units=SelectedUnits();
-        if(units.Count>0)
+        if(notice!="")GUILayout.Label(notice,panelBody);
+        if(s.phase!=Phase.GameOver)
         {
-            GUILayout.Space(6);GUILayout.Label("Selected: "+string.Join(", ",units.Select(u=>u.id).ToArray()));
+            string caption=s.phase==Phase.Setup?"Begin battle":s.phase==Phase.Orders?"Roll orders":
+                s.phase==Phase.Reform?"Finish reform":"Finish segment  ·  Space";
+            GUILayout.Space(8);
+            if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(43)))Advance();
+        }
+        GUILayout.EndVertical();
+        var units=SelectedUnits();
+        if(units.Count>0 || selectedTargets.Count>0)
+        {
+            GUILayout.BeginVertical(panelCard);
+            GUILayout.Label("SELECTED UNITS",panelSection);
+            if(units.Count>0)GUILayout.Label(string.Join(", ",units.Select(u=>u.id).ToArray()),panelBody);
             foreach(var u in units.Take(3))
             {
                 var t=UnitTypes.Get(u);
-                GUILayout.Label($"{t.art}: {u.hex} · {u.status} · {(u.reduced?"Reduced":"Full")} · {game.OrderFor(u)}",small);
+                GUILayout.Label($"{t.art}: {u.hex} · {u.status} · {(u.reduced?"Reduced":"Full")} · {game.OrderFor(u)}",panelMuted);
             }
             if(units.Count==1 && game.CanFace(units[0]) && !UnitTypes.Get(units[0]).leader)
             {
                 GUILayout.BeginHorizontal();
-                if(GUILayout.Button("Face left (Q)"))game.Face(units[0],units[0].facing-1);
-                if(GUILayout.Button("Face right (E)"))game.Face(units[0],units[0].facing+1);
+                if(GUILayout.Button("Turn left  ·  Q",panelButton))game.Face(units[0],units[0].facing-1);
+                if(GUILayout.Button("Turn right  ·  E",panelButton))game.Face(units[0],units[0].facing+1);
                 GUILayout.EndHorizontal();
             }
-        }
-        if(s.phase==Phase.NormanMelee && selectedTargets.Count>0)
-        {
-            GUILayout.Label("Targets: "+string.Join(", ",selectedTargets.ToArray()));
-            if(GUILayout.Button("Resolve selected melee"))
+            if(s.phase==Phase.NormanMelee && selectedTargets.Count>0)
             {
-                var targets=s.units.Where(u=>selectedTargets.Contains(u.id)).ToList();
-                if(!game.Melee(units,targets))notice="Illegal melee group or targets.";
-                else selectedTargets.Clear();
+                GUILayout.Label("Targets: "+string.Join(", ",selectedTargets.ToArray()),panelMuted);
+                if(GUILayout.Button("Resolve selected melee",panelPrimary,GUILayout.Height(38)))
+                {
+                    var targets=s.units.Where(u=>selectedTargets.Contains(u.id)).ToList();
+                    if(!game.Melee(units,targets))notice="Illegal melee group or targets.";
+                    else selectedTargets.Clear();
+                }
+                if(GUILayout.Button("Clear targets",panelLink))selectedTargets.Clear();
             }
-            if(GUILayout.Button("Clear targets"))selectedTargets.Clear();
+            GUILayout.EndVertical();
         }
-        if(notice!="")GUILayout.Label(notice,small);
-        GUILayout.Space(8);
-        if(s.phase!=Phase.GameOver)
-        {
-            string caption=s.phase==Phase.Setup?"Begin Battle":s.phase==Phase.Orders?"Roll Orders":
-                s.phase==Phase.Reform?"Finish Reform":"Finish Segment (Space)";
-            if(GUILayout.Button(caption,GUILayout.Height(34)))Advance();
-        }
+        GUILayout.BeginVertical(panelCard);
+        GUILayout.Label("REFERENCE",panelSection);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Melee chart"))chart="melee";
-        if(GUILayout.Button("Missile chart"))chart="missile";
-        if(GUILayout.Button("Morale chart"))chart="morale";
+        if(GUILayout.Button("Melee",panelButton,GUILayout.Height(34)))OpenChart("melee");
+        if(GUILayout.Button("Missile",panelButton,GUILayout.Height(34)))OpenChart("missile");
+        if(GUILayout.Button("Morale",panelButton,GUILayout.Height(34)))OpenChart("morale");
         GUILayout.EndHorizontal();
-        if(GUILayout.Button("Open rulebook PDF"))
+        GUILayout.Space(4);
+        GUILayout.BeginHorizontal();
+        if(GUILayout.Button("Rulebook PDF",panelLink,GUILayout.Height(31)))
             Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
-        if(GUILayout.Button(showHelp?"Hide controls":"Controls"))showHelp=!showHelp;
-        if(showHelp)GUILayout.Label("Click a Norman counter to select it. Alt-click a stacked leader. Shift-click to add units or melee targets. Click a highlighted hex to move or an enemy to attack. Use WASD or right drag to pan; wheel to zoom. Battle view refocuses the armies; Full map shows the whole board.",small);
-        GUILayout.Space(8);
-        GUILayout.Label($"Casualties: Norman {s.normanCasualties} · Saxon {s.saxonCasualties}");
-        GUILayout.Label("Recent events",heading);
-        logScroll=GUILayout.BeginScrollView(logScroll);
-        foreach(var line in s.log.Skip(Math.Max(0,s.log.Count-35)).Reverse())GUILayout.Label(line,small);
+        if(GUILayout.Button(showHelp?"Hide controls":"Controls",panelLink,GUILayout.Height(31)))showHelp=!showHelp;
+        GUILayout.EndHorizontal();
+        if(showHelp)GUILayout.Label("Select a Norman counter. Alt-click a stacked leader; Shift-click to add units or melee targets. Click a highlighted hex to move or an enemy to attack. WASD or right drag pans; the wheel zooms. Q/E changes facing. Space ends a segment.",panelMuted);
+        GUILayout.EndVertical();
+        GUILayout.BeginVertical(panelCard);
+        GUILayout.Label("CASUALTIES",panelSection);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("NORMAN  "+s.normanCasualties,panelValue);
+        GUILayout.Label("SAXON  "+s.saxonCasualties,panelValue);
+        GUILayout.EndHorizontal();
+        GUILayout.EndVertical();
+        GUILayout.BeginVertical(panelCard);
+        GUILayout.Label("RECENT EVENTS",panelSection);
+        foreach(var line in s.log.Skip(Math.Max(0,s.log.Count-25)).Reverse())
+        {
+            GUILayout.Label("•  "+line,panelMuted);
+            GUILayout.Space(4);
+        }
+        GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+    private static string PhasePrompt(Phase phase)
+    {
+        switch(phase)
+        {
+            case Phase.Setup:return "Set Norman facings on the map, then begin the battle.";
+            case Phase.Orders:return "Choose a strategy for each Norman contingent.";
+            case Phase.NormanMove:return "Select a Norman unit and click a highlighted destination.";
+            case Phase.NormanFire:
+            case Phase.NormanDefenseFire:return "Select missile units, then click a legal Saxon target.";
+            case Phase.NormanMelee:return "Select attackers, then click a Saxon defender.";
+            case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
+            case Phase.GameOver:return "The battle is over.";
+            default:return "Resolve any available actions, then finish this segment.";
+        }
+    }
+    private void OpenChart(string name)
+    {
+        chart=name;
+        chartScroll=Vector2.zero;
     }
     private void Advance()
     {
@@ -516,15 +619,130 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawChart()
     {
-        Rect rect=new Rect(Screen.width*.1f,Screen.height*.1f,Screen.width*.8f,Screen.height*.8f);
-        GUI.Box(rect,chart.ToUpperInvariant()+" CHART");
-        if(GUI.Button(new Rect(rect.xMax-90,rect.y+5,80,26),"Close"))chart="";
-        var texture=Resources.Load<Texture2D>("Art/Charts/"+chart);
-        if(texture==null)return;
-        Rect content=new Rect(rect.x+15,rect.y+40,rect.width-30,rect.height-55);
-        chartScroll=GUI.BeginScrollView(content,chartScroll,new Rect(0,0,
-            Mathf.Max(content.width,texture.width),Mathf.Max(content.height,texture.height)));
-        GUI.DrawTexture(new Rect(0,0,texture.width,texture.height),texture,ScaleMode.ScaleToFit);
+        chartScale=Mathf.Clamp(Screen.height/1080f,1f,1.8f);
+        chartTitle.fontSize=Mathf.RoundToInt(28*chartScale);
+        chartSection.fontSize=Mathf.RoundToInt(19*chartScale);
+        chartHeader.fontSize=Mathf.RoundToInt(15*chartScale);
+        chartCell.fontSize=Mathf.RoundToInt(16*chartScale);
+        chartMuted.fontSize=chartCell.fontSize;
+        chartNote.fontSize=chartCell.fontSize;
+        chartTab.fontSize=Mathf.RoundToInt(15*chartScale);
+        chartTabSelected.fontSize=Mathf.RoundToInt(18*chartScale);
+        chartClose.fontSize=Mathf.RoundToInt(14*chartScale);
+        float u=chartScale;
+        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.02f,.04f,.04f,.82f));
+        float width=Mathf.Min(Screen.width-40f,1180f*u);
+        float height=Mathf.Min(Screen.height-40f,720f*u);
+        var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
+        Fill(rect,new Color(.105f,.15f,.16f));
+        Fill(new Rect(rect.x,rect.y,rect.width,4*u),new Color(.84f,.62f,.34f));
+        GUI.BeginGroup(rect);
+        GUI.Label(new Rect(25*u,18*u,width-180*u,38*u),"BATTLE REFERENCE",chartTitle);
+        if(GUI.Button(new Rect(width-116*u,20*u,90*u,32*u),"Close  ×",chartClose))
+        {chart="";GUI.EndGroup();return;}
+        GUI.Label(new Rect(27*u,59*u,width-54*u,26*u),
+            "Tables shown here match the results used by the game engine.",chartNote);
+        string[] names={"melee","missile","morale"};
+        for(int i=0;i<names.Length;i++)
+        {
+            float tabWidth=(width-52*u)/3f;
+            var tab=new Rect(26*u+i*tabWidth,91*u,tabWidth-5*u,37*u);
+            if(GUI.Button(tab,UpperFirst(names[i]),chart==names[i]?chartTabSelected:chartTab))
+                OpenChart(names[i]);
+        }
+        float contentWidth=Mathf.Max(width-70*u,(chart=="melee"?900:chart=="missile"?830:620)*u);
+        float contentHeight=(chart=="melee"?540:chart=="missile"?820:720)*u;
+        var viewport=new Rect(25*u,144*u,width-50*u,height-165*u);
+        chartScroll=GUI.BeginScrollView(viewport,chartScroll,new Rect(0,0,contentWidth,contentHeight));
+        switch(chart)
+        {
+            case "melee":DrawMeleeChart(contentWidth);break;
+            case "missile":DrawMissileChart(contentWidth);break;
+            case "morale":DrawMoraleChart(contentWidth);break;
+        }
         GUI.EndScrollView();
+        GUI.EndGroup();
+    }
+    private static string UpperFirst(string value)
+    {return char.ToUpperInvariant(value[0])+value.Substring(1);}
+    private float ChartTable(float y,float width,string title,string rowHeading,string[] columns,
+        int rows,Func<int,string> rowName,Func<int,int,string> value)
+    {
+        float u=chartScale;
+        GUI.Label(new Rect(0,y,width,32*u),title,chartSection);
+        y+=38*u;
+        float firstWidth=92*u,rowHeight=39*u,cellWidth=(width-firstWidth)/columns.Length;
+        Fill(new Rect(0,y,width,rowHeight),new Color(.24f,.33f,.34f));
+        GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowHeading,chartHeader);
+        for(int col=0;col<columns.Length;col++)
+            GUI.Label(new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight),columns[col],chartHeader);
+        y+=rowHeight;
+        for(int row=0;row<rows;row++)
+        {
+            Fill(new Rect(0,y,width,rowHeight),row%2==0?
+                new Color(.17f,.23f,.24f):new Color(.14f,.19f,.20f));
+            GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowName(row),chartHeader);
+            for(int col=0;col<columns.Length;col++)
+            {
+                string result=value(row,col);
+                var cell=new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight);
+                if(result=="R")Fill(cell,new Color(.39f,.19f,.18f));
+                else if(result=="D")Fill(cell,new Color(.39f,.29f,.17f));
+                else if(result=="M")Fill(cell,new Color(.18f,.34f,.35f));
+                GUI.Label(cell,result,result=="-"||result=="—"?chartMuted:chartCell);
+            }
+            y+=rowHeight;
+        }
+        return y+23*u;
+    }
+    private float ChartNote(float y,float width,string text)
+    {
+        float u=chartScale;
+        float noteHeight=chartNote.CalcHeight(new GUIContent(text),width-28*u)+20*u;
+        Fill(new Rect(0,y,width,noteHeight),new Color(.19f,.26f,.27f));
+        GUI.Label(new Rect(14*u,y+10*u,width-28*u,noteHeight-20*u),text,chartNote);
+        return y+noteHeight+16*u;
+    }
+    private void DrawMeleeChart(float width)
+    {
+        string[] differentials={"−6","−5","−4","−3","−2","−1","0","+1","+2–3","+4–5","≥+6"};
+        float y=ChartTable(0,width,"MELEE COMBAT RESULTS","D6",differentials,6,
+            row=>(row+1).ToString(),(row,col)=>RuleTables.Melee[row,col]);
+        y=ChartNote(y,width,"Read each result as attacker / defender. Compare attack and defense to find the differential, then roll one die. Below −6, the result is 1/−; above +6, use the ≥+6 column.");
+        ChartNote(y,width,"RESULT KEY   −  No effect     M  Morale check     D  Disrupted     1  Reduced or eliminated. A disrupted unit routs if it was charging or under Attack & Pursue orders.");
+    }
+    private void DrawMissileChart(float width)
+    {
+        float y=ChartTable(0,width,"MISSILE SUPPLY BY ASSAULT","PERIOD",
+            new[]{"Norman bows","Saxon javelins"},2,
+            row=>row==0?"First":"Second",
+            (row,col)=>row==0?(col==0?"6":"4"):(col==0?"3":"2"));
+        y=ChartTable(y,width,"WEAPON STRENGTH BY RANGE","WEAPON",
+            new[]{"1 hex","2 hexes","3 hexes"},3,
+            row=>new[]{"Bow","Javelin","Sling"}[row],
+            (row,col)=>{
+                int strength=RuleTables.MissileStrength(new[]{"B","J","S"}[row],col+1);
+                return strength==0?"—":strength.ToString();
+            });
+        string[] odds={"1:4","1:3","1:2","1:1.5","1:1","1.5:1","2:1","3:1","4:1","5:1"};
+        y=ChartTable(y,width,"MISSILE COMBAT RESULTS","D6",odds,6,
+            row=>(row+1).ToString(),(row,col)=>RuleTables.Missile[row,col]);
+        ChartNote(y,width,"Compare total missile strength with target defense and round down to a listed ratio. Below 1:4 has no effect. Results: − no effect, M morale check, D disrupted, 1 reduced or eliminated.");
+    }
+    private void DrawMoraleChart(float width)
+    {
+        float y=ChartTable(0,width,"RALLY CHECK","RATING",new[]{"Successful die roll"},5,
+            row=>((char)('A'+row)).ToString(),
+            (row,col)=>{
+                int max=Enumerable.Range(1,6).Count(die=>RuleTables.Rally((char)('A'+row),die));
+                return max==1?"1":"1–"+max;
+            });
+        y=ChartTable(y,width,"MORALE CHECK","D6",new[]{"A","B","C","D","E"},6,
+            row=>(row+1).ToString(),
+            (row,col)=>{
+                var result=RuleTables.Morale((char)('A'+col),row+1);
+                return result==Status.Ready?"—":result==Status.Disrupted?"D":"R";
+            });
+        ChartNote(y,width,"RESULT KEY   —  No effect     D  Disrupted     R  Routed. A successful rally removes disruption. A routed unit within a friendly leader's rally range automatically loses its rout marker during rally.");
     }
 }
