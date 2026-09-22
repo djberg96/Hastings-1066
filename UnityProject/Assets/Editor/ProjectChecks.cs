@@ -20,6 +20,14 @@ public static class ProjectChecks
             "Assault period marker art missing");
         Check(Resources.Load<Texture2D>("Art/Counters/Markers/Battle_Turn")!=null,
             "Battle turn marker art missing");
+        foreach(var terrain in new[]{"clear","ridge","marsh","stream","woods","road"})
+        {
+            var swatch=Resources.Load<Texture2D>("Art/Terrain/"+terrain);
+            Check(swatch!=null,"Terrain chart swatch missing: "+terrain);
+            Check(swatch.width==200 && swatch.height==172,
+                "Terrain chart swatch was distorted during import: "+terrain+" "+
+                swatch.width+"x"+swatch.height);
+        }
         var board=new Board(JsonUtility.FromJson<MapData>(source.text));
         Check(board.data.hexes.Length==703,"Expected 703 playable hexes");
         Check(board.data.hexes.Select(h=>h.id).Distinct().Count()==703,"Duplicate hex ids");

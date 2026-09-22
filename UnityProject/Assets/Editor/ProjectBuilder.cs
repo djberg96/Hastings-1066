@@ -79,8 +79,35 @@ public static class ProjectBuilder
         {
             var path=AssetDatabase.GUIDToAssetPath(guid);
             var importer=AssetImporter.GetAtPath(path) as TextureImporter;
-            if(importer!=null && importer.maxTextureSize!=512)
-            {importer.maxTextureSize=512;importer.mipmapEnabled=false;importer.SaveAndReimport();}
+            if(importer==null)continue;
+            bool changed=importer.maxTextureSize!=512 || importer.mipmapEnabled ||
+                importer.textureCompression!=TextureImporterCompression.Uncompressed;
+            if(changed)
+            {
+                importer.maxTextureSize=512;
+                importer.mipmapEnabled=false;
+                importer.textureCompression=TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+        }
+        foreach(var guid in AssetDatabase.FindAssets("t:Texture2D",new[]{"Assets/Resources/Art/Terrain"}))
+        {
+            var path=AssetDatabase.GUIDToAssetPath(guid);
+            var importer=AssetImporter.GetAtPath(path) as TextureImporter;
+            if(importer==null)continue;
+            bool changed=importer.maxTextureSize!=256 || importer.mipmapEnabled ||
+                importer.npotScale!=TextureImporterNPOTScale.None ||
+                importer.textureCompression!=TextureImporterCompression.Uncompressed ||
+                !importer.alphaIsTransparency;
+            if(changed)
+            {
+                importer.maxTextureSize=256;
+                importer.mipmapEnabled=false;
+                importer.npotScale=TextureImporterNPOTScale.None;
+                importer.textureCompression=TextureImporterCompression.Uncompressed;
+                importer.alphaIsTransparency=true;
+                importer.SaveAndReimport();
+            }
         }
     }
 

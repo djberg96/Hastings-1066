@@ -11,6 +11,7 @@ public sealed class HastingsGame : MonoBehaviour
     private GameEngine game;
     private Texture2D map, titleBackground, assaultPeriodMarker, battleTurnMarker;
     private readonly Dictionary<string,Texture2D> counters=new Dictionary<string,Texture2D>();
+    private readonly Dictionary<string,Texture2D> terrainSwatches=new Dictionary<string,Texture2D>();
     private readonly Dictionary<string,float> stackSpread=new Dictionary<string,float>();
     private readonly List<string> selected=new List<string>();
     private readonly List<string> selectedTargets=new List<string>();
@@ -43,6 +44,8 @@ public sealed class HastingsGame : MonoBehaviour
         titleBackground=Resources.Load<Texture2D>("Art/Menu/title_tapestry");
         assaultPeriodMarker=Resources.Load<Texture2D>("Art/Counters/Markers/Assault_Period");
         battleTurnMarker=Resources.Load<Texture2D>("Art/Counters/Markers/Battle_Turn");
+        foreach(var terrain in new[]{"clear","ridge","marsh","stream","woods","road"})
+            terrainSwatches[terrain]=Resources.Load<Texture2D>("Art/Terrain/"+terrain);
     }
     private void Update()
     {
@@ -1241,18 +1244,21 @@ public sealed class HastingsGame : MonoBehaviour
             });
         ChartNote(y,width,"RESULT KEY   —  No effect     D  Disrupted     R  Routed. A successful rally removes disruption. A routed unit within a friendly leader's rally range automatically loses its rout marker during rally.");
     }
-    private float TerrainRow(float y,float width,int index,string terrain,string movement,
-        string combat,string other,Color accent)
+    private float TerrainRow(float y,float width,int index,string terrain,string swatch,
+        string movement,string combat,string other,Color accent)
     {
         float u=chartScale,h=80*u;
-        float terrainWidth=160*u,movementWidth=170*u,combatWidth=305*u;
+        float terrainWidth=225*u,movementWidth=170*u,combatWidth=305*u;
         Fill(new Rect(0,y,width,h),index%2==0?
             new Color(.99f,.975f,.93f):new Color(.93f,.90f,.83f));
         Fill(new Rect(0,y,7*u,h),accent);
         foreach(float x in new[]{terrainWidth,terrainWidth+movementWidth,
                  terrainWidth+movementWidth+combatWidth})
             Fill(new Rect(x,y,1*u,h),new Color(.80f,.74f,.64f));
-        GUI.Label(new Rect(13*u,y+8*u,terrainWidth-20*u,h-16*u),terrain,chartRowHeader);
+        Texture2D sample;
+        if(terrainSwatches.TryGetValue(swatch,out sample) && sample!=null)
+            GUI.DrawTexture(new Rect(16*u,y+9*u,72*u,62*u),sample,ScaleMode.ScaleToFit,true);
+        GUI.Label(new Rect(94*u,y+8*u,terrainWidth-101*u,h-16*u),terrain,chartRowHeader);
         GUI.Label(new Rect(terrainWidth+9*u,y+8*u,movementWidth-18*u,h-16*u),movement,chartCell);
         GUI.Label(new Rect(terrainWidth+movementWidth+12*u,y+8*u,
             combatWidth-24*u,h-16*u),combat,chartNote);
@@ -1264,7 +1270,7 @@ public sealed class HastingsGame : MonoBehaviour
     {
         float u=chartScale;
         GUI.Label(new Rect(0,0,width,36*u),"TERRAIN EFFECTS",chartSection);
-        float y=42*u,terrainWidth=160*u,movementWidth=170*u,combatWidth=305*u;
+        float y=42*u,terrainWidth=225*u,movementWidth=170*u,combatWidth=305*u;
         Fill(new Rect(0,y,width,46*u),new Color(.55f,.23f,.17f));
         GUI.Label(new Rect(0,y,terrainWidth,46*u),"TERRAIN",chartHeader);
         GUI.Label(new Rect(terrainWidth,y,movementWidth,46*u),"MOVEMENT",chartHeader);
@@ -1272,27 +1278,27 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.Label(new Rect(terrainWidth+movementWidth+combatWidth,y,
             width-terrainWidth-movementWidth-combatWidth,46*u),"OTHER EFFECT",chartHeader);
         y+=46*u;
-        y=TerrainRow(y,width,0,"Clear","1 MP","None","Normal terrain",
+        y=TerrainRow(y,width,0,"Clear","clear","1 MP","None","Normal terrain",
             new Color(.66f,.77f,.48f));
-        y=TerrainRow(y,width,1,"Ridge uphill","No extra MP",
+        y=TerrainRow(y,width,1,"Ridge uphill","ridge","No extra MP",
             "Foot −1 melee; knight −2 melee","Knight morale check on crossing",
             new Color(.47f,.43f,.30f));
-        y=TerrainRow(y,width,2,"Ridge downhill","No extra MP",
+        y=TerrainRow(y,width,2,"Ridge downhill","ridge","No extra MP",
             "Foot +1 melee; knight: no ridge modifier","Knight morale check on crossing",
             new Color(.63f,.53f,.35f));
-        y=TerrainRow(y,width,3,"Moving downhill","No extra MP",
+        y=TerrainRow(y,width,3,"Moving downhill","ridge","No extra MP",
             "Foot: none; knight +1 melee","Downhill charge adds +2 more",
             new Color(.78f,.63f,.38f));
-        y=TerrainRow(y,width,4,"Marsh","Foot 2 MP; knight 3 MP",
+        y=TerrainRow(y,width,4,"Marsh","marsh","Foot 2 MP; knight 3 MP",
             "Defender −1","Knight morale check on entry",
             new Color(.33f,.59f,.55f));
-        y=TerrainRow(y,width,5,"Stream","+1 MP to cross","None",
+        y=TerrainRow(y,width,5,"Stream","stream","+1 MP to cross","None",
             "Charges cannot cross streams",new Color(.20f,.43f,.70f));
-        y=TerrainRow(y,width,6,"Woods","Foot 2 MP; knight 3 MP",
+        y=TerrainRow(y,width,6,"Woods","woods","Foot 2 MP; knight 3 MP",
             "Defender +2 in melee; +1 vs bow fire",
             "Fire into woods is allowed; fire through is blocked",
             new Color(.29f,.54f,.36f));
-        y=TerrainRow(y,width,7,"Road","1 MP","None","Road control affects victory",
+        y=TerrainRow(y,width,7,"Road","road","1 MP","None","Road control affects victory",
             new Color(.57f,.47f,.31f));
         y+=18*u;
         y=ChartNote(y,width,"KNIGHT MORALE   Crossing a ridge or entering marsh triggers a morale check. Treat a rout result as disruption. Ridge checks occur before crossing.");

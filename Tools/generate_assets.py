@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "Images/Misc/hex_map.svg"
 DEST = ROOT / "UnityProject/Assets/Resources/Data/Map.json"
 TEXTURE = ROOT / "UnityProject/Assets/Resources/Art/Map/hex_map.png"
+TERRAIN_SWATCHES = ROOT / "UnityProject/Assets/Resources/Art/Terrain"
 TERRAIN_ART = ROOT / "Tools/terrain_art"
 XLINK = "{http://www.w3.org/1999/xlink}href"
 SVG = "{http://www.w3.org/2000/svg}"
@@ -432,4 +433,36 @@ base = Image.alpha_composite(base, flecks)
 base = apply_paper_finish(base)
 base.convert("RGB").save(TEXTURE, optimize=True)
 
-print(f"Generated {len(hexes)} hexes, {len(edges)} edges, and {TEXTURE.name}")
+# The in-game terrain chart uses the same artwork as the board. Crop a clean,
+# label-free example of each terrain and mask it to the map's hex outline.
+swatch_hexes = {
+    "clear": "1312",
+    "ridge": "0923",
+    "marsh": "1101",
+    "stream": "0303",
+    "woods": "2311",
+    "road": "1508",
+}
+TERRAIN_SWATCHES.mkdir(parents=True, exist_ok=True)
+mask_scale = 4
+mask = Image.new("L", (200 * mask_scale, 172 * mask_scale))
+mask_draw = ImageDraw.Draw(mask)
+mask_draw.polygon([(50 * mask_scale, 0), (150 * mask_scale, 0),
+                   (200 * mask_scale - 1, 86 * mask_scale),
+                   (150 * mask_scale, 172 * mask_scale - 1),
+                   (50 * mask_scale, 172 * mask_scale - 1),
+                   (0, 86 * mask_scale)], fill=255)
+mask = mask.resize((200, 172), Image.Resampling.LANCZOS)
+for name, ident in swatch_hexes.items():
+    hex_data = hexes[ident]
+    center_x = round(hex_data["x"] * 2)
+    center_y = round(hex_data["y"] * 2)
+    swatch = base.crop((center_x - 100, center_y - 86,
+                        center_x + 100, center_y + 86))
+    swatch.putalpha(mask)
+    ImageDraw.Draw(swatch).line([(50, 1), (150, 1), (198, 86),
+                                  (150, 170), (50, 170), (1, 86), (50, 1)],
+                                 fill=(59, 58, 45, 235), width=2, joint="curve")
+    swatch.save(TERRAIN_SWATCHES / f"{name}.png", optimize=True)
+
+print(f"Generated {len(hexes)} hexes, {len(edges)}, {TEXTURE.name}, and terrain swatches")
