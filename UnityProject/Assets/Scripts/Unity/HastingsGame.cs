@@ -632,11 +632,41 @@ public sealed class HastingsGame : MonoBehaviour
         if(units.Count>0 || selectedTargets.Count>0)
         {
             GUILayout.BeginVertical(panelCard);
-            GUILayout.Label("SELECTED UNITS",panelSection);
-            if(units.Count>0)GUILayout.Label(string.Join(", ",units.Select(u=>unitLabels[u.id]).ToArray()),panelBody);
-            foreach(var u in units.Take(3))
+            GUILayout.Label(units.Count==1?"SELECTED UNIT":"SELECTED UNITS",panelSection);
+            if(units.Count==1)
             {
-                GUILayout.Label($"Hex {u.hex} · {u.status} · {(u.reduced?"Reduced":"Full")} · {game.OrderFor(u)}",panelMuted);
+                var unit=units[0];
+                GUILayout.BeginHorizontal(GUILayout.MinHeight(82*p));
+                var texture=CounterTexture(unit);
+                if(texture!=null)
+                {
+                    GUILayout.Label(texture,GUILayout.Width(78*p),GUILayout.Height(78*p));
+                    GUILayout.Space(10*p);
+                }
+                GUILayout.BeginVertical(GUILayout.MinHeight(78*p));
+                GUILayout.Label(unitLabels[unit.id],panelBody);
+                GUILayout.Label($"Hex {unit.hex} · {unit.status}",panelMuted);
+                GUILayout.Label($"{(unit.reduced?"Reduced":"Full")} · {game.OrderFor(unit)}",panelMuted);
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+            }
+            else if(units.Count>1)
+            {
+                GUILayout.BeginHorizontal(GUILayout.Height(56*p));
+                foreach(var unit in units.Take(4))
+                {
+                    var texture=CounterTexture(unit);
+                    if(texture!=null)GUILayout.Label(texture,GUILayout.Width(52*p),GUILayout.Height(52*p));
+                    GUILayout.Space(5*p);
+                }
+                if(units.Count>4)GUILayout.Label("+"+(units.Count-4),panelValue,
+                    GUILayout.Width(44*p),GUILayout.Height(52*p));
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.Label(string.Join(", ",units.Select(u=>unitLabels[u.id]).ToArray()),panelBody);
+                foreach(var unit in units.Take(3))
+                    GUILayout.Label($"{unitLabels[unit.id]} · Hex {unit.hex} · {unit.status} · "+
+                        $"{(unit.reduced?"Reduced":"Full")} · {game.OrderFor(unit)}",panelMuted);
             }
             if(units.Count==1 && game.CanFace(units[0]) && !UnitTypes.Get(units[0]).leader)
             {
