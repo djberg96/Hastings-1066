@@ -27,7 +27,7 @@ public sealed class HastingsGame : MonoBehaviour
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
     private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
-        menuTitle, menuSubtitle, menuButton, menuPrimary, menuTextField,
+        menuTitle, menuSubtitle, menuDescription, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
         panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
         fireModeButton, fireModeSelected,
@@ -43,9 +43,11 @@ public sealed class HastingsGame : MonoBehaviour
         chartTab, chartTabSelected, chartClose, trackMarkerText, trackMarkerTextShadow;
     private string hoveredHex="";
     private const float StackSpreadSeconds=.22f;
+    private const string DisplayPrefsVersion="display-prefs-version";
 
     private void Awake()
     {
+        RestoreWindowedDisplay();
         var asset=Resources.Load<TextAsset>("Data/Map");
         if(asset==null){Debug.LogError("Map.json is missing");return;}
         board=new Board(JsonUtility.FromJson<MapData>(asset.text));
@@ -157,6 +159,9 @@ public sealed class HastingsGame : MonoBehaviour
                 alignment=TextAnchor.MiddleCenter};
             menuTitle.normal.textColor=new Color(.25f,.12f,.08f);
             menuSubtitle.normal.textColor=new Color(.35f,.21f,.13f);
+            menuDescription=new GUIStyle(GUI.skin.label){fontSize=20,wordWrap=true,
+                alignment=TextAnchor.UpperLeft};
+            menuDescription.normal.textColor=new Color(.30f,.20f,.14f);
             menuButton=new GUIStyle(GUI.skin.button){fontSize=30,
                 fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleCenter,
                 padding=new RectOffset(18,18,10,10)};
@@ -297,6 +302,7 @@ public sealed class HastingsGame : MonoBehaviour
         float menuScale=Mathf.Clamp(Screen.height/900f,1.1f,1.8f);
         menuTitle.fontSize=Mathf.RoundToInt(52*menuScale);
         menuSubtitle.fontSize=Mathf.RoundToInt(22*menuScale);
+        menuDescription.fontSize=Mathf.RoundToInt(17*menuScale);
         menuButton.fontSize=Mathf.RoundToInt(24*menuScale);
         menuPrimary.fontSize=menuButton.fontSize;
         menuTextField.fontSize=menuButton.fontSize;
@@ -620,11 +626,11 @@ public sealed class HastingsGame : MonoBehaviour
         float field=BoardViewMath.BattlefieldHeight;
         float strip=board.data.height-field;
         var battlefield=new Rect(pan.x,pan.y,board.data.width*scale,field*scale);
-        var old=GUI.matrix;
-        GUIUtility.RotateAroundPivot(180,battlefield.center);
+        // Reverse both texture axes instead of rotating the GUI matrix. Unity
+        // clips GUI draw calls before applying that matrix, which made most of
+        // a zoomed battlefield disappear whenever its rect crossed the view.
         GUI.DrawTextureWithTexCoords(battlefield,map,
-            new Rect(0,strip/board.data.height,1,field/board.data.height),true);
-        GUI.matrix=old;
+            new Rect(1,1,-1,-field/board.data.height),true);
         GUI.DrawTextureWithTexCoords(new Rect(pan.x,pan.y+field*scale,
             board.data.width*scale,strip*scale),map,
             new Rect(0,0,1,strip/board.data.height),true);
@@ -1499,17 +1505,31 @@ public sealed class HastingsGame : MonoBehaviour
             if(GUILayout.Button("Play as the Normans",menuPrimary,GUILayout.Height(buttonHeight)))
                 StartNewGame(Side.Norman);
             GUILayout.Label("Attack Senlac Hill with the Breton, Norman, and Franco-Flemish contingents.",
-                small,GUILayout.Height(48));
+                menuDescription,GUILayout.Height(48));
             GUILayout.Space(14);
             if(GUILayout.Button("Play as the Saxons",menuPrimary,GUILayout.Height(buttonHeight)))
                 StartNewGame(Side.Saxon);
             GUILayout.Label("Defend the ridge with the left, center, and right wings. The battlefield rotates to your viewpoint.",
-                small,GUILayout.Height(52));
+                menuDescription,GUILayout.Height(52));
             GUILayout.FlexibleSpace();
             if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
         if(notice!="")GUILayout.Label(notice,small);
         GUILayout.EndArea();
+    }
+    private static void RestoreWindowedDisplay()
+    {
+#if UNITY_STANDALONE_OSX && !UNITY_EDITOR
+        const int version=1;
+        if(PlayerPrefs.GetInt(DisplayPrefsVersion,0)>=version)return;
+        const float preferredWidth=1600f,preferredHeight=1000f;
+        float fit=Mathf.Min(1f,Display.main.systemWidth*.85f/preferredWidth,
+            Display.main.systemHeight*.82f/preferredHeight);
+        Screen.SetResolution(Mathf.RoundToInt(preferredWidth*fit),
+            Mathf.RoundToInt(preferredHeight*fit),FullScreenMode.Windowed);
+        PlayerPrefs.SetInt(DisplayPrefsVersion,version);
+        PlayerPrefs.Save();
+#endif
     }
     private void StartNewGame(Side playerSide)
     {

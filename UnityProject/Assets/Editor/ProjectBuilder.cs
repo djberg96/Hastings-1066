@@ -15,6 +15,7 @@ public static class ProjectBuilder
     {
         PlayerSettings.companyName = "Hastings 1066";
         PlayerSettings.productName = "Hastings 1066";
+        ConfigureDisplay();
         ConfigureTextures();
         ConfigureBranding();
         Directory.CreateDirectory("Assets/Scenes");
@@ -37,6 +38,7 @@ public static class ProjectBuilder
     {
         PlayerSettings.companyName = "Hastings 1066";
         PlayerSettings.productName = "Hastings 1066";
+        ConfigureDisplay();
         ConfigureTextures();
         ConfigureBranding();
         if (!File.Exists(ScenePath)) CreateScene();
@@ -49,6 +51,15 @@ public static class ProjectBuilder
         });
         if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
             throw new System.Exception("Mac build failed: " + report.summary.result);
+    }
+
+    private static void ConfigureDisplay()
+    {
+        PlayerSettings.defaultScreenWidth=1600;
+        PlayerSettings.defaultScreenHeight=1000;
+        PlayerSettings.defaultIsNativeResolution=false;
+        PlayerSettings.fullScreenMode=FullScreenMode.Windowed;
+        PlayerSettings.resizableWindow=true;
     }
 
     private static void ConfigureTextures()

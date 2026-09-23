@@ -3,7 +3,9 @@ using UnityEngine;
 public static class BoardViewMath
 {
     public const float InitialFocusY = 1080f;
-    public const float BattlefieldHeight = 2200f;
+    // The printed reference strip begins at 2180. Its headings extend above
+    // the otherwise empty gray band, so splitting at 2200 clipped their tops.
+    public const float BattlefieldHeight = 2180f;
 
     public static Vector2 OrientBattlefield(Vector2 point,float boardWidth,bool rotated)
     {
