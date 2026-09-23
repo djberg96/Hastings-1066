@@ -131,4 +131,32 @@ namespace Hastings
             return type.morale=='A'?15:type.morale=='B'?7:type.morale=='C'?3:type.morale=='D'?2:1;
         }
     }
+
+    public static class StrategyEffects
+    {
+        public static char Code(bool knight,int effect)
+        {
+            if(effect<=-9)return 'B';
+            if(effect<=-7)return knight?'B':'A';
+            if(effect<=-4)return knight?'A':'-';
+            if(effect>=13)return 'D';
+            if(effect>=9)return knight?'C':'D';
+            if(effect>=5)return knight?'-':'C';
+            return '-';
+        }
+        public static bool WorsensMorale(bool knight,int effect)
+        {return Code(knight,effect)=='B';}
+        public static bool PenalizesMoraleRoll(bool knight,int effect)
+        {
+            char code=Code(knight,effect);
+            return code=='A'||code=='B';
+        }
+        public static int MovementPenalty(bool knight,int effect)
+        {
+            char code=Code(knight,effect);
+            return code=='C'||code=='D'?1:0;
+        }
+        public static bool PenalizesCombat(bool knight,int effect)
+        {return Code(knight,effect)=='D';}
+    }
 }

@@ -64,8 +64,8 @@ namespace Hastings
             if(board.Hex(target.hex).woods && shooters.All(s=>UnitTypes.Get(s).missile=="B"))defense++;
             int column=RuleTables.MissileColumn(strength,defense);
             if(high)column--;
-            if(shooters.Any(s=>Group(s).effect>=11))column--;
-            if(Group(target).effect>=11)column++;
+            if(shooters.Any(s=>StrategyEffects.PenalizesCombat(UnitTypes.Get(s).knight,Group(s).effect)))column--;
+            if(StrategyEffects.PenalizesCombat(targetType.knight,Group(target).effect))column++;
             column=Math.Min(9,column);
             foreach(var s in shooters)
             {
@@ -105,8 +105,8 @@ namespace Hastings
             int defense=defenders.Sum(d=>Defense(d,true));
             int difference=attack-defense;
             int column=RuleTables.MeleeColumn(difference);
-            if(attackers.Any(a=>Group(a).effect>=11))column--;
-            if(defenders.Any(d=>Group(d).effect>=11))column++;
+            if(attackers.Any(a=>StrategyEffects.PenalizesCombat(UnitTypes.Get(a).knight,Group(a).effect)))column--;
+            if(defenders.Any(d=>StrategyEffects.PenalizesCombat(UnitTypes.Get(d).knight,Group(d).effect)))column++;
             column=Math.Max(0,Math.Min(10,column));
             int die=Die();string raw=difference<-6?"1/-":RuleTables.Melee[die-1,column];
             Log(attackers.Count+" attacks "+defenders.Count+" at "+difference+", roll "+die+" → "+raw);
@@ -148,9 +148,10 @@ namespace Hastings
             foreach(var friend in Living(routed.side).Where(u=>u!=routed && !UnitTypes.Get(u).leader &&
                 board.Distance(u.hex,origin)==1).ToList())
             {
-                int roll=Die()+(Group(friend).effect<=-7?1:0);
-                char morale=UnitTypes.Get(friend).morale;
-                if(Group(friend).effect<=-8 && morale<'E')morale++;
+                var type=UnitTypes.Get(friend);int effect=Group(friend).effect;
+                int roll=Die()+(StrategyEffects.PenalizesMoraleRoll(type.knight,effect)?1:0);
+                char morale=type.morale;
+                if(StrategyEffects.WorsensMorale(type.knight,effect) && morale<'E')morale++;
                 if(RuleTables.Morale(morale,roll)==Status.Routed)Rout(friend);
             }
         }
@@ -287,8 +288,8 @@ namespace Hastings
             var type=UnitTypes.Get(unit);
             char morale=type.morale;
             int effect=Group(unit).effect;
-            if(effect<=-8 && morale<'E')morale++;
-            int roll=Die()+(effect<=-7?1:0);
+            if(StrategyEffects.WorsensMorale(type.knight,effect) && morale<'E')morale++;
+            int roll=Die()+(StrategyEffects.PenalizesMoraleRoll(type.knight,effect)?1:0);
             var result=RuleTables.Morale(morale,roll);
             Log(unit.id+" morale "+morale+" roll "+roll+" → "+result);
             if(result==Status.Routed && !routIsDisrupt)Rout(unit);
@@ -309,8 +310,8 @@ namespace Hastings
                 else
                 {
                     int roll=Math.Max(1,Die()-(nearby?1:0));
-                    char morale=UnitTypes.Get(unit).morale;
-                    if(Group(unit).effect<=-8 && morale<'E')morale++;
+                    var type=UnitTypes.Get(unit);char morale=type.morale;
+                    if(StrategyEffects.WorsensMorale(type.knight,Group(unit).effect) && morale<'E')morale++;
                     if(RuleTables.Rally(morale,roll))
                     {unit.status=Status.Ready;Log(unit.id+" rallies");}
                 }

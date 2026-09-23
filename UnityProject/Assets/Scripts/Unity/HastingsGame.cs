@@ -28,6 +28,7 @@ public sealed class HastingsGame : MonoBehaviour
         panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
         panelBretonButton, panelNormanButton, panelFlemishButton,
         strategyHeading, strategyScale, strategyMarker, strategyLegend, strategyToggle,
+        strategyBand, strategyEffectNote,
         controlHeading, controlBadge, controlAction, controlRow,
         orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
         orderRoll, orderType, orderName, orderText, orderEffect,
@@ -163,6 +164,13 @@ public sealed class HastingsGame : MonoBehaviour
                 new Color(.40f,.17f,.12f));
             strategyToggle.fontStyle=FontStyle.Bold;
             strategyToggle.alignment=TextAnchor.MiddleLeft;
+            strategyBand=LabelStyle(14,true,new Color(.35f,.27f,.21f));
+            strategyBand.alignment=TextAnchor.LowerCenter;
+            strategyBand.wordWrap=true;
+            strategyEffectNote=LabelStyle(13,false,new Color(.36f,.29f,.22f));
+            strategyEffectNote.alignment=TextAnchor.UpperLeft;
+            strategyEffectNote.wordWrap=true;
+            strategyEffectNote.richText=true;
             controlHeading=LabelStyle(12,true,new Color(.56f,.19f,.14f));
             controlHeading.margin=new RectOffset(0,0,8,3);
             controlBadge=LabelStyle(12,true,new Color(.99f,.96f,.88f));
@@ -236,7 +244,7 @@ public sealed class HastingsGame : MonoBehaviour
             return;
         }
         float strategyTrackHeight=showStrategyTrack?
-            Mathf.Clamp(Screen.height*.22f,250f,320f):
+            Mathf.Clamp(Screen.height*.26f,330f,400f):
             Mathf.Clamp(Screen.height*.045f,54f,68f);
         Rect mapRect=new Rect(0,0,Mathf.Max(100,Screen.width-PanelWidth()),
             Screen.height-strategyTrackHeight);
@@ -314,6 +322,8 @@ public sealed class HastingsGame : MonoBehaviour
         strategyMarker.fontSize=Mathf.RoundToInt(11*p);
         strategyLegend.fontSize=Mathf.RoundToInt(10*p);
         strategyToggle.fontSize=Mathf.RoundToInt(13*p);
+        strategyBand.fontSize=Mathf.RoundToInt(14*p);
+        strategyEffectNote.fontSize=Mathf.RoundToInt(13*p);
         controlHeading.fontSize=Mathf.RoundToInt(12*p);
         controlBadge.fontSize=Mathf.RoundToInt(12*p);
         controlAction.fontSize=Mathf.RoundToInt(13*p);
@@ -797,6 +807,8 @@ public sealed class HastingsGame : MonoBehaviour
         strategyScale.fontSize=Mathf.RoundToInt(18*u);
         strategyMarker.fontSize=Mathf.RoundToInt(18*u);
         strategyLegend.fontSize=Mathf.RoundToInt(16*u);
+        strategyBand.fontSize=Mathf.RoundToInt(14*u);
+        strategyEffectNote.fontSize=Mathf.RoundToInt(13*u);
         float informationWidth=Mathf.Clamp(region.width*.16f,240*u,330*u);
         float contentTop=region.y+headerHeight+10*u;
         GUI.Label(new Rect(region.x+18*u,contentTop,informationWidth-28*u,27*u),
@@ -816,9 +828,9 @@ public sealed class HastingsGame : MonoBehaviour
         float availableWidth=region.width-informationWidth-22*u;
         float trackWidth=Mathf.Min(availableWidth,27*68*u);
         float trackX=availableX+(availableWidth-trackWidth)/2f;
-        float trackY=contentTop+64*u;
-        float keyY=region.yMax-54*u;
-        float trackHeight=Mathf.Clamp(keyY-trackY-46*u,35*u,66*u);
+        float trackY=contentTop+88*u;
+        float explanationY=region.yMax-54*u;
+        float trackHeight=Mathf.Clamp(explanationY-trackY-49*u,35*u,66*u);
         var track=new Rect(trackX,trackY,trackWidth,trackHeight);
         float cellWidth=track.width/27f;
         Fill(track,new Color(.28f,.25f,.20f));
@@ -827,21 +839,38 @@ public sealed class HastingsGame : MonoBehaviour
             int value=index-11;
             var cell=new Rect(track.x+index*cellWidth+1,track.y+1,
                 Mathf.Max(1,cellWidth-2),track.height-2);
-            Color cellColor=value<=-8?new Color(.73f,.68f,.68f):
-                value==-7?new Color(.80f,.72f,.62f):
-                value>=11?new Color(.73f,.64f,.61f):
-                value>=5?new Color(.75f,.73f,.63f):new Color(.72f,.84f,.86f);
-            Fill(cell,cellColor);
+            Fill(cell,StrategyBandColor(value));
             GUI.Label(cell,Signed(value),strategyScale);
         }
+        DrawStrategyBandLabel(track,-11,-9,"ALL: B",u);
+        DrawStrategyBandLabel(track,-8,-7,"FOOT: A\nKNIGHTS: B",u);
+        DrawStrategyBandLabel(track,-6,-4,"KNIGHTS: A",u);
+        DrawStrategyBandLabel(track,5,8,"FOOT: C",u);
+        DrawStrategyBandLabel(track,9,12,"FOOT: D\nKNIGHTS: C",u);
+        DrawStrategyBandLabel(track,13,15,"ALL: D",u);
         DrawStrategyMarkerSide(track,game.state,new[]{"Breton","Norman","Franco-Flemish"},true,u);
         DrawStrategyMarkerSide(track,game.state,new[]{"Left","Center","Right"},false,u);
-        GUI.Label(new Rect(track.x,keyY,track.width,23*u),
-            "B  ≤−8   Morale −1 level; morale rolls +1     ·     A  −7   Morale rolls +1",
-            strategyLegend);
-        GUI.Label(new Rect(track.x,keyY+28*u,track.width,23*u),
-            "C  ≥+5   Movement −1 MP     ·     D  ≥+11   Movement −2 MP; combat −1 column",
-            strategyLegend);
+        DrawStrategyEffectNotes(track,explanationY,u);
+    }
+    private void DrawStrategyBandLabel(Rect track,int first,int last,string text,float u)
+    {
+        float cellWidth=track.width/27f;
+        var rect=new Rect(track.x+(first+11)*cellWidth,track.y-93*u,
+            (last-first+1)*cellWidth,43*u);
+        GUI.Label(rect,text,strategyBand);
+    }
+    private void DrawStrategyEffectNotes(Rect track,float y,float u)
+    {
+        string[] notes={
+            "<b>B  MORALE GONE</b>\nMorale −1 level; rolls +1",
+            "<b>A  MORALE DETERIORATING</b>\nMorale rolls +1",
+            "<b>C  FATIGUE SETTING IN</b>\nMovement −1 MP",
+            "<b>D  UNITS EXHAUSTED</b>\nMovement −1 MP; combat shifts one column"
+        };
+        float columnWidth=track.width/4f;
+        for(int index=0;index<notes.Length;index++)
+            GUI.Label(new Rect(track.x+index*columnWidth+5*u,y,
+                columnWidth-10*u,52*u),notes[index],strategyEffectNote);
     }
     private void DrawStrategyMarkerSide(Rect track,GameState state,string[] groupIds,bool above,float u)
     {
@@ -874,6 +903,16 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(group=="Franco-Flemish")return "F";
         return group.Substring(0,1).ToUpperInvariant();
+    }
+    private static Color StrategyBandColor(int value)
+    {
+        if(value<=-9)return new Color(.69f,.60f,.60f);
+        if(value<=-7)return new Color(.78f,.67f,.62f);
+        if(value<=-4)return new Color(.82f,.74f,.62f);
+        if(value>=13)return new Color(.69f,.58f,.55f);
+        if(value>=9)return new Color(.73f,.65f,.55f);
+        if(value>=5)return new Color(.78f,.74f,.60f);
+        return new Color(.72f,.84f,.86f);
     }
     private static string StrategySummary(GameState state)
     {
@@ -1200,8 +1239,9 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Width(108*u),GUILayout.Height(30*u));
         GUILayout.EndHorizontal();
         GUILayout.Space(5*u);
-        bool penalty=result.totalEffect<=-7 || result.totalEffect>=5;
-        GUILayout.Label(EffectExplanation(result.totalEffect),
+        bool penalty=StrategyEffects.Code(false,result.totalEffect)!='-' ||
+            (result.hasKnights && StrategyEffects.Code(true,result.totalEffect)!='-');
+        GUILayout.Label(EffectExplanation(result.totalEffect,result.hasKnights),
             penalty?orderEffectWarning:orderEffectDetail);
         GUILayout.EndVertical();
         GUILayout.EndVertical();
@@ -1287,13 +1327,24 @@ public sealed class HastingsGame : MonoBehaviour
             default:return "";
         }
     }
-    private static string EffectExplanation(int effect)
+    private static string EffectExplanation(int effect,bool hasKnights)
     {
-        if(effect<=-8)return "Morale rating worsens one level, and all morale rolls receive +1.";
-        if(effect<=-7)return "All morale rolls receive +1.";
-        if(effect>=11)return "Movement is reduced by 2 MP, with a one-column penalty in melee and missile combat.";
-        if(effect>=5)return "Movement is reduced by 1 MP.";
-        return "No penalty at this level.";
+        char foot=StrategyEffects.Code(false,effect);
+        if(!hasKnights)return EffectCodeDescription(foot);
+        char knights=StrategyEffects.Code(true,effect);
+        if(foot==knights)return "All units: "+EffectCodeDescription(foot);
+        return "Foot: "+EffectCodeDescription(foot)+"   Knights: "+EffectCodeDescription(knights);
+    }
+    private static string EffectCodeDescription(char code)
+    {
+        switch(code)
+        {
+            case 'A':return "morale rolls +1.";
+            case 'B':return "morale rating −1 level; morale rolls +1.";
+            case 'C':return "movement −1 MP.";
+            case 'D':return "movement −1 MP; combat −1 column.";
+            default:return "no penalty at this level.";
+        }
     }
     private static string Signed(int value)
     {return value>0?"+"+value:value.ToString();}

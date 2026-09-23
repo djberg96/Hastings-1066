@@ -73,6 +73,18 @@ public static class ProjectChecks
                 RuleTables.RollOrder(Side.Norman,false,strategy,dice,out duration,out effect,out optional);
                 RuleTables.RollOrder(Side.Norman,true,strategy,dice,out duration,out effect,out optional);
             }
+        Check(StrategyEffects.Code(false,-9)=='B' && StrategyEffects.Code(false,-8)=='A' &&
+            StrategyEffects.Code(false,-7)=='A' && StrategyEffects.Code(false,-6)=='-' &&
+            StrategyEffects.Code(true,-9)=='B' && StrategyEffects.Code(true,-8)=='B' &&
+            StrategyEffects.Code(true,-7)=='B' && StrategyEffects.Code(true,-6)=='A' &&
+            StrategyEffects.Code(true,-4)=='A' && StrategyEffects.Code(true,-3)=='-',
+            "Negative strategy-effect bands do not match the map");
+        Check(StrategyEffects.Code(false,5)=='C' && StrategyEffects.Code(false,8)=='C' &&
+            StrategyEffects.Code(false,9)=='D' && StrategyEffects.Code(false,12)=='D' &&
+            StrategyEffects.Code(true,8)=='-' && StrategyEffects.Code(true,9)=='C' &&
+            StrategyEffects.Code(true,12)=='C' && StrategyEffects.Code(true,13)=='D' &&
+            StrategyEffects.MovementPenalty(false,13)==1,
+            "Positive strategy-effect bands do not match the map");
         foreach(var type in new[]{"BB","BF","BK","NB","NF","NK","WG","FB","FF","FK",
                                   "HC","T","F1","F2","SB","SL","William","Alan","Odo",
                                   "Eustace","Harold","Gyrth","Leofwine"})

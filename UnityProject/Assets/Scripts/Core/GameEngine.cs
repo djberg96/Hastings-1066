@@ -194,8 +194,7 @@ namespace Hastings
             var order=OrderFor(unit);
             if(order==Order.ShieldWall || order==Order.Hold || order==Order.FireInPlace)return 1;
             int result=type.knight?(order==Order.Charge?6:4):3;
-            if(Group(unit).effect>=5)result--;
-            if(Group(unit).effect>=11)result--;
+            result-=StrategyEffects.MovementPenalty(type.knight,Group(unit).effect);
             return Math.Max(0,result-unit.entrySpent);
         }
         private int MoveCost(UnitState unit,string from,string to)
