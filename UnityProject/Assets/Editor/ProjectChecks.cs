@@ -271,6 +271,23 @@ public static class ProjectChecks
             fireEngine.lastFireResult.targetHex==firedAtHex &&
             fireEngine.lastFireResult.strength>0 && fireEngine.lastFireResult.defense>0,
             "Missile fire did not expose a visual result");
+        var meleeState=Setup.New(board,38);meleeState.phase=Phase.NormanMelee;
+        var meleeEngine=new GameEngine(board,meleeState);
+        var meleeAttacker=meleeState.units.First(u=>u.type=="NF");
+        var meleeDefender=meleeState.units.First(u=>u.type=="HC");
+        foreach(var unit in meleeState.units)unit.hex="";
+        meleeAttacker.hex="1112";meleeDefender.hex=board.Adjacent(meleeAttacker.hex).First();
+        meleeAttacker.facing=board.Direction(meleeAttacker.hex,meleeDefender.hex);
+        meleeDefender.facing=board.Direction(meleeDefender.hex,meleeAttacker.hex);
+        Check(meleeEngine.Melee(new List<UnitState>{meleeAttacker},
+            new List<UnitState>{meleeDefender}),"Legal melee was rejected");
+        Check(meleeEngine.lastMeleeResult!=null &&
+            meleeEngine.lastMeleeResult.attackerIds.SequenceEqual(new[]{meleeAttacker.id}) &&
+            meleeEngine.lastMeleeResult.defenderIds.SequenceEqual(new[]{meleeDefender.id}) &&
+            meleeEngine.lastMeleeResult.attackerHexes[0]=="1112" &&
+            meleeEngine.lastMeleeResult.attack>0 && meleeEngine.lastMeleeResult.defense>0 &&
+            !string.IsNullOrEmpty(meleeEngine.lastMeleeResult.tableResult),
+            "Melee did not expose a visual result");
         var roadState=Setup.New(board,33);
         foreach(var road in roadState.road)road.owner=Side.Norman;
         new GameEngine(board,roadState).CheckVictory();

@@ -125,11 +125,23 @@ namespace Hastings
             int attack=attackers.Sum(a=>defenders.Where(d=>CanMelee(a,d)).Select(d=>Attack(a,d)).DefaultIfEmpty(0).Max());
             int defense=defenders.Sum(d=>Defense(d,true));
             int difference=attack-defense;
+            var meleeResult=new MeleeCombatResult {
+                attackerIds=attackers.Select(u=>u.id).ToArray(),
+                attackerHexes=attackers.Select(u=>u.hex).ToArray(),
+                defenderIds=defenders.Select(u=>u.id).ToArray(),
+                defenderHexes=defenders.Select(u=>u.hex).ToArray(),
+                attack=attack,defense=defense,difference=difference,
+                attackerReducedBefore=attackers.Select(u=>u.reduced).ToArray(),
+                defenderReducedBefore=defenders.Select(u=>u.reduced).ToArray(),
+                attackerStatusBefore=attackers.Select(u=>u.status).ToArray(),
+                defenderStatusBefore=defenders.Select(u=>u.status).ToArray()
+            };
             int column=RuleTables.MeleeColumn(difference);
             if(attackers.Any(a=>StrategyEffects.PenalizesCombat(UnitTypes.Get(a).knight,Group(a).effect)))column--;
             if(defenders.Any(d=>StrategyEffects.PenalizesCombat(UnitTypes.Get(d).knight,Group(d).effect)))column++;
             column=Math.Max(0,Math.Min(10,column));
             int die=Die();string raw=difference<-6?"1/-":RuleTables.Melee[die-1,column];
+            meleeResult.roll=die;meleeResult.tableResult=raw;
             Log(attackers.Count+" attacks "+defenders.Count+" at "+difference+", roll "+die+" → "+raw);
             var parts=raw.Split('/');
             if(parts[0].Contains('1'))ApplyResult(attackers[0],"1",true);
@@ -162,6 +174,11 @@ namespace Hastings
             foreach(var a in attackers.Where(a=>a.charged && a.status!=Status.Eliminated))CheckMorale(a,true);
             foreach(var a in attackers)a.engaged=true;
             foreach(var d in defenders)d.engaged=true;
+            meleeResult.attackerReducedAfter=attackers.Select(u=>u.reduced).ToArray();
+            meleeResult.defenderReducedAfter=defenders.Select(u=>u.reduced).ToArray();
+            meleeResult.attackerStatusAfter=attackers.Select(u=>u.status).ToArray();
+            meleeResult.defenderStatusAfter=defenders.Select(u=>u.status).ToArray();
+            lastMeleeResult=meleeResult;
             CheckVictory();
         }
         private void RoutShock(UnitState routed,string origin)
@@ -173,7 +190,9 @@ namespace Hastings
                 int roll=Die()+(StrategyEffects.PenalizesMoraleRoll(type.knight,effect)?1:0);
                 char morale=type.morale;
                 if(StrategyEffects.WorsensMorale(type.knight,effect) && morale<'E')morale++;
-                if(RuleTables.Morale(morale,roll)==Status.Routed)Rout(friend);
+                var result=RuleTables.Morale(morale,roll);
+                Log(friend.id+" rout shock morale "+morale+" roll "+roll+" → "+result);
+                if(result==Status.Routed)Rout(friend);
             }
         }
         private void Pursue(UnitState pursuer,UnitState routed)

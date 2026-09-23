@@ -77,6 +77,16 @@ namespace Hastings
         public bool high, targetReducedBefore, targetReducedAfter;
         public Status targetStatusBefore, targetStatusAfter;
     }
+    public sealed class MeleeCombatResult
+    {
+        public string[] attackerIds, attackerHexes, defenderIds, defenderHexes;
+        public int attack, defense, difference, roll;
+        public string tableResult;
+        public bool[] attackerReducedBefore, attackerReducedAfter;
+        public bool[] defenderReducedBefore, defenderReducedAfter;
+        public Status[] attackerStatusBefore, attackerStatusAfter;
+        public Status[] defenderStatusBefore, defenderStatusAfter;
+    }
     [Serializable] public class GameState
     {
         public int saveVersion = 1;

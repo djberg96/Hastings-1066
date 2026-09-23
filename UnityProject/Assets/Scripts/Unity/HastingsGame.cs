@@ -19,12 +19,14 @@ public sealed class HastingsGame : MonoBehaviour
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
     private float panelScale=1f, chartScale=1f, orderScale=1f;
-    private float missileEffectStarted, missileEffectUntil;
+    private float missileEffectStarted, missileEffectUntil,meleeEffectStarted,meleeEffectUntil;
     private MissileFireResult missileResult;
-    private bool showMenu=true, showUnits=true, showHigh, showHelp, showOrderResults,
+    private MeleeCombatResult meleeResult;
+    private bool showMenu=true, showUnits=true, showHelp, showOrderResults,
         orderReviewMode, showStrategyTrack, fullMapMode;
     private int orderReviewTab;
-    private string saveSlot="Game 1", notice="", chart="", menuPage="main";
+    private string saveSlot="Game 1", notice="", chart="", menuPage="main",
+        highTrajectoryTargetId="";
     private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
         menuTitle, menuSubtitle, menuDescription, menuButton, menuPrimary, menuTextField,
@@ -527,32 +529,40 @@ public sealed class HastingsGame : MonoBehaviour
         {
             if(PlayerFirePhase())
             {
-                if(!game.Fire(selection,enemy??enemyLeader,showHigh))
-                    notice="Illegal fire target or missile supply exhausted.";
-                else
+                var target=enemy??enemyLeader;
+                if(game.Fire(selection,target,false))ShowMissileResult();
+                else if(selection.All(shooter=>game.CanFire(shooter,target,true)))
                 {
-                    missileResult=game.lastFireResult;
-                    missileEffectStarted=Time.unscaledTime;
-                    missileEffectUntil=missileEffectStarted+3.6f;
+                    highTrajectoryTargetId=target.id;
                     notice="";
                 }
+                else notice="That unit is not a legal direct-fire target, or its missile supply is exhausted.";
                 return;
             }
             if(PlayerMeleePhase() && enemy!=null)
             {
-                if(add){if(!selectedTargets.Contains(enemy.id))selectedTargets.Add(enemy.id);return;}
-                if(!game.Melee(selection,new List<UnitState>{enemy}))notice="Illegal melee group or target.";
+                if(add)
+                {
+                    if(selection.Any(attacker=>!attacker.engaged && !enemy.engaged &&
+                        game.CanMelee(attacker,enemy)))
+                    {if(!selectedTargets.Contains(enemy.id))selectedTargets.Add(enemy.id);notice="";}
+                    else notice=MeleeFailure(selection,enemy);
+                    return;
+                }
+                if(!game.Melee(selection,new List<UnitState>{enemy}))notice=MeleeFailure(selection,enemy);
+                else ShowMeleeResult();
                 return;
             }
         }
         if(friendly!=null || leader!=null)
         {
+            highTrajectoryTargetId="";
             var unit=preferLeader?(leader??friendly):(friendly??leader);
             if(add)
             {if(!selected.Contains(unit.id))selected.Add(unit.id);}
             else{selected.Clear();selected.Add(unit.id);}
         }
-        else if(!add)selected.Clear();
+        else if(!add){selected.Clear();highTrajectoryTargetId="";}
     }
     private List<UnitState> SelectedUnits()
     {
@@ -588,6 +598,7 @@ public sealed class HastingsGame : MonoBehaviour
                 GUI.color=Color.white;
             }
             DrawMissilePaths();
+            DrawMeleePaths();
             DrawHexNumbers(region);
             DrawTrackMarkers();
             if(showUnits)
@@ -609,9 +620,11 @@ public sealed class HastingsGame : MonoBehaviour
                     if(u.status==Status.Disrupted||u.status==Status.Routed)
                         DrawUnitStatusMarker(u.status,rect);
                 }
-                DrawFireTargetHighlights();
+                DrawFireDesignationHighlights();
+                DrawMeleeDesignationHighlights();
             }
             DrawMissileImpact(region);
+            DrawMeleeImpact(region);
         }
         GUI.EndGroup();
     }
@@ -697,13 +710,25 @@ public sealed class HastingsGame : MonoBehaviour
         statusMarker.normal.textColor=status==Status.Routed?Color.white:new Color(.18f,.11f,.06f);
         GUI.Label(marker,status==Status.Routed?"R":"D",statusMarker);
     }
-    private void DrawFireTargetHighlights()
+    private void DrawFireDesignationHighlights()
     {
         if(!PlayerFirePhase())return;
         var shooters=SelectedUnits();
+        var enemies=game.Living(GameEngine.Opposite(PlayerSide())).ToList();
+        float pulse=.5f+.5f*Mathf.Sin(Time.unscaledTime*5.5f);
+        foreach(var unit in game.Living(PlayerSide()).Where(unit=>
+            !UnitTypes.Get(unit).leader && !unit.fired &&
+            enemies.Any(target=>game.CanFire(unit,target,false)||game.CanFire(unit,target,true))))
+        {
+            var rect=CounterRect(unit,SpreadFor(unit.hex));
+            float inset=3f+2f*pulse;
+            DrawRectOutline(new Rect(rect.x-inset,rect.y-inset,
+                rect.width+2*inset,rect.height+2*inset),2f+1.5f*pulse,
+                new Color(1f,.69f,.17f,.68f+.18f*pulse));
+        }
         if(shooters.Count==0)return;
         foreach(var target in game.Living(GameEngine.Opposite(PlayerSide())).Where(target=>
-            shooters.All(shooter=>game.CanFire(shooter,target,showHigh))))
+            shooters.All(shooter=>game.CanFire(shooter,target,false))))
         {
             var hex=board.Hex(target.hex);
             var center=MapPoint(hex.x,hex.y);
@@ -711,6 +736,118 @@ public sealed class HastingsGame : MonoBehaviour
             var rect=new Rect(center.x-size/2f,center.y-size/2f,size,size);
             DrawRectOutline(rect,Mathf.Clamp(3*scale,2f,6f),new Color(1f,.67f,.12f,.92f));
         }
+        var highTarget=PendingHighTrajectoryTarget();
+        if(highTarget!=null)
+        {
+            var rect=CounterRect(highTarget,SpreadFor(highTarget.hex));
+            float inset=5f+3f*pulse;
+            DrawRectOutline(new Rect(rect.x-inset,rect.y-inset,
+                rect.width+2*inset,rect.height+2*inset),3f+2f*pulse,
+                new Color(.84f,.28f,.10f,.92f));
+        }
+    }
+    private void DrawMeleeDesignationHighlights()
+    {
+        if(!PlayerMeleePhase())return;
+        var attackers=SelectedUnits();
+        float pulse=.5f+.5f*Mathf.Sin(Time.unscaledTime*6f);
+        if(attackers.Count==0)
+        {
+            foreach(var unit in game.Living(PlayerSide()).Where(unit=>
+                !UnitTypes.Get(unit).leader && unit.status==Status.Ready && !unit.engaged &&
+                game.Living(GameEngine.Opposite(PlayerSide())).Any(enemy=>
+                    !enemy.engaged && game.CanMelee(unit,enemy))))
+            {
+                var rect=CounterRect(unit,SpreadFor(unit.hex));
+                DrawRectOutline(new Rect(rect.x-4,rect.y-4,rect.width+8,rect.height+8),
+                    2f+2f*pulse,new Color(.91f,.62f,.14f,.72f));
+            }
+            return;
+        }
+        foreach(var target in game.Living(GameEngine.Opposite(PlayerSide())).Where(target=>
+            !target.engaged && attackers.All(attacker=>!attacker.engaged &&
+                game.CanMelee(attacker,target))))
+        {
+            var rect=CounterRect(target,SpreadFor(target.hex));
+            float inset=3f+3f*pulse;
+            DrawRectOutline(new Rect(rect.x-inset,rect.y-inset,
+                rect.width+2*inset,rect.height+2*inset),3f+2f*pulse,
+                new Color(.76f,.16f,.10f,.92f));
+            var badge=new Rect(rect.center.x-34f,rect.y-27f,68f,22f);
+            Fill(badge,new Color(.48f,.10f,.07f,.94f));
+            missileMapResult.fontSize=11;
+            GUI.Label(badge,"MELEE",missileMapResult);
+        }
+        foreach(var target in game.state.units.Where(unit=>selectedTargets.Contains(unit.id) &&
+            unit.status!=Status.Eliminated))
+        {
+            var rect=CounterRect(target,SpreadFor(target.hex));
+            DrawRectOutline(new Rect(rect.x-8,rect.y-8,rect.width+16,rect.height+16),5f,
+                new Color(1f,.75f,.17f,.98f));
+        }
+    }
+    private void DrawMeleePaths()
+    {
+        if(meleeResult==null || Time.unscaledTime>meleeEffectUntil)return;
+        var targets=meleeResult.defenderHexes.Where(board.Has).Select(id=>board.Hex(id)).
+            Select(hex=>MapPoint(hex.x,hex.y)).ToArray();
+        if(targets.Length==0)return;
+        float elapsed=Time.unscaledTime-meleeEffectStarted;
+        float fade=1f-Mathf.Clamp01((elapsed-3.2f)/1.1f);
+        float travel=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.8f));
+        foreach(var hexId in meleeResult.attackerHexes)
+        {
+            if(!board.Has(hexId))continue;
+            var hex=board.Hex(hexId);var origin=MapPoint(hex.x,hex.y);
+            var target=targets.OrderBy(point=>(point-origin).sqrMagnitude).First();
+            DrawLine(origin,target,Mathf.Clamp(8f*scale,5f,12f),
+                new Color(.35f,.06f,.04f,.72f*fade));
+            DrawLine(origin,target,Mathf.Clamp(2.5f*scale,2f,5f),
+                new Color(1f,.67f,.18f,.94f*fade));
+            var marker=Vector2.Lerp(origin,target,travel);
+            float size=Mathf.Clamp(15f*scale,10f,22f);
+            Fill(new Rect(marker.x-size/2,marker.y-size/2,size,size),
+                new Color(.92f,.22f,.11f,fade));
+        }
+    }
+    private void DrawMeleeImpact(Rect region)
+    {
+        if(meleeResult==null || Time.unscaledTime>meleeEffectUntil)return;
+        var targets=meleeResult.defenderHexes.Where(board.Has).Select(id=>board.Hex(id)).
+            Select(hex=>MapPoint(hex.x,hex.y)).ToArray();
+        if(targets.Length==0)return;
+        float elapsed=Time.unscaledTime-meleeEffectStarted;
+        float fade=1f-Mathf.Clamp01((elapsed-3.2f)/1.1f);
+        float impact=Mathf.SmoothStep(0,1,Mathf.Clamp01((elapsed-.45f)/.25f));
+        float pulse=.5f+.5f*Mathf.Sin(elapsed*11f);
+        foreach(var target in targets)
+        {
+            float radius=Mathf.Max(32f,(42f+9f*pulse)*scale);
+            DrawRectOutline(new Rect(target.x-radius,target.y-radius,radius*2,radius*2),
+                Mathf.Clamp(4f*scale,3f,8f),new Color(.78f,.14f,.08f,.90f*fade));
+            float blade=radius*.62f;
+            DrawLine(target-new Vector2(blade,blade),target+new Vector2(blade,blade),
+                Mathf.Clamp(4f*scale,3f,7f),new Color(1f,.78f,.24f,impact*fade));
+            DrawLine(target+new Vector2(-blade,blade),target+new Vector2(blade,-blade),
+                Mathf.Clamp(4f*scale,3f,7f),new Color(1f,.78f,.24f,impact*fade));
+        }
+        var center=new Vector2(targets.Average(point=>point.x),targets.Average(point=>point.y));
+        const float width=260f,height=72f;
+        float x=Mathf.Clamp(center.x-width/2f,8f,region.width-width-8f);
+        float y=Mathf.Clamp(center.y-120f,8f,region.height-height-8f);
+        var callout=new Rect(x,y,width,height);
+        Fill(new Rect(callout.x-3,callout.y-3,callout.width+6,callout.height+6),
+            new Color(.20f,.08f,.05f,.94f*impact*fade));
+        Fill(new Rect(callout.x,callout.y,callout.width,41),new Color(.58f,.16f,.11f,.98f*impact*fade));
+        Fill(new Rect(callout.x,callout.y+41,callout.width,31),new Color(.96f,.91f,.81f,.98f*impact*fade));
+        var oldColor=GUI.color;GUI.color=new Color(1,1,1,impact*fade);
+        missileMapResult.fontSize=18;missileMapDetail.fontSize=12;
+        GUI.Label(new Rect(callout.x+6,callout.y+2,callout.width-12,37),
+            MeleeOutcome(meleeResult),missileMapResult);
+        GUI.Label(new Rect(callout.x+6,callout.y+43,callout.width-12,27),
+            meleeResult.attack+" attack · "+meleeResult.defense+" defense · Roll "+meleeResult.roll,
+            missileMapDetail);
+        GUI.color=oldColor;
     }
     private void DrawMissilePaths()
     {
@@ -800,6 +937,48 @@ public sealed class HastingsGame : MonoBehaviour
             case "MORALE HOLDS":return "The target passed its morale check.";
             default:return "The fire caused no damage or morale effect.";
         }
+    }
+    private static bool ForceChanged(Status[] before,Status[] after,bool[] reducedBefore,
+        bool[] reducedAfter)
+    {
+        return before.Where((status,index)=>after[index]!=status).Any() ||
+            reducedBefore.Where((reduced,index)=>reducedAfter[index]!=reduced).Any();
+    }
+    private static string MeleeOutcome(MeleeCombatResult result)
+    {
+        bool attackersChanged=ForceChanged(result.attackerStatusBefore,result.attackerStatusAfter,
+            result.attackerReducedBefore,result.attackerReducedAfter);
+        bool defendersChanged=ForceChanged(result.defenderStatusBefore,result.defenderStatusAfter,
+            result.defenderReducedBefore,result.defenderReducedAfter);
+        if(attackersChanged && defendersChanged)return "BOTH SIDES HIT";
+        if(defendersChanged)
+        {
+            if(result.defenderStatusAfter.Contains(Status.Eliminated))return "DEFENDER ELIMINATED";
+            if(result.defenderStatusAfter.Contains(Status.Routed))return "DEFENDER ROUTED";
+            if(result.defenderReducedBefore.Where((value,index)=>
+                !value && result.defenderReducedAfter[index]).Any())return "DEFENDER STEP LOSS";
+            return "DEFENDER DISRUPTED";
+        }
+        if(attackersChanged)return "ATTACKERS REPULSED";
+        if(result.tableResult.Contains("M"))return "MORALE HOLDS";
+        return "NO EFFECT";
+    }
+    private static string ForceSummary(Status[] before,Status[] after,bool[] reducedBefore,
+        bool[] reducedAfter,string tablePart)
+    {
+        if(after.Contains(Status.Eliminated))return "eliminated";
+        if(after.Contains(Status.Routed) && !before.Contains(Status.Routed))return "routed";
+        if(reducedBefore.Where((value,index)=>!value && reducedAfter[index]).Any())return "step loss";
+        if(after.Contains(Status.Disrupted) && !before.Contains(Status.Disrupted))return "disrupted";
+        return tablePart.Contains("M")?"morale held":"held";
+    }
+    private static string MeleeOutcomeDetail(MeleeCombatResult result)
+    {
+        var parts=result.tableResult.Split('/');
+        return "Attackers "+ForceSummary(result.attackerStatusBefore,result.attackerStatusAfter,
+            result.attackerReducedBefore,result.attackerReducedAfter,parts[0])+"; defenders "+
+            ForceSummary(result.defenderStatusBefore,result.defenderStatusAfter,
+                result.defenderReducedBefore,result.defenderReducedAfter,parts[1])+".";
     }
     private void DrawHexNumbers(Rect region)
     {
@@ -939,9 +1118,10 @@ public sealed class HastingsGame : MonoBehaviour
         }
         if(PlayerFirePhase() && !optionsPending)
         {
-            DrawHighTrajectoryControl(s,p);
+            DrawHighTrajectoryResponse(p);
             DrawBowFireProgress(p);
         }
+        if(PlayerMeleePhase())DrawMeleeGuide(p);
         if(notice!="")GUILayout.Label(notice,panelBody);
         if(s.phase!=Phase.GameOver)
         {
@@ -955,6 +1135,7 @@ public sealed class HastingsGame : MonoBehaviour
         }
         GUILayout.EndVertical();
         if(missileResult!=null)DrawMissileResultCard(unitLabels);
+        if(meleeResult!=null)DrawMeleeResultCard(unitLabels);
         var units=SelectedUnits();
         if(units.Count>0 || selectedTargets.Count>0)
         {
@@ -974,6 +1155,8 @@ public sealed class HastingsGame : MonoBehaviour
                 GUILayout.Label(unitLabels[unit.id],panelBody);
                 GUILayout.Label($"Hex {unit.hex} · {unit.status}",panelMuted);
                 GUILayout.Label($"{(unit.reduced?"Reduced":"Full")} · {game.OrderFor(unit)}",panelMuted);
+                var statusCause=UnitStatusCause(unit,unitLabels);
+                if(statusCause!="")GUILayout.Label(statusCause,panelMuted);
                 GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
             }
@@ -1009,7 +1192,7 @@ public sealed class HastingsGame : MonoBehaviour
                 {
                     var targets=s.units.Where(u=>selectedTargets.Contains(u.id)).ToList();
                     if(!game.Melee(units,targets))notice="Illegal melee group or targets.";
-                    else selectedTargets.Clear();
+                    else ShowMeleeResult();
                 }
                 if(GUILayout.Button("Clear targets",panelLink))selectedTargets.Clear();
             }
@@ -1057,28 +1240,35 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndScrollView();
         GUILayout.EndArea();
     }
-    private void DrawHighTrajectoryControl(GameState state,float p)
+    private UnitState PendingHighTrajectoryTarget()
     {
+        if(game==null || string.IsNullOrEmpty(highTrajectoryTargetId))return null;
+        return game.state.units.FirstOrDefault(unit=>unit.id==highTrajectoryTargetId &&
+            unit.status!=Status.Eliminated);
+    }
+    private void DrawHighTrajectoryResponse(float p)
+    {
+        var target=PendingHighTrajectoryTarget();
+        if(target==null)return;
+        var shooters=SelectedUnits();
+        if(shooters.Count==0 || shooters.Any(shooter=>!game.CanFire(shooter,target,true)))
+        {
+            highTrajectoryTargetId="";
+            return;
+        }
         GUILayout.Space(5*p);
         GUILayout.BeginVertical(controlRow);
-        if(state.period==2)
+        GUILayout.Label("DIRECT FIRE BLOCKED",controlHeading);
+        GUILayout.Label("The selected bows can fire over the intervening units using high trajectory. This shifts the attack one column left.",controlAction);
+        GUILayout.BeginHorizontal();
+        if(GUILayout.Button("Fire high trajectory",fireModeSelected,GUILayout.Height(38*p)))
         {
-            GUILayout.Label("FIRE TRAJECTORY",controlHeading);
-            GUILayout.BeginHorizontal();
-            if(GUILayout.Button("Direct fire",showHigh?fireModeButton:fireModeSelected,
-                GUILayout.Height(34*p)))showHigh=false;
-            if(GUILayout.Button("High · over units",showHigh?fireModeSelected:fireModeButton,
-                GUILayout.Height(34*p)))showHigh=true;
-            GUILayout.EndHorizontal();
-            GUILayout.Label(showHigh?"Fires over intervening units with the high trajectory penalty.":
-                "Default mode for targets with a clear line of sight.",controlAction);
+            if(game.Fire(shooters,target,true))ShowMissileResult();
+            else notice="High trajectory fire is no longer legal for that target.";
         }
-        else
-        {
-            showHigh=false;
-            GUILayout.Label("HIGH TRAJECTORY BOW FIRE",controlHeading);
-            GUILayout.Label("Available during Assault II.",controlAction);
-        }
+        if(GUILayout.Button("Cancel",fireModeButton,GUILayout.Height(38*p)))
+            highTrajectoryTargetId="";
+        GUILayout.EndHorizontal();
         GUILayout.EndVertical();
     }
     private void DrawBowFireProgress(float p)
@@ -1099,6 +1289,41 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.FlexibleSpace();
         GUILayout.Label(badge,complete?fireCompleteBadge:controlBadge,
+            GUILayout.Width(104*p),GUILayout.Height(34*p));
+        GUILayout.EndHorizontal();
+    }
+    private void DrawMeleeGuide(float p)
+    {
+        var units=SelectedUnits();
+        int legalTargets=units.Count==0?0:game.Living(GameEngine.Opposite(PlayerSide())).Count(target=>
+            !target.engaged && units.All(attacker=>!attacker.engaged && game.CanMelee(attacker,target)));
+        bool leader=units.Any(unit=>UnitTypes.Get(unit).leader);
+        bool disrupted=units.Any(unit=>unit.status==Status.Disrupted);
+        bool routed=units.Any(unit=>unit.status==Status.Routed);
+        bool engaged=units.Any(unit=>unit.engaged);
+        bool ready=units.Count>0 && !leader && !disrupted && !routed && !engaged;
+        string detail;
+        if(units.Count==0)
+            detail="Gold outlines mark ready units with an enemy in their frontal hexes.";
+        else if(leader)detail="Leaders support a stacked combat unit but cannot attack by themselves.";
+        else if(disrupted)detail="A selected unit is disrupted and cannot attack until it rallies.";
+        else if(routed)detail="A selected unit is routed and cannot attack until it rallies.";
+        else if(engaged)detail="A selected unit has already fought during this melee segment.";
+        else if(legalTargets==0)detail=units.Count==1?
+            "No enemy is in this unit's two frontal hexes. Change its facing during movement.":
+            "No defender is in every selected unit's frontal hexes. Adjust the selection.";
+        else detail="Red pulsing markers show legal defenders. Click one to resolve the attack.";
+        string badge=units.Count==0?"SELECT":!ready?"BLOCKED":legalTargets+" TARGET"+
+            (legalTargets==1?"":"S");
+        GUILayout.Space(5*p);
+        GUILayout.BeginHorizontal(controlRow);
+        GUILayout.BeginVertical();
+        GUILayout.Label("MELEE COMBAT",controlHeading);
+        GUILayout.Label(detail,controlAction);
+        GUILayout.Label("D = disrupted  ·  R = routed  ·  neither can attack until rallied.",controlAction);
+        GUILayout.EndVertical();
+        GUILayout.FlexibleSpace();
+        GUILayout.Label(badge,ready&&legalTargets>0?fireCompleteBadge:controlBadge,
             GUILayout.Width(104*p),GUILayout.Height(34*p));
         GUILayout.EndHorizontal();
     }
@@ -1123,6 +1348,27 @@ public sealed class HastingsGame : MonoBehaviour
             missileResult.strength+" attack · "+missileResult.defense+" defense · roll "+missileResult.roll,
             panelMuted);
         GUILayout.Label(MissileOutcomeDetail(missileResult),panelMuted);
+        GUILayout.EndVertical();
+    }
+    private void DrawMeleeResultCard(Dictionary<string,string> unitLabels)
+    {
+        float p=panelScale;
+        var defenders=meleeResult.defenderIds.Select(id=>
+            unitLabels.ContainsKey(id)?unitLabels[id]:id).ToArray();
+        GUILayout.BeginVertical(panelCard);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("MELEE RESULT",panelSection);
+        GUILayout.FlexibleSpace();
+        if(GUILayout.Button("Dismiss",panelLink,GUILayout.Width(78*p),GUILayout.Height(28*p)))
+        {meleeResult=null;GUILayout.EndHorizontal();GUILayout.EndVertical();return;}
+        GUILayout.EndHorizontal();
+        GUILayout.Label(MeleeOutcome(meleeResult),panelValue);
+        GUILayout.Label(meleeResult.attackerIds.Length+" attacker"+
+            (meleeResult.attackerIds.Length==1?"":"s")+" → "+string.Join(", ",defenders),panelBody);
+        GUILayout.Label(meleeResult.attack+" attack · "+meleeResult.defense+" defense · differential "+
+            (meleeResult.difference>0?"+":"")+meleeResult.difference+" · roll "+meleeResult.roll,
+            panelMuted);
+        GUILayout.Label(MeleeOutcomeDetail(meleeResult),panelMuted);
         GUILayout.EndVertical();
     }
     private void DrawStrategyEffectsTrack(Rect region)
@@ -1332,13 +1578,13 @@ public sealed class HastingsGame : MonoBehaviour
             case Phase.NormanMove:return "Select a Norman unit and click a highlighted destination.";
             case Phase.NormanFire:return PlayerSide()==Side.Saxon?
                 "Continue to resolve Norman missile fire and movement.":
-                "Select missile units, then click an amber-outlined Saxon target.";
-            case Phase.NormanDefenseFire:return "Select missile units, then click an amber-outlined Saxon target.";
+                "Gold outlines mark missile units that can fire. Select them, then click an amber Saxon target.";
+            case Phase.NormanDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click an amber Saxon target.";
             case Phase.NormanMelee:return "Select attackers, then click a Saxon defender.";
             case Phase.NormanReaction:return "Select a Norman unit and click a highlighted reaction destination.";
             case Phase.SaxonReaction:return "Select a Saxon unit and click a highlighted reaction destination.";
-            case Phase.SaxonDefenseFire:return "Select Saxon missile units, then click an amber-outlined Norman target.";
-            case Phase.SaxonFire:return "Select Saxon missile units, then click an amber-outlined Norman target.";
+            case Phase.SaxonDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click an amber Norman target.";
+            case Phase.SaxonFire:return "Gold outlines mark missile units that can fire. Select them, then click an amber Norman target.";
             case Phase.SaxonMove:return "Select a Saxon unit and click a highlighted destination.";
             case Phase.SaxonMelee:return "Select Saxon attackers, then click a Norman defender.";
             case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
@@ -1390,10 +1636,55 @@ public sealed class HastingsGame : MonoBehaviour
         }
         selected.Clear();
         selectedTargets.Clear();
-        if(game.state.phase!=priorPhase &&
-           (game.state.phase==Phase.NormanFire||game.state.phase==Phase.NormanDefenseFire||
-            game.state.phase==Phase.SaxonFire||game.state.phase==Phase.SaxonDefenseFire))
-            showHigh=false;
+        highTrajectoryTargetId="";
+        if(game.state.phase!=priorPhase && !PlayerFirePhase())missileResult=null;
+        if(game.state.phase!=priorPhase && !PlayerMeleePhase())meleeResult=null;
+    }
+    private string MeleeFailure(List<UnitState> attackers,UnitState defender)
+    {
+        if(attackers==null || attackers.Count==0)return "Select one or more attackers first.";
+        if(attackers.Any(unit=>UnitTypes.Get(unit).leader))return "Leaders cannot attack by themselves.";
+        if(attackers.Any(unit=>unit.status==Status.Disrupted))
+            return "D marks a disrupted unit. It cannot attack until it rallies.";
+        if(attackers.Any(unit=>unit.status==Status.Routed))
+            return "R marks a routed unit. It cannot attack until it rallies.";
+        if(attackers.Any(unit=>unit.engaged))return "A selected unit has already fought this segment.";
+        if(defender!=null && defender.engaged)return "That defender has already fought this segment.";
+        return "That defender is outside one or more attackers' two frontal hexes.";
+    }
+    private string UnitStatusCause(UnitState unit,Dictionary<string,string> unitLabels)
+    {
+        if(unit.status!=Status.Disrupted && unit.status!=Status.Routed)return "";
+        string statusEvent=unit.id+(unit.status==Status.Routed?" routed":" disrupted");
+        int index=game.state.log.FindLastIndex(line=>line.Contains(statusEvent));
+        if(index<0)return "";
+        for(int prior=index-1;prior>=Math.Max(0,index-3);prior--)
+        {
+            string line=game.state.log[prior];
+            if(line.Contains(unit.id) && line.Contains(" morale "))
+                return "Cause · "+UnitDisplayNames.InEvent(line,unitLabels);
+            if(line.Contains("fire on "+unit.id+" "))
+                return "Cause · "+UnitDisplayNames.InEvent(line,unitLabels);
+        }
+        return unit.status==Status.Routed?
+            "Cause · combat result or rout shock; see Recent Events.":
+            "Cause · combat result or failed morale check; see Recent Events.";
+    }
+    private void ShowMeleeResult()
+    {
+        meleeResult=game.lastMeleeResult;
+        meleeEffectStarted=Time.unscaledTime;
+        meleeEffectUntil=meleeEffectStarted+4.3f;
+        missileResult=null;notice="";
+        selected.Clear();selectedTargets.Clear();
+    }
+    private void ShowMissileResult()
+    {
+        missileResult=game.lastFireResult;
+        missileEffectStarted=Time.unscaledTime;
+        missileEffectUntil=missileEffectStarted+3.6f;
+        meleeResult=null;notice="";highTrajectoryTargetId="";
+        selected.Clear();selectedTargets.Clear();
     }
     private void ChooseOptionalOrder(string group,bool knight,Order order)
     {
@@ -1459,9 +1750,10 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-                        showUnits=true;showHigh=false;chart="";showOrderResults=false;orderReviewMode=false;
+                        showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
+                        highTrajectoryTargetId="";
                         stackSpread.Clear();hoveredHex="";
-                        missileResult=null;
+                        missileResult=null;meleeResult=null;
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
                     catch(Exception ex){notice="Load failed: "+ex.Message;}
@@ -1499,18 +1791,23 @@ public sealed class HastingsGame : MonoBehaviour
         }
         else if(menuPage=="newSide")
         {
+            const string normanDescription=
+                "Attack Senlac Hill with the Breton, Norman, and Franco-Flemish contingents.";
+            const string saxonDescription=
+                "Defend the ridge with the left, center, and right wings. The battlefield rotates to your viewpoint.";
+            float descriptionWidth=rect.width-2*inset;
             GUILayout.Label("The opposing army will be controlled by the AI.",menuSubtitle,
                 GUILayout.Height(42));
             GUILayout.Space(18);
             if(GUILayout.Button("Play as the Normans",menuPrimary,GUILayout.Height(buttonHeight)))
                 StartNewGame(Side.Norman);
-            GUILayout.Label("Attack Senlac Hill with the Breton, Norman, and Franco-Flemish contingents.",
-                menuDescription,GUILayout.Height(48));
+            GUILayout.Label(normanDescription,menuDescription,GUILayout.Height(
+                menuDescription.CalcHeight(new GUIContent(normanDescription),descriptionWidth)+8f));
             GUILayout.Space(14);
             if(GUILayout.Button("Play as the Saxons",menuPrimary,GUILayout.Height(buttonHeight)))
                 StartNewGame(Side.Saxon);
-            GUILayout.Label("Defend the ridge with the left, center, and right wings. The battlefield rotates to your viewpoint.",
-                menuDescription,GUILayout.Height(52));
+            GUILayout.Label(saxonDescription,menuDescription,GUILayout.Height(
+                menuDescription.CalcHeight(new GUIContent(saxonDescription),descriptionWidth)+8f));
             GUILayout.FlexibleSpace();
             if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
@@ -1535,9 +1832,10 @@ public sealed class HastingsGame : MonoBehaviour
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks,playerSide));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-        showUnits=true;showHigh=false;chart="";showOrderResults=false;orderReviewMode=false;
+        showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
+        highTrajectoryTargetId="";
         stackSpread.Clear();hoveredHex="";
-        missileResult=null;
+        missileResult=null;meleeResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;
     }
     private void DrawOrderResults()
