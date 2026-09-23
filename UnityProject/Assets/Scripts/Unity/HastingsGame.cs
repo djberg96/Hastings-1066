@@ -31,7 +31,7 @@ public sealed class HastingsGame : MonoBehaviour
         panelBretonButton, panelNormanButton, panelFlemishButton,
         strategyHeading, strategyScale, strategyMarker, strategyLegend, strategyToggle,
         strategyBand, strategyEffectNote,
-        missileMapResult, missileMapDetail,
+        missileMapResult, missileMapDetail, statusMarker,
         controlHeading, controlBadge, controlAction, controlRow,
         orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
         orderRoll, orderType, orderName, orderText, orderChoice, orderEffect,
@@ -57,7 +57,11 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Escape))
         {
-            if(showOrderResults){showOrderResults=false;return;}
+            if(showOrderResults)
+            {
+                if(game==null || !game.OptionsPending())showOrderResults=false;
+                return;
+            }
             if(chart!=""){chart="";return;}
             if(game==null){showMenu=true;menuPage="main";}
             else if(!showMenu){showMenu=true;menuPage="main";}
@@ -180,6 +184,10 @@ public sealed class HastingsGame : MonoBehaviour
             missileMapDetail=LabelStyle(12,true,new Color(.32f,.20f,.14f));
             missileMapDetail.alignment=TextAnchor.MiddleCenter;
             missileMapDetail.wordWrap=false;
+            statusMarker=LabelStyle(15,true,Color.white);
+            statusMarker.alignment=TextAnchor.MiddleCenter;
+            statusMarker.wordWrap=false;
+            statusMarker.padding=new RectOffset(0,0,0,0);
             controlHeading=LabelStyle(12,true,new Color(.56f,.19f,.14f));
             controlHeading.margin=new RectOffset(0,0,8,3);
             controlBadge=LabelStyle(12,true,new Color(.99f,.96f,.88f));
@@ -514,10 +522,7 @@ public sealed class HastingsGame : MonoBehaviour
                     if(selected.Contains(u.id))DrawSelectionOutline(rect);
                     GUI.matrix=old;
                     if(u.status==Status.Disrupted||u.status==Status.Routed)
-                    {
-                        GUI.color=u.status==Status.Routed?Color.red:Color.yellow;
-                        GUI.Label(new Rect(rect.xMax-10,rect.y-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
-                    }
+                        DrawUnitStatusMarker(u.status,rect);
                 }
                 DrawFireTargetHighlights();
             }
@@ -574,6 +579,18 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.DrawTexture(new Rect(rect.x-line,rect.y,line,rect.height),Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(rect.xMax,rect.y,line,rect.height),Texture2D.whiteTexture);
         GUI.color=Color.white;
+    }
+    private void DrawUnitStatusMarker(Status status,Rect counter)
+    {
+        float size=Mathf.Clamp(27f*scale,18f,34f);
+        var marker=new Rect(counter.xMax-size*.68f,counter.y-size*.32f,size,size);
+        Color fill=status==Status.Routed?new Color(.62f,.13f,.10f):new Color(.78f,.52f,.12f);
+        Fill(new Rect(marker.x-2,marker.y-2,marker.width+4,marker.height+4),
+            new Color(.20f,.12f,.08f,.96f));
+        Fill(marker,fill);
+        statusMarker.fontSize=Mathf.Clamp(Mathf.RoundToInt(size*.63f),12,22);
+        statusMarker.normal.textColor=status==Status.Routed?Color.white:new Color(.18f,.11f,.06f);
+        GUI.Label(marker,status==Status.Routed?"R":"D",statusMarker);
     }
     private void DrawFireTargetHighlights()
     {
@@ -723,6 +740,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.BeginArea(new Rect(region.x+20*p,16*p,region.width-40*p,region.height-32*p));
         GUILayout.Label("HASTINGS 1066",panelTitle,GUILayout.Height(36*p));
         var s=game.state;
+        bool optionsPending=game.OptionsPending();
         var unitLabels=UnitDisplayNames.Build(s);
         GUILayout.Label(s.phase==Phase.GameOver?s.result:
             $"ASSAULT {s.period}   ·   TURN {s.turn}",panelStatus,GUILayout.Height(28*p));
@@ -751,8 +769,11 @@ public sealed class HastingsGame : MonoBehaviour
         panelScroll=GUILayout.BeginScrollView(panelScroll);
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("YOUR NEXT ACTION",panelSection);
-        GUILayout.Label(PhaseLabel(s.phase),panelValue);
-        GUILayout.Label(PhasePrompt(s.phase),panelMuted);
+        bool waitingForOrders=optionsPending && s.phase==Phase.NormanFire;
+        GUILayout.Label(waitingForOrders?"Complete battle orders":PhaseLabel(s.phase),panelValue);
+        GUILayout.Label(waitingForOrders?
+            "Choose each optional order below. Missile fire begins after every section has an order.":
+            PhasePrompt(s.phase),panelMuted);
         if(s.phase!=Phase.Orders && s.orderResults!=null && s.orderResults.Count>0)
         {
             GUILayout.Space(5*p);
@@ -774,7 +795,7 @@ public sealed class HastingsGame : MonoBehaviour
                 "Click a contingent to cycle its strategy. Hover for a short overview.":GUI.tooltip,
                 panelMuted,GUILayout.MinHeight(40*p));
         }
-        if(game.OptionsPending())
+        if(optionsPending)
         {
             GUILayout.Space(6*p);
             GUILayout.Label("OPTIONAL ORDERS",panelSection);
@@ -783,30 +804,32 @@ public sealed class HastingsGame : MonoBehaviour
                 if(g.footOptional)
                 {
                     GUILayout.Label(g.id+" foot",panelMuted);GUILayout.BeginHorizontal();
-                    if(GUILayout.Button("Wall",panelButton))game.SetOptionalOrder(g.id,false,Order.ShieldWall);
-                    if(GUILayout.Button("Fire",panelButton))game.SetOptionalOrder(g.id,false,Order.FireInPlace);
-                    if(GUILayout.Button("Advance",panelButton))game.SetOptionalOrder(g.id,false,Order.Advance);
+                    if(GUILayout.Button("Wall",panelButton))ChooseOptionalOrder(g.id,false,Order.ShieldWall);
+                    if(GUILayout.Button("Fire",panelButton))ChooseOptionalOrder(g.id,false,Order.FireInPlace);
+                    if(GUILayout.Button("Advance",panelButton))ChooseOptionalOrder(g.id,false,Order.Advance);
                     GUILayout.EndHorizontal();
                 }
                 if(g.knightOptional)
                 {
                     GUILayout.Label(g.id+" knights",panelMuted);GUILayout.BeginHorizontal();
-                    if(GUILayout.Button("Hold",panelButton))game.SetOptionalOrder(g.id,true,Order.Hold);
-                    if(GUILayout.Button("Advance",panelButton))game.SetOptionalOrder(g.id,true,Order.Advance);
-                    if(GUILayout.Button("Charge",panelButton))game.SetOptionalOrder(g.id,true,Order.Charge);
+                    if(GUILayout.Button("Hold",panelButton))ChooseOptionalOrder(g.id,true,Order.Hold);
+                    if(GUILayout.Button("Advance",panelButton))ChooseOptionalOrder(g.id,true,Order.Advance);
+                    if(GUILayout.Button("Charge",panelButton))ChooseOptionalOrder(g.id,true,Order.Charge);
                     GUILayout.EndHorizontal();
                 }
             }
         }
-        if(s.phase==Phase.NormanFire||s.phase==Phase.NormanDefenseFire)
+        if((s.phase==Phase.NormanFire||s.phase==Phase.NormanDefenseFire) && !optionsPending)
             showHigh=GUILayout.Toggle(showHigh,"High trajectory bow fire (period II)");
         if(notice!="")GUILayout.Label(notice,panelBody);
         if(s.phase!=Phase.GameOver)
         {
             string caption=s.phase==Phase.Setup?"Begin battle":s.phase==Phase.Orders?"Roll orders":
-                s.phase==Phase.Reform?"Finish reform":"Finish segment";
+                s.phase==Phase.Reform?"Finish reform":optionsPending?"Choose optional orders above":"Finish segment";
             GUILayout.Space(9*p);
+            GUI.enabled=!optionsPending;
             if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(54*p)))Advance();
+            GUI.enabled=true;
         }
         GUILayout.EndVertical();
         if(missileResult!=null)DrawMissileResultCard(unitLabels);
@@ -1182,6 +1205,10 @@ public sealed class HastingsGame : MonoBehaviour
         selected.Clear();
         selectedTargets.Clear();
     }
+    private void ChooseOptionalOrder(string group,bool knight,Order order)
+    {
+        if(game.SetOptionalOrder(group,knight,order))notice="";
+    }
     private void DrawMenu()
     {
         if(game!=null)
@@ -1326,8 +1353,11 @@ public sealed class HastingsGame : MonoBehaviour
         Fill(new Rect(rect.x,rect.y,rect.width,66*u),new Color(.60f,.21f,.16f));
         GUI.BeginGroup(rect);
         GUI.Label(new Rect(27*u,17*u,width-210*u,42*u),"BATTLE ORDERS",orderTitle);
+        bool optionsPending=game.OptionsPending();
+        GUI.enabled=!optionsPending;
         if(GUI.Button(new Rect(width-120*u,18*u,94*u,34*u),"Close  ×",panelLink))
         {showOrderResults=false;GUI.EndGroup();return;}
+        GUI.enabled=true;
         GUI.Label(new Rect(30*u,76*u,width-60*u,48*u),
             "Each Norman foot and knight section rolls 2d6 separately. Their strategy effects are combined for the nationality. Saxon wings each use one roll.",
             orderSubtitle);
@@ -1341,7 +1371,6 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
-        bool optionsPending=game.OptionsPending();
         string buttonText=optionsPending?"Choose the optional orders above":"Continue to Norman fire";
         GUI.enabled=!optionsPending;
         if(GUI.Button(new Rect(27*u,height-68*u,width-54*u,48*u),buttonText,panelPrimary))
@@ -1436,20 +1465,20 @@ public sealed class HastingsGame : MonoBehaviour
             if(knight)
             {
                 if(GUILayout.Button("Hold",orderChoice,GUILayout.Height(36*u)))
-                    game.SetOptionalOrder(result.group,true,Order.Hold);
+                    ChooseOptionalOrder(result.group,true,Order.Hold);
                 if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
-                    game.SetOptionalOrder(result.group,true,Order.Advance);
+                    ChooseOptionalOrder(result.group,true,Order.Advance);
                 if(GUILayout.Button("Charge",orderChoice,GUILayout.Height(36*u)))
-                    game.SetOptionalOrder(result.group,true,Order.Charge);
+                    ChooseOptionalOrder(result.group,true,Order.Charge);
             }
             else
             {
                 if(GUILayout.Button("Shield Wall",orderChoice,GUILayout.Height(36*u)))
-                    game.SetOptionalOrder(result.group,false,Order.ShieldWall);
+                    ChooseOptionalOrder(result.group,false,Order.ShieldWall);
                 if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
-                    game.SetOptionalOrder(result.group,false,Order.FireInPlace);
+                    ChooseOptionalOrder(result.group,false,Order.FireInPlace);
                 if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
-                    game.SetOptionalOrder(result.group,false,Order.Advance);
+                    ChooseOptionalOrder(result.group,false,Order.Advance);
             }
             GUILayout.EndHorizontal();
         }

@@ -169,9 +169,16 @@ public static class ProjectChecks
         optionalState.orderResults.Add(new OrderRollResult {group="Breton",side=Side.Norman,
             footOptional=true,hasKnights=true});
         var optionalEngine=new GameEngine(board,optionalState);
+        var waitingBowman=optionalState.units.First(u=>u.type=="NB");
+        var waitingTarget=optionalState.units.First(u=>u.type=="HC");
+        waitingBowman.hex="1112";waitingTarget.hex=board.Adjacent(waitingBowman.hex).First();
+        waitingBowman.facing=board.Direction(waitingBowman.hex,waitingTarget.hex);
+        Check(!optionalEngine.CanFire(waitingBowman,waitingTarget),
+            "Missile fire was allowed before optional battle orders were completed");
         Check(optionalEngine.SetOptionalOrder("Breton",false,Order.FireInPlace) &&
             !optionalGroup.footOptional && optionalGroup.footOrder==Order.FireInPlace &&
-            optionalState.orderResults[0].footOrder==Order.FireInPlace,
+            optionalState.orderResults[0].footOrder==Order.FireInPlace &&
+            optionalEngine.CanFire(waitingBowman,waitingTarget),
             "Optional order choice was not applied to its section");
         var json=JsonUtility.ToJson(state);
         var restored=JsonUtility.FromJson<GameState>(json);
