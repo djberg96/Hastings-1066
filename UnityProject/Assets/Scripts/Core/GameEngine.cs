@@ -16,6 +16,7 @@ namespace Hastings
     {
         public readonly Board board;
         public GameState state;
+        public MissileFireResult lastFireResult;
         public GameEngine(Board board, GameState state) { this.board=board; this.state=state; }
         public IEnumerable<UnitState> Living(Side side) { return state.units.Where(u=>u.side==side && u.status!=Status.Eliminated && board.Has(u.hex)); }
         public UnitState UnitAt(string hex, Side? side=null, bool leader=false)

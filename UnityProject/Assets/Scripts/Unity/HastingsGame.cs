@@ -18,6 +18,8 @@ public sealed class HastingsGame : MonoBehaviour
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
     private float panelScale=1f, chartScale=1f, orderScale=1f;
+    private float missileEffectStarted, missileEffectUntil;
+    private MissileFireResult missileResult;
     private bool showMenu=true, showUnits=true, showHigh, showHelp, showOrderResults,
         showStrategyTrack, fullMapMode;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
@@ -29,6 +31,7 @@ public sealed class HastingsGame : MonoBehaviour
         panelBretonButton, panelNormanButton, panelFlemishButton,
         strategyHeading, strategyScale, strategyMarker, strategyLegend, strategyToggle,
         strategyBand, strategyEffectNote,
+        missileMapResult, missileMapDetail,
         controlHeading, controlBadge, controlAction, controlRow,
         orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
         orderRoll, orderType, orderName, orderText, orderEffect,
@@ -171,6 +174,12 @@ public sealed class HastingsGame : MonoBehaviour
             strategyEffectNote.alignment=TextAnchor.UpperLeft;
             strategyEffectNote.wordWrap=true;
             strategyEffectNote.richText=true;
+            missileMapResult=LabelStyle(18,true,new Color(.99f,.96f,.88f));
+            missileMapResult.alignment=TextAnchor.MiddleCenter;
+            missileMapResult.wordWrap=false;
+            missileMapDetail=LabelStyle(12,true,new Color(.32f,.20f,.14f));
+            missileMapDetail.alignment=TextAnchor.MiddleCenter;
+            missileMapDetail.wordWrap=false;
             controlHeading=LabelStyle(12,true,new Color(.56f,.19f,.14f));
             controlHeading.margin=new RectOffset(0,0,8,3);
             controlBadge=LabelStyle(12,true,new Color(.99f,.96f,.88f));
@@ -426,7 +435,15 @@ public sealed class HastingsGame : MonoBehaviour
         {
             if(game.state.phase==Phase.NormanFire || game.state.phase==Phase.NormanDefenseFire)
             {
-                if(!game.Fire(selection,enemy??enemyLeader,showHigh))notice="Illegal fire target or missile supply exhausted.";
+                if(!game.Fire(selection,enemy??enemyLeader,showHigh))
+                    notice="Illegal fire target or missile supply exhausted.";
+                else
+                {
+                    missileResult=game.lastFireResult;
+                    missileEffectStarted=Time.unscaledTime;
+                    missileEffectUntil=missileEffectStarted+3.6f;
+                    notice="";
+                }
                 return;
             }
             if(game.state.phase==Phase.NormanMelee && enemy!=null)
@@ -476,6 +493,7 @@ public sealed class HastingsGame : MonoBehaviour
                 }
                 GUI.color=Color.white;
             }
+            DrawMissilePaths();
             DrawHexNumbers(region);
             DrawTrackMarkers();
             if(showUnits)
@@ -499,7 +517,9 @@ public sealed class HastingsGame : MonoBehaviour
                         GUI.Label(new Rect(rect.xMax-10,rect.y-5,22,20),u.status==Status.Routed?"R":"D");GUI.color=Color.white;
                     }
                 }
+                DrawFireTargetHighlights();
             }
+            DrawMissileImpact(region);
         }
         GUI.EndGroup();
     }
@@ -552,6 +572,109 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.DrawTexture(new Rect(rect.x-line,rect.y,line,rect.height),Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(rect.xMax,rect.y,line,rect.height),Texture2D.whiteTexture);
         GUI.color=Color.white;
+    }
+    private void DrawFireTargetHighlights()
+    {
+        if(game.state.phase!=Phase.NormanFire && game.state.phase!=Phase.NormanDefenseFire)return;
+        var shooters=SelectedUnits();
+        if(shooters.Count==0)return;
+        foreach(var target in game.Living(Side.Saxon).Where(target=>
+            shooters.All(shooter=>game.CanFire(shooter,target,showHigh))))
+        {
+            var hex=board.Hex(target.hex);
+            float size=Mathf.Max(48f,74*scale);
+            var rect=new Rect(pan.x+hex.x*scale-size/2f,pan.y+hex.y*scale-size/2f,size,size);
+            DrawRectOutline(rect,Mathf.Clamp(3*scale,2f,6f),new Color(1f,.67f,.12f,.92f));
+        }
+    }
+    private void DrawMissilePaths()
+    {
+        if(missileResult==null || Time.unscaledTime>missileEffectUntil ||
+           !board.Has(missileResult.targetHex))return;
+        float elapsed=Time.unscaledTime-missileEffectStarted;
+        float fade=1f-Mathf.Clamp01((elapsed-2.5f)/1.1f);
+        var targetHex=board.Hex(missileResult.targetHex);
+        var target=new Vector2(pan.x+targetHex.x*scale,pan.y+targetHex.y*scale);
+        float travel=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.65f));
+        foreach(var shooterHexId in missileResult.shooterHexes)
+        {
+            if(!board.Has(shooterHexId))continue;
+            var shooterHex=board.Hex(shooterHexId);
+            var origin=new Vector2(pan.x+shooterHex.x*scale,pan.y+shooterHex.y*scale);
+            DrawLine(origin,target,Mathf.Clamp(2.5f*scale,2f,5f),
+                new Color(1f,.82f,.24f,.48f*fade));
+            var projectile=Vector2.Lerp(origin,target,travel);
+            float size=Mathf.Clamp(10*scale,7f,16f);
+            Fill(new Rect(projectile.x-size/2,projectile.y-size/2,size,size),
+                new Color(1f,.95f,.62f,fade));
+        }
+    }
+    private void DrawMissileImpact(Rect region)
+    {
+        if(missileResult==null || Time.unscaledTime>missileEffectUntil ||
+           !board.Has(missileResult.targetHex))return;
+        float elapsed=Time.unscaledTime-missileEffectStarted;
+        float fade=1f-Mathf.Clamp01((elapsed-2.5f)/1.1f);
+        var hex=board.Hex(missileResult.targetHex);
+        var target=new Vector2(pan.x+hex.x*scale,pan.y+hex.y*scale);
+        float pulse=.5f+.5f*Mathf.Sin(elapsed*10f);
+        float targetSize=Mathf.Max(58f,(76+12*pulse)*scale);
+        DrawRectOutline(new Rect(target.x-targetSize/2,target.y-targetSize/2,targetSize,targetSize),
+            Mathf.Clamp(4*scale,3f,7f),new Color(1f,.77f,.18f,.88f*fade));
+
+        float width=220f,height=70f;
+        float x=Mathf.Clamp(target.x-width/2f,8f,region.width-width-8f);
+        float y=Mathf.Clamp(target.y-targetSize/2f-height-12f,8f,region.height-height-8f);
+        var callout=new Rect(x,y,width,height);
+        Fill(new Rect(callout.x-3,callout.y-3,callout.width+6,callout.height+6),
+            new Color(.24f,.13f,.09f,.92f*fade));
+        Fill(new Rect(callout.x,callout.y,callout.width,40),new Color(.61f,.22f,.16f,.98f*fade));
+        Fill(new Rect(callout.x,callout.y+40,callout.width,30),new Color(.96f,.91f,.81f,.98f*fade));
+        missileMapResult.fontSize=18;
+        missileMapDetail.fontSize=12;
+        GUI.Label(new Rect(callout.x+5,callout.y+2,callout.width-10,36),
+            MissileOutcome(missileResult),missileMapResult);
+        string detail=missileResult.roll==0?"Odds below 1:4":
+            missileResult.strength+" attack · "+missileResult.defense+" defense · Roll "+missileResult.roll;
+        GUI.Label(new Rect(callout.x+5,callout.y+41,callout.width-10,27),detail,missileMapDetail);
+    }
+    private static void DrawLine(Vector2 from,Vector2 to,float width,Color color)
+    {
+        Vector2 delta=to-from;
+        float length=delta.magnitude;
+        if(length<=.1f)return;
+        var old=GUI.matrix;
+        GUIUtility.RotateAroundPivot(Mathf.Atan2(delta.y,delta.x)*Mathf.Rad2Deg,from);
+        Fill(new Rect(from.x,from.y-width/2f,length,width),color);
+        GUI.matrix=old;
+    }
+    private static void DrawRectOutline(Rect rect,float width,Color color)
+    {
+        Fill(new Rect(rect.x,rect.y,rect.width,width),color);
+        Fill(new Rect(rect.x,rect.yMax-width,rect.width,width),color);
+        Fill(new Rect(rect.x,rect.y,width,rect.height),color);
+        Fill(new Rect(rect.xMax-width,rect.y,width,rect.height),color);
+    }
+    private static string MissileOutcome(MissileFireResult result)
+    {
+        if(result.targetStatusAfter==Status.Eliminated)return "ELIMINATED";
+        if(!result.targetReducedBefore && result.targetReducedAfter)return "STEP LOSS";
+        if(result.targetStatusAfter==Status.Routed)return "ROUTED";
+        if(result.targetStatusAfter==Status.Disrupted)return "DISRUPTED";
+        if(result.tableResult!=null && result.tableResult.Contains("M"))return "MORALE HOLDS";
+        return "NO EFFECT";
+    }
+    private static string MissileOutcomeDetail(MissileFireResult result)
+    {
+        switch(MissileOutcome(result))
+        {
+            case "ELIMINATED":return "The target was removed from play.";
+            case "STEP LOSS":return "The target counter was reduced.";
+            case "ROUTED":return "The target routed and retreated.";
+            case "DISRUPTED":return "The target is disrupted.";
+            case "MORALE HOLDS":return "The target passed its morale check.";
+            default:return "The fire caused no damage or morale effect.";
+        }
     }
     private void DrawHexNumbers(Rect region)
     {
@@ -684,6 +807,7 @@ public sealed class HastingsGame : MonoBehaviour
             if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(54*p)))Advance();
         }
         GUILayout.EndVertical();
+        if(missileResult!=null)DrawMissileResultCard(unitLabels);
         var units=SelectedUnits();
         if(units.Count>0 || selectedTargets.Count>0)
         {
@@ -785,6 +909,29 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+    private void DrawMissileResultCard(Dictionary<string,string> unitLabels)
+    {
+        float p=panelScale;
+        string targetName;
+        if(!unitLabels.TryGetValue(missileResult.targetId,out targetName))
+            targetName=missileResult.targetId;
+        GUILayout.BeginVertical(panelCard);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("MISSILE FIRE RESULT",panelSection);
+        GUILayout.FlexibleSpace();
+        if(GUILayout.Button("Dismiss",panelLink,GUILayout.Width(78*p),GUILayout.Height(28*p)))
+        {missileResult=null;GUILayout.EndHorizontal();GUILayout.EndVertical();return;}
+        GUILayout.EndHorizontal();
+        GUILayout.Label(MissileOutcome(missileResult),panelValue);
+        GUILayout.Label(missileResult.shooterIds.Length+" firing unit"+
+            (missileResult.shooterIds.Length==1?"":"s")+" → "+targetName,panelBody);
+        GUILayout.Label(missileResult.roll==0?
+            missileResult.strength+" attack · "+missileResult.defense+" defense · below 1:4":
+            missileResult.strength+" attack · "+missileResult.defense+" defense · roll "+missileResult.roll,
+            panelMuted);
+        GUILayout.Label(MissileOutcomeDetail(missileResult),panelMuted);
+        GUILayout.EndVertical();
     }
     private void DrawStrategyEffectsTrack(Rect region)
     {
@@ -984,7 +1131,7 @@ public sealed class HastingsGame : MonoBehaviour
             case Phase.Orders:return "Choose a strategy for each Norman contingent.";
             case Phase.NormanMove:return "Select a Norman unit and click a highlighted destination.";
             case Phase.NormanFire:
-            case Phase.NormanDefenseFire:return "Select missile units, then click a legal Saxon target.";
+            case Phase.NormanDefenseFire:return "Select missile units, then click an amber-outlined Saxon target.";
             case Phase.NormanMelee:return "Select attackers, then click a Saxon defender.";
             case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
             case Phase.GameOver:return "The battle is over.";
@@ -1094,6 +1241,7 @@ public sealed class HastingsGame : MonoBehaviour
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
                         showUnits=true;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
+                        missileResult=null;
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
                     catch(Exception ex){notice="Load failed: "+ex.Message;}
@@ -1137,6 +1285,7 @@ public sealed class HastingsGame : MonoBehaviour
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
         showUnits=true;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
+        missileResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;
     }
     private void DrawOrderResults()

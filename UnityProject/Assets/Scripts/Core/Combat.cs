@@ -67,6 +67,12 @@ namespace Hastings
             if(shooters.Any(s=>StrategyEffects.PenalizesCombat(UnitTypes.Get(s).knight,Group(s).effect)))column--;
             if(StrategyEffects.PenalizesCombat(targetType.knight,Group(target).effect))column++;
             column=Math.Min(9,column);
+            var fireResult=new MissileFireResult {
+                shooterIds=shooters.Select(s=>s.id).ToArray(),
+                shooterHexes=shooters.Select(s=>s.hex).ToArray(),
+                targetId=target.id,targetHex=target.hex,strength=strength,defense=defense,
+                high=high,targetStatusBefore=target.status,targetReducedBefore=target.reduced
+            };
             foreach(var s in shooters)
             {
                 s.fired=true; var t=UnitTypes.Get(s);
@@ -76,10 +82,21 @@ namespace Hastings
                     g.firedThisSegment=true;
                 }
             }
-            if(column<0){Log("Fire on "+target.id+" at odds below 1:4: no effect");return true;}
+            if(column<0)
+            {
+                fireResult.tableResult="-";fireResult.roll=0;
+                fireResult.targetStatusAfter=target.status;
+                fireResult.targetReducedAfter=target.reduced;
+                lastFireResult=fireResult;
+                Log("Fire on "+target.id+" at odds below 1:4: no effect");return true;
+            }
             int die=Die();string result=RuleTables.Missile[die-1,column];
             Log(shooters.Count+" unit(s) fire on "+target.id+" ("+strength+":"+defense+") roll "+die+" → "+result);
             ApplyResult(target,result,false);
+            fireResult.roll=die;fireResult.tableResult=result;
+            fireResult.targetStatusAfter=target.status;
+            fireResult.targetReducedAfter=target.reduced;
+            lastFireResult=fireResult;
             CheckVictory();return true;
         }
         public bool CanMelee(UnitState attacker,UnitState defender)

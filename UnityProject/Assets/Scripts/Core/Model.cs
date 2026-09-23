@@ -68,6 +68,14 @@ namespace Hastings
         public bool hasKnights, footOptional, knightOptional;
         public bool footContinued, knightContinued;
     }
+    public sealed class MissileFireResult
+    {
+        public string[] shooterIds, shooterHexes;
+        public string targetId, targetHex, tableResult;
+        public int strength, defense, roll;
+        public bool high, targetReducedBefore, targetReducedAfter;
+        public Status targetStatusBefore, targetStatusAfter;
+    }
     [Serializable] public class GameState
     {
         public int saveVersion = 1;

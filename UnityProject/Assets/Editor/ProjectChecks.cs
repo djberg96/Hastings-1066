@@ -175,6 +175,22 @@ public static class ProjectChecks
             string path=Path.Combine(Application.persistentDataPath,"Saves",slot+".json");
             if(File.Exists(path))File.Delete(path);
         }
+        var fireState=Setup.New(board,37);fireState.phase=Phase.NormanFire;
+        var fireEngine=new GameEngine(board,fireState);
+        var bowman=fireState.units.First(u=>u.type=="NB");
+        var fireTarget=fireState.units.First(u=>u.type=="HC");
+        bowman.hex="1112";fireTarget.hex=board.Adjacent(bowman.hex).First();
+        string firedAtHex=fireTarget.hex;
+        bowman.facing=board.Direction(bowman.hex,fireTarget.hex);
+        fireTarget.facing=board.Direction(fireTarget.hex,bowman.hex);
+        Check(fireEngine.Fire(new List<UnitState>{bowman},fireTarget),
+            "Legal bow fire was rejected");
+        Check(fireEngine.lastFireResult!=null &&
+            fireEngine.lastFireResult.shooterIds.SequenceEqual(new[]{bowman.id}) &&
+            fireEngine.lastFireResult.targetId==fireTarget.id &&
+            fireEngine.lastFireResult.targetHex==firedAtHex &&
+            fireEngine.lastFireResult.strength>0 && fireEngine.lastFireResult.defense>0,
+            "Missile fire did not expose a visual result");
         var roadState=Setup.New(board,33);
         foreach(var road in roadState.road)road.owner=Side.Norman;
         new GameEngine(board,roadState).CheckVictory();
