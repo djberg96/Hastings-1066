@@ -369,8 +369,7 @@ public sealed class HastingsGame : MonoBehaviour
         Event e=Event.current;
         if(e.type==EventType.KeyDown)
         {
-            if(e.keyCode==KeyCode.Space && !showMenu && chart=="" && !showOrderResults){Advance();e.Use();}
-            else if(showUnits && !showMenu && chart=="" && !showOrderResults &&
+            if(showUnits && !showMenu && chart=="" && !showOrderResults &&
                     (e.keyCode==KeyCode.Q||e.keyCode==KeyCode.E) && selected.Count==1)
             {
                 var unit=SelectedUnits().FirstOrDefault();
@@ -802,7 +801,7 @@ public sealed class HastingsGame : MonoBehaviour
         if(s.phase!=Phase.GameOver)
         {
             string caption=s.phase==Phase.Setup?"Begin battle":s.phase==Phase.Orders?"Roll orders":
-                s.phase==Phase.Reform?"Finish reform":"Finish segment  ·  Space";
+                s.phase==Phase.Reform?"Finish reform":"Finish segment";
             GUILayout.Space(9*p);
             if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(54*p)))Advance();
         }
@@ -1086,7 +1085,6 @@ public sealed class HastingsGame : MonoBehaviour
         DrawControlRow("Q  /  E", "Turn the selected unit");
 
         GUILayout.Label("GAME FLOW",controlHeading);
-        DrawControlRow("SPACE", "Finish the current segment");
         DrawControlRow("ESC", "Open or close the game menu");
     }
     private void DrawControlRow(string control,string action)
