@@ -1201,9 +1201,10 @@ public sealed class HastingsGame : MonoBehaviour
             case Phase.NormanFire:return "Norman missile fire";
             case Phase.NormanDefenseFire:return "Norman defensive fire";
             case Phase.NormanMelee:return "Norman melee";
+            case Phase.NormanReaction:return "Norman reaction";
             case Phase.Reform:return "Reform";
             case Phase.GameOver:return "Battle ended";
-            default:return UpperFirst(phase.ToString());
+            default:return "Battle phase";
         }
     }
     private static string PhasePrompt(Phase phase)
@@ -1216,6 +1217,7 @@ public sealed class HastingsGame : MonoBehaviour
             case Phase.NormanFire:
             case Phase.NormanDefenseFire:return "Select missile units, then click an amber-outlined Saxon target.";
             case Phase.NormanMelee:return "Select attackers, then click a Saxon defender.";
+            case Phase.NormanReaction:return "Select a Norman unit and click a highlighted reaction destination.";
             case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
             case Phase.GameOver:return "The battle is over.";
             default:return "Resolve any available actions, then finish this segment.";
