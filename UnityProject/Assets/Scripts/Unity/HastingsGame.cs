@@ -9,7 +9,8 @@ public sealed class HastingsGame : MonoBehaviour
 {
     private Board board;
     private GameEngine game;
-    private Texture2D map, titleBackground, assaultPeriodMarker, battleTurnMarker;
+    private Texture2D map, titleBackground, assaultPeriodMarker, battleTurnMarker,
+        movementHex;
     private readonly Dictionary<string,Texture2D> counters=new Dictionary<string,Texture2D>();
     private readonly Dictionary<string,Texture2D> terrainSwatches=new Dictionary<string,Texture2D>();
     private readonly Dictionary<string,float> stackSpread=new Dictionary<string,float>();
@@ -51,6 +52,7 @@ public sealed class HastingsGame : MonoBehaviour
         titleBackground=Resources.Load<Texture2D>("Art/Menu/title_tapestry");
         assaultPeriodMarker=Resources.Load<Texture2D>("Art/Counters/Markers/Assault_Period");
         battleTurnMarker=Resources.Load<Texture2D>("Art/Counters/Markers/Battle_Turn");
+        movementHex=CreateHexOverlay(128,148);
         foreach(var terrain in new[]{"clear","ridge","marsh","stream","woods","road"})
             terrainSwatches[terrain]=Resources.Load<Texture2D>("Art/Terrain/"+terrain);
     }
@@ -310,6 +312,30 @@ public sealed class HastingsGame : MonoBehaviour
         var result=new Texture2D(1,1,TextureFormat.RGBA32,false);
         result.SetPixel(0,0,color);result.Apply();return result;
     }
+    private static Texture2D CreateHexOverlay(int width,int height)
+    {
+        var texture=new Texture2D(width,height,TextureFormat.RGBA32,false)
+        {filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp,
+            hideFlags=HideFlags.HideAndDontSave};
+        var pixels=new Color[width*height];
+        const int samples=4;
+        for(int y=0;y<height;y++)for(int x=0;x<width;x++)
+        {
+            float alpha=0;
+            for(int sy=0;sy<samples;sy++)for(int sx=0;sx<samples;sx++)
+            {
+                float nx=Mathf.Abs(((x+(sx+.5f)/samples)/width-.5f)*2f);
+                float ny=Mathf.Abs(((y+(sy+.5f)/samples)/height-.5f)*2f);
+                bool outer=ny<=1f && nx<=Mathf.Min(1f,2f*(1f-ny));
+                float innerScale=.90f;
+                float ix=nx/innerScale,iy=ny/innerScale;
+                bool inner=iy<=1f && ix<=Mathf.Min(1f,2f*(1f-iy));
+                if(outer)alpha+=inner?.19f:.88f;
+            }
+            pixels[y*width+x]=new Color(1,1,1,alpha/(samples*samples));
+        }
+        texture.SetPixels(pixels);texture.Apply();return texture;
+    }
     private static GUIStyle LabelStyle(int size,bool bold,Color color)
     {
         var style=new GUIStyle(GUI.skin.label){fontSize=size,fontStyle=bold?FontStyle.Bold:FontStyle.Normal,
@@ -508,9 +534,11 @@ public sealed class HastingsGame : MonoBehaviour
                 foreach(var move in game.LegalMoves(unit,reaction).Values)
                 {
                     var h=board.Hex(move.destination);
-                    float size=74*scale;
-                    GUI.color=move.charge?new Color(1,.6f,.1f,.45f):new Color(.1f,1,.25f,.42f);
-                    GUI.DrawTexture(new Rect(pan.x+h.x*scale-size/2,pan.y+h.y*scale-size/2,size,size),Texture2D.whiteTexture);
+                    float width=96*scale,height=111*scale;
+                    GUI.color=move.charge?new Color(.82f,.31f,.15f,.96f):
+                        new Color(.95f,.84f,.49f,.90f);
+                    GUI.DrawTexture(new Rect(pan.x+h.x*scale-width/2,
+                        pan.y+h.y*scale-height/2,width,height),movementHex,ScaleMode.StretchToFill);
                 }
                 GUI.color=Color.white;
             }
