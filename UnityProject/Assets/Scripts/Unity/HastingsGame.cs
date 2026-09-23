@@ -7,6 +7,11 @@ using UnityEngine;
 
 public sealed class HastingsGame : MonoBehaviour
 {
+    private sealed class MovementUndoEntry
+    {
+        public string stateJson,unitId,action;
+    }
+
     private Board board;
     private GameEngine game;
     private Texture2D map, titleBackground, assaultPeriodMarker, battleTurnMarker,
@@ -16,6 +21,7 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly Dictionary<string,float> stackSpread=new Dictionary<string,float>();
     private readonly List<string> selected=new List<string>();
     private readonly List<string> selectedTargets=new List<string>();
+    private readonly Stack<MovementUndoEntry> movementUndo=new Stack<MovementUndoEntry>();
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
     private float panelScale=1f, chartScale=1f, orderScale=1f;
@@ -36,7 +42,7 @@ public sealed class HastingsGame : MonoBehaviour
         panelBretonButton, panelNormanButton, panelFlemishButton,
         strategyHeading, strategyScale, strategyMarker, strategyLegend, strategyToggle,
         strategyBand, strategyEffectNote,
-        missileMapResult, missileMapDetail, statusMarker,
+        missileMapResult, missileMapDetail, statusMarker, movedMarker,
         controlHeading, controlBadge, controlAction, controlRow, fireCompleteBadge,
         orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
         orderRoll, orderType, orderName, orderText, orderChoice, orderEffect,
@@ -237,6 +243,10 @@ public sealed class HastingsGame : MonoBehaviour
             statusMarker.alignment=TextAnchor.MiddleCenter;
             statusMarker.wordWrap=false;
             statusMarker.padding=new RectOffset(0,0,0,0);
+            movedMarker=LabelStyle(10,true,new Color(.99f,.96f,.88f));
+            movedMarker.alignment=TextAnchor.MiddleCenter;
+            movedMarker.wordWrap=false;
+            movedMarker.padding=new RectOffset(2,2,0,0);
             controlHeading=LabelStyle(12,true,new Color(.56f,.19f,.14f));
             controlHeading.margin=new RectOffset(0,0,8,3);
             controlBadge=LabelStyle(12,true,new Color(.99f,.96f,.88f));
@@ -463,7 +473,13 @@ public sealed class HastingsGame : MonoBehaviour
                     (e.keyCode==KeyCode.Q||e.keyCode==KeyCode.E) && selected.Count==1)
             {
                 var unit=SelectedUnits().FirstOrDefault();
-                if(unit!=null)game.Face(unit,unit.facing+(e.keyCode==KeyCode.E?1:-1));e.Use();
+                if(unit!=null)
+                {
+                    int direction=unit.facing+(e.keyCode==KeyCode.E?1:-1);
+                    if(PlayerMovePhase())FaceWithUndo(unit,direction);
+                    else game.Face(unit,direction);
+                }
+                e.Use();
             }
         }
         if(showMenu||chart!=""||showOrderResults||!region.Contains(e.mousePosition))return;
@@ -477,10 +493,28 @@ public sealed class HastingsGame : MonoBehaviour
         {fullMapMode=false;pan+=e.delta;e.Use();}
         else if(e.type==EventType.MouseDown && e.button==0 && game!=null && showUnits)
         {
+            var selectedUnit=SelectedCounterAt(e.mousePosition);
+            if(selectedUnit!=null)
+            {
+                selected.Remove(selectedUnit.id);
+                selectedTargets.Clear();
+                highTrajectoryTargetId="";
+                e.Use();
+                return;
+            }
             string hex=HexAtPointer(e.mousePosition);
             if(hex!=null)ClickHex(hex,e.shift,e.alt||PointerOnSplayedLeader(hex,e.mousePosition));
             e.Use();
         }
+    }
+    private UnitState SelectedCounterAt(Vector2 point)
+    {
+        return SelectedUnits().Where(unit=>board.Has(unit.hex))
+            .Select(unit=>new {unit,rect=CounterRect(unit,SpreadFor(unit.hex))})
+            .Where(item=>(point-item.rect.center).sqrMagnitude<=
+                item.rect.width*item.rect.width*.52f)
+            .OrderBy(item=>(point-item.rect.center).sqrMagnitude)
+            .Select(item=>item.unit).FirstOrDefault();
     }
     private Rect CounterRect(UnitState unit,float spread)
     {
@@ -521,10 +555,12 @@ public sealed class HastingsGame : MonoBehaviour
         var enemy=game.UnitAt(hex,opponent);
         var enemyLeader=game.UnitAt(hex,opponent,true);
         var selection=SelectedUnits();
-        if(!preferLeader && PlayerMovePhase() && selection.Count==1 && game.Move(selection[0],hex))return;
-        if(!preferLeader && PlayerReactionPhase() && selection.Count==1 && game.Move(selection[0],hex,true))return;
+        if(!preferLeader && PlayerMovePhase() && selection.Count==1 && selection[0].hex!=hex &&
+           MoveWithUndo(selection[0],hex))return;
+        if(!preferLeader && PlayerReactionPhase() && selection.Count==1 && selection[0].hex!=hex &&
+           game.Move(selection[0],hex,true))return;
         if(!preferLeader && game.state.phase==Phase.Reform && player==Side.Norman &&
-           selection.Count==1 && game.ReformMove(selection[0],hex))return;
+           selection.Count==1 && selection[0].hex!=hex && game.ReformMove(selection[0],hex))return;
         if((enemy!=null||enemyLeader!=null) && selection.Count>0)
         {
             if(PlayerFirePhase())
@@ -558,11 +594,41 @@ public sealed class HastingsGame : MonoBehaviour
         {
             highTrajectoryTargetId="";
             var unit=preferLeader?(leader??friendly):(friendly??leader);
-            if(add)
-            {if(!selected.Contains(unit.id))selected.Add(unit.id);}
+            if(selected.Contains(unit.id))selected.Remove(unit.id);
+            else if(add)selected.Add(unit.id);
             else{selected.Clear();selected.Add(unit.id);}
+            selectedTargets.Clear();
         }
-        else if(!add){selected.Clear();highTrajectoryTargetId="";}
+        else if(!add){selected.Clear();selectedTargets.Clear();highTrajectoryTargetId="";}
+    }
+    private bool MoveWithUndo(UnitState unit,string destination)
+    {
+        string snapshot=JsonUtility.ToJson(game.state);
+        if(!game.Move(unit,destination))return false;
+        movementUndo.Push(new MovementUndoEntry{stateJson=snapshot,unitId=unit.id,action="move"});
+        notice="";
+        return true;
+    }
+    private bool FaceWithUndo(UnitState unit,int direction)
+    {
+        string snapshot=JsonUtility.ToJson(game.state);
+        if(!game.Face(unit,direction))return false;
+        movementUndo.Push(new MovementUndoEntry{stateJson=snapshot,unitId=unit.id,action="facing"});
+        notice="";
+        return true;
+    }
+    private void UndoMovement()
+    {
+        if(movementUndo.Count==0)return;
+        var entry=movementUndo.Pop();
+        var restored=JsonUtility.FromJson<GameState>(entry.stateJson);
+        game=new GameEngine(board,restored);
+        selected.Clear();selectedTargets.Clear();highTrajectoryTargetId="";
+        if(game.state.units.Any(unit=>unit.id==entry.unitId && unit.status!=Status.Eliminated))
+            selected.Add(entry.unitId);
+        var labels=UnitDisplayNames.Build(game.state);
+        notice="Undid "+(labels.ContainsKey(entry.unitId)?labels[entry.unitId]:entry.unitId)+"'s "+
+            (entry.action=="facing"?"facing change.":"move.");
     }
     private List<UnitState> SelectedUnits()
     {
@@ -619,6 +685,8 @@ public sealed class HastingsGame : MonoBehaviour
                     GUI.matrix=old;
                     if(u.status==Status.Disrupted||u.status==Status.Routed)
                         DrawUnitStatusMarker(u.status,rect);
+                    if(PlayerMovePhase() && u.side==PlayerSide() && u.moved)
+                        DrawUnitMovedMarker(rect);
                 }
                 DrawFireDesignationHighlights();
                 DrawMeleeDesignationHighlights();
@@ -710,6 +778,16 @@ public sealed class HastingsGame : MonoBehaviour
         statusMarker.normal.textColor=status==Status.Routed?Color.white:new Color(.18f,.11f,.06f);
         GUI.Label(marker,status==Status.Routed?"R":"D",statusMarker);
     }
+    private void DrawUnitMovedMarker(Rect counter)
+    {
+        float size=Mathf.Clamp(25f*scale,17f,30f);
+        var marker=new Rect(counter.x-size*.32f,counter.yMax-size*.68f,size,size);
+        Fill(new Rect(marker.x-2,marker.y-2,marker.width+4,marker.height+4),
+            new Color(.20f,.12f,.08f,.92f));
+        Fill(marker,new Color(.42f,.31f,.22f,.96f));
+        movedMarker.fontSize=Mathf.Clamp(Mathf.RoundToInt(size*.62f),11,18);
+        GUI.Label(marker,"M",movedMarker);
+    }
     private void DrawFireDesignationHighlights()
     {
         if(!PlayerFirePhase())return;
@@ -734,7 +812,7 @@ public sealed class HastingsGame : MonoBehaviour
             var center=MapPoint(hex.x,hex.y);
             float size=Mathf.Max(48f,74*scale);
             var rect=new Rect(center.x-size/2f,center.y-size/2f,size,size);
-            DrawRectOutline(rect,Mathf.Clamp(3*scale,2f,6f),new Color(1f,.67f,.12f,.92f));
+            DrawRectOutline(rect,Mathf.Clamp(3*scale,2f,6f),new Color(.82f,.15f,.09f,.94f));
         }
         var highTarget=PendingHighTrajectoryTarget();
         if(highTarget!=null)
@@ -750,7 +828,6 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(!PlayerMeleePhase())return;
         var attackers=SelectedUnits();
-        float pulse=.5f+.5f*Mathf.Sin(Time.unscaledTime*6f);
         if(attackers.Count==0)
         {
             foreach(var unit in game.Living(PlayerSide()).Where(unit=>
@@ -760,7 +837,7 @@ public sealed class HastingsGame : MonoBehaviour
             {
                 var rect=CounterRect(unit,SpreadFor(unit.hex));
                 DrawRectOutline(new Rect(rect.x-4,rect.y-4,rect.width+8,rect.height+8),
-                    2f+2f*pulse,new Color(.91f,.62f,.14f,.72f));
+                    3f,new Color(.91f,.62f,.14f,.82f));
             }
             return;
         }
@@ -769,9 +846,9 @@ public sealed class HastingsGame : MonoBehaviour
                 game.CanMelee(attacker,target))))
         {
             var rect=CounterRect(target,SpreadFor(target.hex));
-            float inset=3f+3f*pulse;
+            const float inset=6f;
             DrawRectOutline(new Rect(rect.x-inset,rect.y-inset,
-                rect.width+2*inset,rect.height+2*inset),3f+2f*pulse,
+                rect.width+2*inset,rect.height+2*inset),4f,
                 new Color(.76f,.16f,.10f,.92f));
             var badge=new Rect(rect.center.x-34f,rect.y-27f,68f,22f);
             Fill(badge,new Color(.48f,.10f,.07f,.94f));
@@ -1122,6 +1199,14 @@ public sealed class HastingsGame : MonoBehaviour
             DrawBowFireProgress(p);
         }
         if(PlayerMeleePhase())DrawMeleeGuide(p);
+        if(movementUndo.Count>0 && (PlayerMovePhase() || s.phase==Phase.GameOver))
+        {
+            GUILayout.Space(6*p);
+            string undoLabel=movementUndo.Peek().action=="facing"?
+                "Undo facing change":"Undo last move";
+            if(GUILayout.Button(undoLabel,panelLink,GUILayout.Height(40*p)))
+                UndoMovement();
+        }
         if(notice!="")GUILayout.Label(notice,panelBody);
         if(s.phase!=Phase.GameOver)
         {
@@ -1312,7 +1397,7 @@ public sealed class HastingsGame : MonoBehaviour
         else if(legalTargets==0)detail=units.Count==1?
             "No enemy is in this unit's two frontal hexes. Change its facing during movement.":
             "No defender is in every selected unit's frontal hexes. Adjust the selection.";
-        else detail="Red pulsing markers show legal defenders. Click one to resolve the attack.";
+        else detail="Red outlines show legal defenders. Click one to resolve the attack.";
         string badge=units.Count==0?"SELECT":!ready?"BLOCKED":legalTargets+" TARGET"+
             (legalTargets==1?"":"S");
         GUILayout.Space(5*p);
@@ -1578,13 +1663,13 @@ public sealed class HastingsGame : MonoBehaviour
             case Phase.NormanMove:return "Select a Norman unit and click a highlighted destination.";
             case Phase.NormanFire:return PlayerSide()==Side.Saxon?
                 "Continue to resolve Norman missile fire and movement.":
-                "Gold outlines mark missile units that can fire. Select them, then click an amber Saxon target.";
-            case Phase.NormanDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click an amber Saxon target.";
+                "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Saxon target.";
+            case Phase.NormanDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Saxon target.";
             case Phase.NormanMelee:return "Select attackers, then click a Saxon defender.";
             case Phase.NormanReaction:return "Select a Norman unit and click a highlighted reaction destination.";
             case Phase.SaxonReaction:return "Select a Saxon unit and click a highlighted reaction destination.";
-            case Phase.SaxonDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click an amber Norman target.";
-            case Phase.SaxonFire:return "Gold outlines mark missile units that can fire. Select them, then click an amber Norman target.";
+            case Phase.SaxonDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
+            case Phase.SaxonFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
             case Phase.SaxonMove:return "Select a Saxon unit and click a highlighted destination.";
             case Phase.SaxonMelee:return "Select Saxon attackers, then click a Norman defender.";
             case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
@@ -1637,6 +1722,7 @@ public sealed class HastingsGame : MonoBehaviour
         selected.Clear();
         selectedTargets.Clear();
         highTrajectoryTargetId="";
+        if(game.state.phase!=priorPhase)movementUndo.Clear();
         if(game.state.phase!=priorPhase && !PlayerFirePhase())missileResult=null;
         if(game.state.phase!=priorPhase && !PlayerMeleePhase())meleeResult=null;
     }
@@ -1752,6 +1838,7 @@ public sealed class HastingsGame : MonoBehaviour
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
                         showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
                         highTrajectoryTargetId="";
+                        movementUndo.Clear();
                         stackSpread.Clear();hoveredHex="";
                         missileResult=null;meleeResult=null;
                         lastMapWidth=0;scale=0;fullMapMode=false;
@@ -1834,6 +1921,7 @@ public sealed class HastingsGame : MonoBehaviour
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
         showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
         highTrajectoryTargetId="";
+        movementUndo.Clear();
         stackSpread.Clear();hoveredHex="";
         missileResult=null;meleeResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;
