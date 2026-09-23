@@ -28,6 +28,9 @@ XLINK = "{http://www.w3.org/1999/xlink}href"
 SVG = "{http://www.w3.org/2000/svg}"
 TRANSLATE = re.compile(r"translate\(\s*([-\d.]+)(?:[,\s]+([-\d.]+))?\s*\)")
 HEX_ID = re.compile(r"\d{4}$")
+STREAM_COLOR = "#2d91ad"
+STREAM_WIDTH = "11"
+STREAM_OPACITY = "0.68"
 
 
 def offset(transform):
@@ -47,6 +50,26 @@ def distance_to_segment(px, py, ax, ay, bx, by):
 
 
 root = ET.parse(SOURCE).getroot()
+
+# The source uses a broad, saturated blue line that reads more like a river at
+# game scale. Keep its course intact while rendering a quieter, narrower stream
+# on the generated board and terrain swatch.
+for element in root.iter():
+    if element.get("id") == "all_streams":
+        element.set("stroke", STREAM_COLOR)
+        element.set("stroke-width", STREAM_WIDTH)
+        element.set("stroke-opacity", STREAM_OPACITY)
+    elif element.get("id") == "stream_key":
+        for child in element.iter():
+            if child.tag.endswith("polyline"):
+                child.set("stroke", STREAM_COLOR)
+                child.set("stroke-width", STREAM_WIDTH)
+                child.set("stroke-opacity", STREAM_OPACITY)
+    elif element.get("id") == "stream":
+        for child in element.iter():
+            if child.tag.endswith("feDisplacementMap"):
+                child.set("scale", "9")
+
 hexes = {}
 ridge_drawings = []
 ridge_key_drawings = []
@@ -239,6 +262,11 @@ affected_grid = {
                       h["y"] - hexes[ident]["y"]) < 120
            for ident in woods | marshes)
 }
+# Keep the printed hex border visible through each stream. This gives the
+# turbulent banks a stable centerline and makes it clear which edge is crossed.
+affected_grid.update(
+    ident for edge in edges if edge["stream"] for ident in (edge["a"], edge["b"])
+)
 hex_points = (
     (50.24, .25), (100.23, 29.112), (100.23, 86.835),
     (50.24, 115.697), (.25, 86.835), (.25, 29.112),
@@ -291,7 +319,10 @@ for ident in affected_grid:
             "x1": f"{start[0]:.3f}", "y1": f"{start[1]:.3f}",
             "x2": f"{end[0]:.3f}", "y2": f"{end[1]:.3f}",
         })
-root.insert(stream_index + 1, grid)
+# The terrain overlay was inserted immediately before the original stream
+# group, so place the restored grid after both. Stream-edge lines then remain
+# the exact visible centerline while the displaced water varies around them.
+root.insert(stream_index + 2, grid)
 
 # The source road is a four-point polyline with two abrupt corners at Senlac
 # Hill. Round only short sections beside those corners. The long approaches

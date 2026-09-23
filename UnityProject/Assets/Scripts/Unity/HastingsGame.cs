@@ -2030,7 +2030,7 @@ public sealed class HastingsGame : MonoBehaviour
             "Defender −1","Knight morale check on entry",
             new Color(.33f,.59f,.55f));
         y=TerrainRow(y,width,5,"Stream","stream","+1 MP to cross","None",
-            "Charges cannot cross streams",new Color(.20f,.43f,.70f));
+            "Charges cannot cross streams",new Color(.18f,.57f,.68f));
         y=TerrainRow(y,width,6,"Woods","woods","Foot 2 MP; knight 3 MP",
             "Defender +2 in melee; +1 vs bow fire",
             "Fire into woods is allowed; fire through is blocked",
