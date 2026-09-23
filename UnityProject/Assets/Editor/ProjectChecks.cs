@@ -146,6 +146,33 @@ public static class ProjectChecks
             state.orderResults.Count(r=>r.side==Side.Norman)==3 &&
             state.orderResults.All(r=>r.roll>=2 && r.roll<=12),
             "Order roll results were not retained for the player summary");
+        foreach(var result in state.orderResults.Where(r=>r.side==Side.Norman))
+        {
+            int footDuration,footEffect,knightDuration,knightEffect;
+            bool footOptional,knightOptional;
+            var expectedFoot=RuleTables.RollOrder(Side.Norman,false,result.strategy,result.footRoll,
+                out footDuration,out footEffect,out footOptional);
+            var expectedKnights=RuleTables.RollOrder(Side.Norman,true,result.strategy,result.knightRoll,
+                out knightDuration,out knightEffect,out knightOptional);
+            Check(result.footRoll>=2 && result.footRoll<=12 &&
+                result.knightRoll>=2 && result.knightRoll<=12 &&
+                result.footOrder==expectedFoot && result.knightOrder==expectedKnights &&
+                result.effectChange==footEffect+knightEffect,
+                result.group+" did not resolve its separate foot and knight rolls");
+        }
+        Check(state.orderResults.Where(r=>r.side==Side.Norman)
+            .Any(r=>r.footRoll!=r.knightRoll),
+            "Norman foot and knight sections reused the same dice roll");
+        var optionalState=Setup.New(board,54321);optionalState.phase=Phase.NormanFire;
+        var optionalGroup=optionalState.groups.First(g=>g.id=="Breton");
+        optionalGroup.footOptional=true;
+        optionalState.orderResults.Add(new OrderRollResult {group="Breton",side=Side.Norman,
+            footOptional=true,hasKnights=true});
+        var optionalEngine=new GameEngine(board,optionalState);
+        Check(optionalEngine.SetOptionalOrder("Breton",false,Order.FireInPlace) &&
+            !optionalGroup.footOptional && optionalGroup.footOrder==Order.FireInPlace &&
+            optionalState.orderResults[0].footOrder==Order.FireInPlace,
+            "Optional order choice was not applied to its section");
         var json=JsonUtility.ToJson(state);
         var restored=JsonUtility.FromJson<GameState>(json);
         Check(restored.randomState==state.randomState && restored.units.Count==state.units.Count &&

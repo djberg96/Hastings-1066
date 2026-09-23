@@ -34,7 +34,7 @@ public sealed class HastingsGame : MonoBehaviour
         missileMapResult, missileMapDetail,
         controlHeading, controlBadge, controlAction, controlRow,
         orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
-        orderRoll, orderType, orderName, orderText, orderEffect,
+        orderRoll, orderType, orderName, orderText, orderChoice, orderEffect,
         orderEffectHeading, orderEffectValue, orderEffectDetail, orderEffectWarning,
         chartTitle, chartSection, chartHeader, chartRowHeader, chartCell, chartMuted, chartNote,
         chartTab, chartTabSelected, chartClose, trackMarkerText, trackMarkerTextShadow;
@@ -205,6 +205,9 @@ public sealed class HastingsGame : MonoBehaviour
             orderType=LabelStyle(11,true,new Color(.56f,.19f,.14f));
             orderName=LabelStyle(17,true,new Color(.25f,.15f,.11f));
             orderText=LabelStyle(13,false,new Color(.34f,.27f,.21f));
+            orderChoice=ButtonStyle(13,new Color(.78f,.69f,.54f),new Color(.88f,.78f,.60f),
+                new Color(.25f,.15f,.11f));
+            orderChoice.fontStyle=FontStyle.Bold;
             orderEffect=new GUIStyle(GUI.skin.box){padding=new RectOffset(11,11,9,9)};
             orderEffect.normal.background=SolidTexture(new Color(.90f,.85f,.73f));
             orderEffectHeading=LabelStyle(12,true,new Color(.51f,.20f,.15f));
@@ -1300,6 +1303,7 @@ public sealed class HastingsGame : MonoBehaviour
         orderType.fontSize=Mathf.RoundToInt(11*u);
         orderName.fontSize=Mathf.RoundToInt(17*u);
         orderText.fontSize=Mathf.RoundToInt(13*u);
+        orderChoice.fontSize=Mathf.RoundToInt(13*u);
         orderEffectHeading.fontSize=Mathf.RoundToInt(12*u);
         orderEffectValue.fontSize=Mathf.RoundToInt(12*u);
         orderEffectDetail.fontSize=Mathf.RoundToInt(12*u);
@@ -1325,7 +1329,7 @@ public sealed class HastingsGame : MonoBehaviour
         if(GUI.Button(new Rect(width-120*u,18*u,94*u,34*u),"Close  ×",panelLink))
         {showOrderResults=false;GUI.EndGroup();return;}
         GUI.Label(new Rect(30*u,76*u,width-60*u,48*u),
-            "Each contingent rolled 2d6 under its chosen strategy. Orders govern how its units act; strategy effects accumulate for the assault, and either extreme can impose penalties.",
+            "Each Norman foot and knight section rolls 2d6 separately. Their strategy effects are combined for the nationality. Saxon wings each use one roll.",
             orderSubtitle);
 
         var contentRect=new Rect(27*u,128*u,width-54*u,height-210*u);
@@ -1337,9 +1341,12 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
-        string buttonText=game.OptionsPending()?"Choose optional orders":"Continue to Norman fire";
+        bool optionsPending=game.OptionsPending();
+        string buttonText=optionsPending?"Choose the optional orders above":"Continue to Norman fire";
+        GUI.enabled=!optionsPending;
         if(GUI.Button(new Rect(27*u,height-68*u,width-54*u,48*u),buttonText,panelPrimary))
             showOrderResults=false;
+        GUI.enabled=true;
         GUI.EndGroup();
     }
     private void DrawOrderSide(string heading,Side side,float contentWidth)
@@ -1361,7 +1368,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label(result.group.ToUpperInvariant(),orderCardTitle,GUILayout.Height(31*u));
         orderCardTitle.normal.textColor=oldTitleColor;
         GUILayout.FlexibleSpace();
-        GUILayout.Label(result.strategy.ToString().ToUpperInvariant()+"   ·   2D6: "+result.roll,
+        GUILayout.Label(result.strategy.ToString().ToUpperInvariant(),
             orderRoll,GUILayout.Height(31*u));
         GUILayout.EndHorizontal();
         GUILayout.Space(5*u);
@@ -1409,7 +1416,10 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Space(10*u);
         }
         GUILayout.BeginVertical();
-        GUILayout.Label(unitKind,orderType,GUILayout.Height(18*u));
+        int sectionRoll=knight?result.knightRoll:result.footRoll;
+        if(sectionRoll<=0 && !continued)sectionRoll=result.roll;
+        GUILayout.Label(unitKind+"   ·   "+(continued?"CONTINUED ORDER":"2D6: "+sectionRoll),
+            orderType,GUILayout.Height(18*u));
         GUILayout.Label(choicePending?"CHOOSE AN ORDER":OrderDisplay(order),orderName,
             GUILayout.Height(27*u));
         string timing=choicePending?"Optional result · your choice is required":
@@ -1419,10 +1429,31 @@ public sealed class HastingsGame : MonoBehaviour
             duration>1?"Remains in effect for "+duration+" turns":"Applies this turn";
         GUILayout.Label(timing,orderText);
         GUILayout.Space(3*u);
-        GUILayout.Label(choicePending?
-            (knight?"Choose Hold, Advance, or Charge in the side panel.":
-                "Choose Shield Wall, Fire in Place, or Advance in the side panel."):
-            OrderDescription(order),orderText);
+        if(choicePending)
+        {
+            GUILayout.Label("Choose this section's order:",orderText);
+            GUILayout.BeginHorizontal();
+            if(knight)
+            {
+                if(GUILayout.Button("Hold",orderChoice,GUILayout.Height(36*u)))
+                    game.SetOptionalOrder(result.group,true,Order.Hold);
+                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
+                    game.SetOptionalOrder(result.group,true,Order.Advance);
+                if(GUILayout.Button("Charge",orderChoice,GUILayout.Height(36*u)))
+                    game.SetOptionalOrder(result.group,true,Order.Charge);
+            }
+            else
+            {
+                if(GUILayout.Button("Shield Wall",orderChoice,GUILayout.Height(36*u)))
+                    game.SetOptionalOrder(result.group,false,Order.ShieldWall);
+                if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
+                    game.SetOptionalOrder(result.group,false,Order.FireInPlace);
+                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
+                    game.SetOptionalOrder(result.group,false,Order.Advance);
+            }
+            GUILayout.EndHorizontal();
+        }
+        else GUILayout.Label(OrderDescription(order),orderText);
         GUILayout.EndVertical();
         GUILayout.EndHorizontal();
     }

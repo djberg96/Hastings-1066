@@ -67,16 +67,17 @@ namespace Hastings
                     !Living(Side.Saxon).Any(u=>u.group==group.id && !UnitTypes.Get(u).leader))continue;
                 if(group.id=="Left" || group.id=="Center" || group.id=="Right")
                     group.strategy=ChooseSaxonStrategy(group.id);
-                int roll=Die()+Die();
                 int footDuration=1, knightDuration=1, footEffect=0, knightEffect=0;
                 bool footOptional=false, knightOptional=false;
                 var side=group.id=="Left"||group.id=="Center"||group.id=="Right"?Side.Saxon:Side.Norman;
                 bool footContinued=group.footDuration>1;
                 bool knightContinued=side==Side.Norman && group.knightDuration>1;
+                int footRoll=footContinued?0:Die()+Die();
+                int knightRoll=side==Side.Norman&&!knightContinued?Die()+Die():0;
                 if(footContinued){group.footDuration--;footEffect=group.footPendingEffect;}
                 else
                 {
-                    group.footOrder=RuleTables.RollOrder(side,false,group.strategy,roll,
+                    group.footOrder=RuleTables.RollOrder(side,false,group.strategy,footRoll,
                         out footDuration,out footEffect,out footOptional);
                     group.footPendingEffect=footDuration>1?footEffect:0;
                 }
@@ -85,7 +86,7 @@ namespace Hastings
                     if(knightContinued){group.knightDuration--;knightEffect=group.knightPendingEffect;}
                     else
                     {
-                        group.knightOrder=RuleTables.RollOrder(side,true,group.strategy,roll,
+                        group.knightOrder=RuleTables.RollOrder(side,true,group.strategy,knightRoll,
                             out knightDuration,out knightEffect,out knightOptional);
                         group.knightPendingEffect=knightDuration>1?knightEffect:0;
                     }
@@ -98,7 +99,8 @@ namespace Hastings
                     group.footOrder=group.strategy==Strategy.Defensive?Order.ShieldWall:Order.Advance;
                 group.effect+=footEffect+knightEffect;
                 state.orderResults.Add(new OrderRollResult {
-                    group=group.id,side=side,strategy=group.strategy,roll=roll,
+                    group=group.id,side=side,strategy=group.strategy,roll=footRoll,
+                    footRoll=footRoll,knightRoll=knightRoll,
                     footOrder=group.footOrder,knightOrder=group.knightOrder,
                     footDuration=group.footDuration,knightDuration=group.knightDuration,
                     effectChange=footEffect+knightEffect,totalEffect=group.effect,
@@ -106,8 +108,12 @@ namespace Hastings
                     knightOptional=knightOptional,footContinued=footContinued,
                     knightContinued=knightContinued
                 });
-                Log(group.id+" chooses "+group.strategy+", rolls "+roll+": "+group.footOrder+
-                    (side==Side.Norman?" / "+group.knightOrder:"")+"; effect "+group.effect);
+                Log(group.id+" chooses "+group.strategy+", "+
+                    (footContinued?"foot continues "+group.footOrder:
+                        "foot rolls "+footRoll+": "+group.footOrder)+
+                    (side==Side.Norman?(knightContinued?"; knights continue "+group.knightOrder:
+                        "; knights roll "+knightRoll+": "+group.knightOrder):"")+
+                    "; effect "+group.effect);
             }
             Rally(Side.Norman);
             state.phase=Phase.NormanFire;

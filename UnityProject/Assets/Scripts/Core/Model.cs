@@ -61,7 +61,7 @@ namespace Hastings
         public string group;
         public Side side;
         public Strategy strategy;
-        public int roll;
+        public int roll, footRoll, knightRoll;
         public Order footOrder, knightOrder;
         public int footDuration, knightDuration;
         public int effectChange, totalEffect;
