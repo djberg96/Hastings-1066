@@ -22,7 +22,8 @@ public sealed class HastingsGame : MonoBehaviour
     private float missileEffectStarted, missileEffectUntil;
     private MissileFireResult missileResult;
     private bool showMenu=true, showUnits=true, showHigh, showHelp, showOrderResults,
-        showStrategyTrack, fullMapMode;
+        orderReviewMode, showStrategyTrack, fullMapMode;
+    private int orderReviewTab;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
     private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
@@ -817,7 +818,10 @@ public sealed class HastingsGame : MonoBehaviour
         {
             GUILayout.Space(5*p);
             if(GUILayout.Button("Review battle orders",panelLink,GUILayout.Height(38*p)))
-            {showOrderResults=true;orderScroll=Vector2.zero;}
+            {
+                orderReviewMode=!game.OptionsPending();orderReviewTab=0;
+                showOrderResults=true;orderScroll=Vector2.zero;
+            }
         }
         if(s.phase==Phase.Orders)
         {
@@ -1286,6 +1290,7 @@ public sealed class HastingsGame : MonoBehaviour
             case Phase.Setup:game.Begin();break;
             case Phase.Orders:
                 game.ResolveOrders();
+                orderReviewMode=false;
                 showOrderResults=game.state.orderResults!=null && game.state.orderResults.Count>0;
                 orderScroll=Vector2.zero;
                 break;
@@ -1361,7 +1366,8 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-                        showUnits=true;showHigh=false;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
+                        showUnits=true;showHigh=false;chart="";showOrderResults=false;orderReviewMode=false;
+                        stackSpread.Clear();hoveredHex="";
                         missileResult=null;
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
@@ -1405,7 +1411,8 @@ public sealed class HastingsGame : MonoBehaviour
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-        showUnits=true;showHigh=false;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
+        showUnits=true;showHigh=false;chart="";showOrderResults=false;orderReviewMode=false;
+        stackSpread.Clear();hoveredHex="";
         missileResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;
     }
@@ -1413,6 +1420,12 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(game==null || game.state.orderResults==null || game.state.orderResults.Count==0)
         {showOrderResults=false;return;}
+        if(orderReviewMode && !game.OptionsPending())
+        {DrawOrderReview();return;}
+        DrawOrderResolution();
+    }
+    private void DrawOrderResolution()
+    {
         orderScale=Mathf.Clamp(Screen.height/1000f,1f,1.55f);
         float u=orderScale;
         orderTitle.fontSize=Mathf.RoundToInt(28*u);
@@ -1470,6 +1483,131 @@ public sealed class HastingsGame : MonoBehaviour
             showOrderResults=false;
         GUI.enabled=true;
         GUI.EndGroup();
+    }
+    private void DrawOrderReview()
+    {
+        float u=Mathf.Clamp(Screen.height/900f,.90f,1.28f);
+        orderTitle.fontSize=Mathf.RoundToInt(27*u);
+        orderSubtitle.fontSize=Mathf.RoundToInt(14*u);
+        chartTab.fontSize=Mathf.RoundToInt(14*u);
+        chartTabSelected.fontSize=Mathf.RoundToInt(15*u);
+        chartHeader.fontSize=Mathf.RoundToInt(13*u);
+        chartRowHeader.fontSize=Mathf.RoundToInt(15*u);
+        chartCell.fontSize=Mathf.RoundToInt(13*u);
+        chartMuted.fontSize=Mathf.RoundToInt(12*u);
+
+        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.12f,.09f,.06f,.68f));
+        float width=Mathf.Min(Screen.width-50f,1120f*u);
+        float height=Mathf.Min(Screen.height-50f,570f*u);
+        var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
+        Fill(rect,new Color(.94f,.90f,.81f));
+        Fill(new Rect(rect.x,rect.y,rect.width,64*u),new Color(.60f,.21f,.16f));
+        GUI.BeginGroup(rect);
+        GUI.Label(new Rect(27*u,15*u,width-205*u,42*u),"BATTLE ORDERS",orderTitle);
+        if(GUI.Button(new Rect(width-120*u,16*u,94*u,34*u),"Close  ×",panelLink))
+        {showOrderResults=false;GUI.EndGroup();return;}
+        GUI.Label(new Rect(30*u,70*u,width-60*u,30*u),
+            "Current orders for Assault "+game.state.period+", turn "+game.state.turn+".",
+            orderSubtitle);
+
+        string[] tabs={"NORMAN FOOT","NORMAN KNIGHTS","SAXONS"};
+        float tabsX=30*u,tabsY=102*u,tabsWidth=width-60*u,gap=6*u;
+        float tabWidth=(tabsWidth-gap*2)/3f;
+        for(int index=0;index<tabs.Length;index++)
+        {
+            var tabRect=new Rect(tabsX+index*(tabWidth+gap),tabsY,tabWidth,42*u);
+            if(GUI.Button(tabRect,tabs[index],index==orderReviewTab?chartTabSelected:chartTab))
+                orderReviewTab=index;
+        }
+        var tableRect=new Rect(30*u,156*u,width-60*u,height-181*u);
+        DrawOrderReviewTable(tableRect,orderReviewTab==1,orderReviewTab==2,u);
+        GUI.EndGroup();
+    }
+    private void DrawOrderReviewTable(Rect rect,bool knight,bool saxon,float u)
+    {
+        string[] columns=knight?
+            new[]{"HOLD","CHARGE","CHARGE\n2 TURNS","ADVANCE","ADVANCE\n2 TURNS"}:
+            saxon?
+            new[]{"SHIELD\nWALL","ATTACK &\nPURSUE","ATTACK & PURSUE\n2 TURNS","ADVANCE","MELEE IN\nPLACE"}:
+            new[]{"SHIELD\nWALL","ADVANCE","ADVANCE\n2 TURNS","FIRE IN\nPLACE"};
+        string[] groups=saxon?new[]{"Left","Center","Right"}:
+            new[]{"Breton","Norman","Franco-Flemish"};
+        float headingWidth=Mathf.Clamp(rect.width*.23f,190*u,260*u);
+        float columnWidth=(rect.width-headingWidth)/columns.Length;
+        float headerHeight=62*u;
+        float rowHeight=(rect.height-headerHeight)/groups.Length;
+        Color border=new Color(.35f,.27f,.20f);
+        Fill(rect,border);
+        DrawOrderReviewCell(new Rect(rect.x+1,rect.y+1,headingWidth-2,headerHeight-2),
+            new Color(.55f,.23f,.17f),"CONTINGENT",chartHeader);
+        for(int column=0;column<columns.Length;column++)
+            DrawOrderReviewCell(new Rect(rect.x+headingWidth+column*columnWidth+1,rect.y+1,
+                columnWidth-2,headerHeight-2),new Color(.55f,.23f,.17f),
+                columns[column],chartHeader);
+
+        for(int row=0;row<groups.Length;row++)
+        {
+            string groupId=groups[row];
+            var result=game.state.orderResults.LastOrDefault(item=>item.group==groupId &&
+                item.side==(saxon?Side.Saxon:Side.Norman));
+            float y=rect.y+headerHeight+row*rowHeight;
+            var rowRect=new Rect(rect.x+1,y+1,headingWidth-2,rowHeight-2);
+            Color rowColor=row%2==0?new Color(.93f,.90f,.82f):new Color(.88f,.84f,.75f);
+            string heading=result==null?groupId.ToUpperInvariant():
+                groupId.ToUpperInvariant()+"\n"+result.strategy.ToString().ToUpperInvariant()+
+                "  ·  EFFECT "+Signed(result.totalEffect);
+            DrawOrderReviewCell(rowRect,rowColor,heading,chartRowHeader);
+            Fill(new Rect(rowRect.x,rowRect.y,8*u,rowRect.height),
+                FactionColor(groupId,saxon?Side.Saxon:Side.Norman));
+            int selected=result==null?-1:OrderReviewColumn(result,knight,saxon);
+            for(int column=0;column<columns.Length;column++)
+            {
+                var cell=new Rect(rect.x+headingWidth+column*columnWidth+1,y+1,
+                    columnWidth-2,rowHeight-2);
+                if(column==selected)
+                {
+                    DrawOrderReviewCell(cell,FactionColor(groupId,saxon?Side.Saxon:Side.Norman),
+                        "CURRENT\n"+OrderReviewRoll(result,knight),chartHeader);
+                }
+                else DrawOrderReviewCell(cell,rowColor,"",chartCell);
+            }
+        }
+    }
+    private static void DrawOrderReviewCell(Rect rect,Color color,string text,GUIStyle style)
+    {
+        Fill(rect,color);
+        if(text!="")GUI.Label(new Rect(rect.x+4,rect.y+3,rect.width-8,rect.height-6),text,style);
+    }
+    private static int OrderReviewColumn(OrderRollResult result,bool knight,bool saxon)
+    {
+        Order order=knight?result.knightOrder:result.footOrder;
+        bool twoTurns=knight?
+            result.knightDuration>1||result.knightContinued:
+            result.footDuration>1||result.footContinued;
+        if(knight)
+        {
+            if(order==Order.Hold)return 0;
+            if(order==Order.Charge)return twoTurns?2:1;
+            return twoTurns?4:3;
+        }
+        if(saxon)
+        {
+            if(order==Order.ShieldWall)return 0;
+            if(order==Order.AttackPursue)return twoTurns?2:1;
+            if(order==Order.Advance)return 3;
+            return 4;
+        }
+        if(order==Order.ShieldWall)return 0;
+        if(order==Order.Advance)return twoTurns?2:1;
+        return 3;
+    }
+    private static string OrderReviewRoll(OrderRollResult result,bool knight)
+    {
+        bool continued=knight?result.knightContinued:result.footContinued;
+        if(continued)return "CONTINUED";
+        int roll=knight?result.knightRoll:result.footRoll;
+        if(roll<=0)roll=result.roll;
+        return roll>0?"2D6: "+roll:"SELECTED";
     }
     private void DrawOrderSide(string heading,Side side,float contentWidth)
     {
