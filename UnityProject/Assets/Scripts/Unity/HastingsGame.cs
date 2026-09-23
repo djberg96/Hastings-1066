@@ -18,7 +18,8 @@ public sealed class HastingsGame : MonoBehaviour
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
     private float panelScale=1f, chartScale=1f, orderScale=1f;
-    private bool showMenu=true, showUnits=true, showHigh, showHelp, showOrderResults, fullMapMode;
+    private bool showMenu=true, showUnits=true, showHigh, showHelp, showOrderResults,
+        showStrategyTrack, fullMapMode;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main";
     private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
@@ -26,6 +27,7 @@ public sealed class HastingsGame : MonoBehaviour
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
         panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
         panelBretonButton, panelNormanButton, panelFlemishButton,
+        strategyHeading, strategyScale, strategyMarker, strategyLegend, strategyToggle,
         controlHeading, controlBadge, controlAction, controlRow,
         orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
         orderRoll, orderType, orderName, orderText, orderEffect,
@@ -147,6 +149,20 @@ public sealed class HastingsGame : MonoBehaviour
                 new Color(.31f,.13f,.10f));
             panelFlemishButton=ButtonStyle(15,new Color(.68f,.79f,.86f),new Color(.76f,.86f,.92f),
                 new Color(.12f,.22f,.30f));
+            strategyHeading=LabelStyle(11,true,new Color(.56f,.19f,.14f));
+            strategyScale=LabelStyle(9,false,new Color(.40f,.34f,.27f));
+            strategyScale.alignment=TextAnchor.MiddleCenter;
+            strategyScale.wordWrap=false;
+            strategyMarker=LabelStyle(11,true,new Color(.99f,.96f,.88f));
+            strategyMarker.alignment=TextAnchor.MiddleCenter;
+            strategyMarker.padding=new RectOffset(0,0,0,0);
+            strategyLegend=LabelStyle(10,false,new Color(.36f,.29f,.22f));
+            strategyLegend.alignment=TextAnchor.MiddleLeft;
+            strategyLegend.wordWrap=false;
+            strategyToggle=ButtonStyle(13,new Color(.86f,.80f,.68f),new Color(.93f,.86f,.71f),
+                new Color(.40f,.17f,.12f));
+            strategyToggle.fontStyle=FontStyle.Bold;
+            strategyToggle.alignment=TextAnchor.MiddleLeft;
             controlHeading=LabelStyle(12,true,new Color(.56f,.19f,.14f));
             controlHeading.margin=new RectOffset(0,0,8,3);
             controlBadge=LabelStyle(12,true,new Color(.99f,.96f,.88f));
@@ -219,12 +235,18 @@ public sealed class HastingsGame : MonoBehaviour
             DrawMenu();
             return;
         }
-        Rect mapRect=new Rect(0,0,Mathf.Max(100,Screen.width-PanelWidth()),Screen.height);
+        float strategyTrackHeight=showStrategyTrack?
+            Mathf.Clamp(Screen.height*.22f,250f,320f):
+            Mathf.Clamp(Screen.height*.045f,54f,68f);
+        Rect mapRect=new Rect(0,0,Mathf.Max(100,Screen.width-PanelWidth()),
+            Screen.height-strategyTrackHeight);
+        var strategyTrackRect=new Rect(0,mapRect.yMax,mapRect.width,strategyTrackHeight);
         ResizeMapView(mapRect);
         HandleInput(mapRect);
         pan=BoardViewMath.ClampPan(pan,scale,mapRect.width,mapRect.height,
             board.data.width,board.data.height);
         DrawMap(mapRect);
+        DrawStrategyEffectsTrack(strategyTrackRect);
         if(showOrderResults)GUI.enabled=false;
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
         GUI.enabled=true;
@@ -287,6 +309,11 @@ public sealed class HastingsGame : MonoBehaviour
         panelBretonButton.fontSize=panelButton.fontSize;
         panelNormanButton.fontSize=panelButton.fontSize;
         panelFlemishButton.fontSize=panelButton.fontSize;
+        strategyHeading.fontSize=Mathf.RoundToInt(11*p);
+        strategyScale.fontSize=Mathf.Max(9,Mathf.RoundToInt(9*p));
+        strategyMarker.fontSize=Mathf.RoundToInt(11*p);
+        strategyLegend.fontSize=Mathf.RoundToInt(10*p);
+        strategyToggle.fontSize=Mathf.RoundToInt(13*p);
         controlHeading.fontSize=Mathf.RoundToInt(12*p);
         controlBadge.fontSize=Mathf.RoundToInt(12*p);
         controlAction.fontSize=Mathf.RoundToInt(13*p);
@@ -748,6 +775,115 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+    private void DrawStrategyEffectsTrack(Rect region)
+    {
+        Fill(region,new Color(.91f,.87f,.77f));
+        Fill(new Rect(region.x,region.y,region.width,3),new Color(.59f,.22f,.17f));
+        float headerHeight=showStrategyTrack?48f:region.height;
+        string toggleText=showStrategyTrack?
+            "STRATEGY EFFECTS     ▲  HIDE":
+            "STRATEGY EFFECTS     ▼  SHOW     "+StrategySummary(game.state);
+        if(GUI.Button(new Rect(region.x+8,region.y+7,region.width-16,headerHeight-12),
+            toggleText,strategyToggle))
+        {
+            showStrategyTrack=!showStrategyTrack;
+            return;
+        }
+        if(!showStrategyTrack)return;
+
+        float u=Mathf.Clamp(region.height/260f,.88f,1.16f);
+        strategyHeading.fontSize=Mathf.RoundToInt(18*u);
+        strategyScale.fontSize=Mathf.RoundToInt(18*u);
+        strategyMarker.fontSize=Mathf.RoundToInt(18*u);
+        strategyLegend.fontSize=Mathf.RoundToInt(16*u);
+        float informationWidth=Mathf.Clamp(region.width*.16f,240*u,330*u);
+        float contentTop=region.y+headerHeight+10*u;
+        GUI.Label(new Rect(region.x+18*u,contentTop,informationWidth-28*u,27*u),
+            "NORMAN",strategyHeading);
+        GUI.Label(new Rect(region.x+18*u,contentTop+30*u,informationWidth-28*u,24*u),
+            "B  Breton   ·   N  Norman",strategyLegend);
+        GUI.Label(new Rect(region.x+18*u,contentTop+53*u,informationWidth-28*u,24*u),
+            "F  Franco-Flemish",strategyLegend);
+        GUI.Label(new Rect(region.x+18*u,contentTop+83*u,informationWidth-28*u,27*u),
+            "SAXON",strategyHeading);
+        GUI.Label(new Rect(region.x+18*u,contentTop+113*u,informationWidth-28*u,24*u),
+            "L  Left   ·   C  Center   ·   R  Right",strategyLegend);
+        GUI.Label(new Rect(region.x+18*u,contentTop+151*u,informationWidth-28*u,22*u),
+            "Resets before Assault II",strategyLegend);
+
+        float availableX=region.x+informationWidth;
+        float availableWidth=region.width-informationWidth-22*u;
+        float trackWidth=Mathf.Min(availableWidth,27*68*u);
+        float trackX=availableX+(availableWidth-trackWidth)/2f;
+        float trackY=contentTop+64*u;
+        float keyY=region.yMax-54*u;
+        float trackHeight=Mathf.Clamp(keyY-trackY-46*u,35*u,66*u);
+        var track=new Rect(trackX,trackY,trackWidth,trackHeight);
+        float cellWidth=track.width/27f;
+        Fill(track,new Color(.28f,.25f,.20f));
+        for(int index=0;index<27;index++)
+        {
+            int value=index-11;
+            var cell=new Rect(track.x+index*cellWidth+1,track.y+1,
+                Mathf.Max(1,cellWidth-2),track.height-2);
+            Color cellColor=value<=-8?new Color(.73f,.68f,.68f):
+                value==-7?new Color(.80f,.72f,.62f):
+                value>=11?new Color(.73f,.64f,.61f):
+                value>=5?new Color(.75f,.73f,.63f):new Color(.72f,.84f,.86f);
+            Fill(cell,cellColor);
+            GUI.Label(cell,Signed(value),strategyScale);
+        }
+        DrawStrategyMarkerSide(track,game.state,new[]{"Breton","Norman","Franco-Flemish"},true,u);
+        DrawStrategyMarkerSide(track,game.state,new[]{"Left","Center","Right"},false,u);
+        GUI.Label(new Rect(track.x,keyY,track.width,23*u),
+            "B  ≤−8   Morale −1 level; morale rolls +1     ·     A  −7   Morale rolls +1",
+            strategyLegend);
+        GUI.Label(new Rect(track.x,keyY+28*u,track.width,23*u),
+            "C  ≥+5   Movement −1 MP     ·     D  ≥+11   Movement −2 MP; combat −1 column",
+            strategyLegend);
+    }
+    private void DrawStrategyMarkerSide(Rect track,GameState state,string[] groupIds,bool above,float u)
+    {
+        float cellWidth=track.width/27f;
+        float badgeWidth=Mathf.Clamp(cellWidth*.72f,30*u,46*u),badgeHeight=36*u;
+        var groups=groupIds.Select(id=>state.groups.First(group=>group.id==id)).ToArray();
+        for(int index=0;index<groups.Length;index++)
+        {
+            var group=groups[index];
+            int value=Mathf.Clamp(group.effect,-11,15);
+            var tied=groups.Where(other=>Mathf.Clamp(other.effect,-11,15)==value).ToArray();
+            int tiedIndex=Array.IndexOf(tied,group);
+            float spread=Mathf.Min(cellWidth*.80f,badgeWidth*.96f);
+            float offset=(tiedIndex-(tied.Length-1)/2f)*spread;
+            float targetX=track.x+(value+11+.5f)*cellWidth;
+            float badgeY=above?track.y-badgeHeight-8*u:track.yMax+8*u;
+            var badge=new Rect(targetX-badgeWidth/2f+offset,badgeY,badgeWidth,badgeHeight);
+            float connectorY=above?badge.yMax:track.yMax;
+            float connectorHeight=above?track.y-connectorY:badge.y-track.yMax;
+            Fill(new Rect(targetX-.7f*u,connectorY,1.4f*u,connectorHeight),
+                new Color(.25f,.18f,.13f,.72f));
+            var side=above?Side.Norman:Side.Saxon;
+            Fill(new Rect(badge.x-1.2f*u,badge.y-1.2f*u,badge.width+2.4f*u,badge.height+2.4f*u),
+                new Color(.25f,.15f,.10f));
+            Fill(badge,FactionColor(group.id,side));
+            GUI.Label(badge,StrategyMarkerLabel(group.id),strategyMarker);
+        }
+    }
+    private static string StrategyMarkerLabel(string group)
+    {
+        if(group=="Franco-Flemish")return "F";
+        return group.Substring(0,1).ToUpperInvariant();
+    }
+    private static string StrategySummary(GameState state)
+    {
+        string[] ids={"Breton","Norman","Franco-Flemish","Left","Center","Right"};
+        return "NORMAN  "+StrategyMarkerLabel(ids[0])+" "+Signed(state.groups.First(g=>g.id==ids[0]).effect)+
+            "  ·  "+StrategyMarkerLabel(ids[1])+" "+Signed(state.groups.First(g=>g.id==ids[1]).effect)+
+            "  ·  "+StrategyMarkerLabel(ids[2])+" "+Signed(state.groups.First(g=>g.id==ids[2]).effect)+
+            "        SAXON  "+StrategyMarkerLabel(ids[3])+" "+Signed(state.groups.First(g=>g.id==ids[3]).effect)+
+            "  ·  "+StrategyMarkerLabel(ids[4])+" "+Signed(state.groups.First(g=>g.id==ids[4]).effect)+
+            "  ·  "+StrategyMarkerLabel(ids[5])+" "+Signed(state.groups.First(g=>g.id==ids[5]).effect);
     }
     private void DrawControlsGuide()
     {
