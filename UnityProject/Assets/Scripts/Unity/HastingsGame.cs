@@ -28,11 +28,12 @@ public sealed class HastingsGame : MonoBehaviour
         menuTitle, menuSubtitle, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
         panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
+        fireModeButton, fireModeSelected,
         panelBretonButton, panelNormanButton, panelFlemishButton,
         strategyHeading, strategyScale, strategyMarker, strategyLegend, strategyToggle,
         strategyBand, strategyEffectNote,
         missileMapResult, missileMapDetail, statusMarker,
-        controlHeading, controlBadge, controlAction, controlRow,
+        controlHeading, controlBadge, controlAction, controlRow, fireCompleteBadge,
         orderTitle, orderSubtitle, orderSection, orderCard, orderCardTitle,
         orderRoll, orderType, orderName, orderText, orderChoice, orderEffect,
         orderEffectHeading, orderEffectValue, orderEffectDetail, orderEffectWarning,
@@ -151,6 +152,11 @@ public sealed class HastingsGame : MonoBehaviour
             panelPrimary.fontStyle=FontStyle.Bold;
             panelLink=ButtonStyle(14,new Color(.92f,.88f,.78f),new Color(.83f,.76f,.62f),
                 new Color(.27f,.19f,.14f));
+            fireModeButton=ButtonStyle(14,new Color(.82f,.75f,.62f),new Color(.91f,.82f,.67f),
+                new Color(.24f,.16f,.11f));
+            fireModeSelected=ButtonStyle(14,new Color(.55f,.23f,.17f),new Color(.63f,.27f,.20f),
+                new Color(.99f,.96f,.88f));
+            fireModeSelected.fontStyle=FontStyle.Bold;
             panelBretonButton=ButtonStyle(15,new Color(.72f,.81f,.64f),new Color(.80f,.88f,.71f),
                 new Color(.15f,.25f,.13f));
             panelNormanButton=ButtonStyle(15,new Color(.85f,.70f,.63f),new Color(.91f,.77f,.69f),
@@ -194,6 +200,8 @@ public sealed class HastingsGame : MonoBehaviour
             controlBadge.alignment=TextAnchor.MiddleCenter;
             controlBadge.normal.background=SolidTexture(new Color(.47f,.27f,.20f));
             controlBadge.padding=new RectOffset(6,6,3,3);
+            fireCompleteBadge=new GUIStyle(controlBadge);
+            fireCompleteBadge.normal.background=SolidTexture(new Color(.25f,.43f,.23f));
             controlAction=LabelStyle(13,false,new Color(.28f,.21f,.16f));
             controlAction.alignment=TextAnchor.MiddleLeft;
             controlRow=new GUIStyle(GUI.skin.box){padding=new RectOffset(5,7,4,4),
@@ -334,6 +342,8 @@ public sealed class HastingsGame : MonoBehaviour
         panelNavButton.fontSize=panelButton.fontSize;
         panelPrimary.fontSize=Mathf.RoundToInt(18*p);
         panelLink.fontSize=Mathf.RoundToInt(14*p);
+        fireModeButton.fontSize=Mathf.RoundToInt(14*p);
+        fireModeSelected.fontSize=fireModeButton.fontSize;
         panelBretonButton.fontSize=panelButton.fontSize;
         panelNormanButton.fontSize=panelButton.fontSize;
         panelFlemishButton.fontSize=panelButton.fontSize;
@@ -346,6 +356,7 @@ public sealed class HastingsGame : MonoBehaviour
         strategyEffectNote.fontSize=Mathf.RoundToInt(13*p);
         controlHeading.fontSize=Mathf.RoundToInt(12*p);
         controlBadge.fontSize=Mathf.RoundToInt(12*p);
+        fireCompleteBadge.fontSize=controlBadge.fontSize;
         controlAction.fontSize=Mathf.RoundToInt(13*p);
         int side=Mathf.RoundToInt(15*p),top=Mathf.RoundToInt(13*p);
         panelCard.padding=new RectOffset(side,side,top,Mathf.RoundToInt(15*p));
@@ -820,7 +831,10 @@ public sealed class HastingsGame : MonoBehaviour
             }
         }
         if((s.phase==Phase.NormanFire||s.phase==Phase.NormanDefenseFire) && !optionsPending)
-            showHigh=GUILayout.Toggle(showHigh,"High trajectory bow fire (period II)");
+        {
+            DrawHighTrajectoryControl(s,p);
+            DrawBowFireProgress(p);
+        }
         if(notice!="")GUILayout.Label(notice,panelBody);
         if(s.phase!=Phase.GameOver)
         {
@@ -934,6 +948,51 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+    private void DrawHighTrajectoryControl(GameState state,float p)
+    {
+        GUILayout.Space(5*p);
+        GUILayout.BeginVertical(controlRow);
+        if(state.period==2)
+        {
+            GUILayout.Label("FIRE TRAJECTORY",controlHeading);
+            GUILayout.BeginHorizontal();
+            if(GUILayout.Button("Direct fire",showHigh?fireModeButton:fireModeSelected,
+                GUILayout.Height(34*p)))showHigh=false;
+            if(GUILayout.Button("High · over units",showHigh?fireModeSelected:fireModeButton,
+                GUILayout.Height(34*p)))showHigh=true;
+            GUILayout.EndHorizontal();
+            GUILayout.Label(showHigh?"Fires over intervening units with the high trajectory penalty.":
+                "Default mode for targets with a clear line of sight.",controlAction);
+        }
+        else
+        {
+            showHigh=false;
+            GUILayout.Label("HIGH TRAJECTORY BOW FIRE",controlHeading);
+            GUILayout.Label("Available during Assault II.",controlAction);
+        }
+        GUILayout.EndVertical();
+    }
+    private void DrawBowFireProgress(float p)
+    {
+        var bows=game.Living(Side.Norman).Where(unit=>
+            UnitTypes.Get(unit).missile=="B" && unit.status==Status.Ready).ToList();
+        int fired=bows.Count(unit=>unit.fired),total=bows.Count;
+        bool complete=total>0 && fired==total;
+        string detail=total==0?"No ready bow units are available.":complete?
+            "Every ready bow unit has fired this segment.":
+            (total-fired)+" ready bow unit"+(total-fired==1?" remains.":"s remain.");
+        string badge=total==0?"NONE":complete?"COMPLETE":fired+" / "+total;
+        GUILayout.Space(5*p);
+        GUILayout.BeginHorizontal(controlRow);
+        GUILayout.BeginVertical();
+        GUILayout.Label("BOW FIRE",controlHeading);
+        GUILayout.Label(detail,controlAction);
+        GUILayout.EndVertical();
+        GUILayout.FlexibleSpace();
+        GUILayout.Label(badge,complete?fireCompleteBadge:controlBadge,
+            GUILayout.Width(104*p),GUILayout.Height(34*p));
+        GUILayout.EndHorizontal();
     }
     private void DrawMissileResultCard(Dictionary<string,string> unitLabels)
     {
@@ -1190,6 +1249,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void Advance()
     {
         if(game==null)return;
+        var priorPhase=game.state.phase;
         notice="";
         switch(game.state.phase)
         {
@@ -1204,6 +1264,9 @@ public sealed class HastingsGame : MonoBehaviour
         }
         selected.Clear();
         selectedTargets.Clear();
+        if(game.state.phase!=priorPhase &&
+           (game.state.phase==Phase.NormanFire||game.state.phase==Phase.NormanDefenseFire))
+            showHigh=false;
     }
     private void ChooseOptionalOrder(string group,bool knight,Order order)
     {
@@ -1268,7 +1331,7 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-                        showUnits=true;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
+                        showUnits=true;showHigh=false;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
                         missileResult=null;
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
@@ -1312,7 +1375,7 @@ public sealed class HastingsGame : MonoBehaviour
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-        showUnits=true;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
+        showUnits=true;showHigh=false;chart="";showOrderResults=false;stackSpread.Clear();hoveredHex="";
         missileResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;
     }
