@@ -7,7 +7,8 @@ namespace Hastings
 {
     public enum Side { Norman, Saxon }
     public enum Phase { Setup, Orders, NormanFire, NormanMove, NormanMelee, NormanReaction,
-        NormanDefenseFire, Reform, GameOver }
+        NormanDefenseFire, Reform, GameOver, SaxonReaction, SaxonDefenseFire, SaxonFire,
+        SaxonMove, SaxonMelee }
     public enum Status { Ready, Disrupted, Routed, Eliminated }
     public enum Strategy { Defensive, Cautious, Moderate, Aggressive }
     public enum Order { ShieldWall, FireInPlace, Advance, AttackPursue, Hold, Charge }
@@ -81,6 +82,7 @@ namespace Hastings
         public int saveVersion = 1;
         public int period = 1, turn = 1, extendedTo = 8;
         public Phase phase = Phase.Setup;
+        public Side playerSide = Side.Norman;
         public uint randomState;
         public List<UnitState> units = new List<UnitState>();
         public List<GroupState> groups = new List<GroupState>();

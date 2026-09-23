@@ -23,9 +23,10 @@ namespace Hastings
             "0724","0723","0722","0721","0720","0719","0718","0717",
             "0716","0715","0714","0713","0712","0711","0710","0709"
         };
-        public static GameState New(Board board, uint seed)
+        public static GameState New(Board board, uint seed, Side playerSide=Side.Norman)
         {
-            var state = new GameState { randomState = seed == 0 ? 1u : seed };
+            var state = new GameState { randomState = seed == 0 ? 1u : seed,
+                playerSide=playerSide };
             foreach (var group in new[] {"Breton","Norman","Franco-Flemish","Left","Center","Right"})
                 state.groups.Add(new GroupState { id=group, strategy=Strategy.Moderate,
                     footOrder=Order.Advance, knightOrder=Order.Advance });
@@ -74,7 +75,9 @@ namespace Hastings
             }
             foreach(var h in board.data.hexes.Where(h=>h.road && int.Parse(h.id.Substring(0,2))<=8))
                 state.road.Add(new RoadState { hex=h.id, owner=Side.Saxon });
-            state.log.Add("New standard game. Set Norman facings, then begin the first turn.");
+            state.log.Add(playerSide==Side.Norman?
+                "New standard game. Set Norman facings, then begin the first turn.":
+                "New standard game as the Saxons. The Norman army is controlled by the AI.");
             return state;
         }
         private static string ClosestWing(Board board, string hex)

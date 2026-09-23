@@ -100,6 +100,39 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private static float PanelWidth() { return Mathf.Clamp(Screen.width*.24f,500f,900f); }
     private static float PanelUiScale() { return Mathf.Clamp(Screen.height/900f,1.2f,1.8f); }
+    private Side PlayerSide() { return game==null?Side.Norman:game.state.playerSide; }
+    private bool SaxonView() { return PlayerSide()==Side.Saxon; }
+    private bool PlayerMovePhase()
+    {
+        return game!=null && ((PlayerSide()==Side.Norman && game.state.phase==Phase.NormanMove) ||
+            (PlayerSide()==Side.Saxon && game.state.phase==Phase.SaxonMove));
+    }
+    private bool PlayerReactionPhase()
+    {
+        return game!=null && ((PlayerSide()==Side.Norman && game.state.phase==Phase.NormanReaction) ||
+            (PlayerSide()==Side.Saxon && game.state.phase==Phase.SaxonReaction));
+    }
+    private bool PlayerFirePhase()
+    {
+        if(game==null)return false;
+        return PlayerSide()==Side.Norman?
+            game.state.phase==Phase.NormanFire||game.state.phase==Phase.NormanDefenseFire:
+            game.state.phase==Phase.SaxonFire||game.state.phase==Phase.SaxonDefenseFire;
+    }
+    private bool PlayerMeleePhase()
+    {
+        return game!=null && ((PlayerSide()==Side.Norman && game.state.phase==Phase.NormanMelee) ||
+            (PlayerSide()==Side.Saxon && game.state.phase==Phase.SaxonMelee));
+    }
+    private Vector2 OrientedBoardPoint(float x,float y)
+    {
+        return BoardViewMath.OrientBattlefield(new Vector2(x,y),board.data.width,SaxonView());
+    }
+    private Vector2 MapPoint(float x,float y)
+    {
+        var point=OrientedBoardPoint(x,y);
+        return new Vector2(pan.x+point.x*scale,pan.y+point.y*scale);
+    }
     private void OnGUI()
     {
         if(board==null||map==null){GUI.Label(new Rect(20,20,700,40),"Hastings assets are missing. Run Tools/generate_assets.py.");return;}
@@ -444,7 +477,7 @@ public sealed class HastingsGame : MonoBehaviour
     private Rect CounterRect(UnitState unit,float spread)
     {
         var h=board.Hex(unit.hex);
-        return CounterLayout.RectFor(new Vector2(pan.x+h.x*scale,pan.y+h.y*scale),
+        return CounterLayout.RectFor(MapPoint(h.x,h.y),
             scale,UnitTypes.Get(unit).leader,spread);
     }
     private bool LeaderStackAt(string hex)
@@ -460,7 +493,10 @@ public sealed class HastingsGame : MonoBehaviour
         if(showUnits && LeaderStackAt(hoveredHex) && game.state.units.Any(u=>
             u.hex==hoveredHex && u.status!=Status.Eliminated &&
             CounterRect(u,1f).Contains(point)))return hoveredHex;
-        return board.Nearest((point.x-pan.x)/scale,(point.y-pan.y)/scale);
+        var boardPoint=BoardViewMath.OrientBattlefield(
+            new Vector2((point.x-pan.x)/scale,(point.y-pan.y)/scale),
+            board.data.width,SaxonView());
+        return board.Nearest(boardPoint.x,boardPoint.y);
     }
     private bool PointerOnSplayedLeader(string hex,Vector2 point)
     {
@@ -471,17 +507,19 @@ public sealed class HastingsGame : MonoBehaviour
     private void ClickHex(string hex,bool add,bool preferLeader)
     {
         if(game==null)return;
-        var friendly=game.UnitAt(hex,Side.Norman);
-        var leader=game.UnitAt(hex,Side.Norman,true);
-        var enemy=game.UnitAt(hex,Side.Saxon);
-        var enemyLeader=game.UnitAt(hex,Side.Saxon,true);
+        var player=PlayerSide();var opponent=GameEngine.Opposite(player);
+        var friendly=game.UnitAt(hex,player);
+        var leader=game.UnitAt(hex,player,true);
+        var enemy=game.UnitAt(hex,opponent);
+        var enemyLeader=game.UnitAt(hex,opponent,true);
         var selection=SelectedUnits();
-        if(!preferLeader && game.state.phase==Phase.NormanMove && selection.Count==1 && game.Move(selection[0],hex))return;
-        if(!preferLeader && game.state.phase==Phase.NormanReaction && selection.Count==1 && game.Move(selection[0],hex,true))return;
-        if(!preferLeader && game.state.phase==Phase.Reform && selection.Count==1 && game.ReformMove(selection[0],hex))return;
+        if(!preferLeader && PlayerMovePhase() && selection.Count==1 && game.Move(selection[0],hex))return;
+        if(!preferLeader && PlayerReactionPhase() && selection.Count==1 && game.Move(selection[0],hex,true))return;
+        if(!preferLeader && game.state.phase==Phase.Reform && player==Side.Norman &&
+           selection.Count==1 && game.ReformMove(selection[0],hex))return;
         if((enemy!=null||enemyLeader!=null) && selection.Count>0)
         {
-            if(game.state.phase==Phase.NormanFire || game.state.phase==Phase.NormanDefenseFire)
+            if(PlayerFirePhase())
             {
                 if(!game.Fire(selection,enemy??enemyLeader,showHigh))
                     notice="Illegal fire target or missile supply exhausted.";
@@ -494,7 +532,7 @@ public sealed class HastingsGame : MonoBehaviour
                 }
                 return;
             }
-            if(game.state.phase==Phase.NormanMelee && enemy!=null)
+            if(PlayerMeleePhase() && enemy!=null)
             {
                 if(add){if(!selectedTargets.Contains(enemy.id))selectedTargets.Add(enemy.id);return;}
                 if(!game.Melee(selection,new List<UnitState>{enemy}))notice="Illegal melee group or target.";
@@ -521,25 +559,25 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.DrawTexture(region,Texture2D.whiteTexture);
         GUI.color=Color.white;
         GUI.BeginGroup(region);
-        GUI.DrawTexture(new Rect(pan.x,pan.y,board.data.width*scale,board.data.height*scale),map,ScaleMode.StretchToFill);
+        DrawBoardTexture();
         if(game!=null)
         {
             var e=Event.current;
             hoveredHex=!showMenu && chart=="" && !showOrderResults && region.Contains(e.mousePosition)?
                 HexAtPointer(e.mousePosition):"";
             var unit=SelectedUnits().FirstOrDefault();
-            if(showUnits && unit!=null &&
-               (game.state.phase==Phase.NormanMove || game.state.phase==Phase.NormanReaction))
+            if(showUnits && unit!=null && (PlayerMovePhase() || PlayerReactionPhase()))
             {
-                bool reaction=game.state.phase==Phase.NormanReaction;
+                bool reaction=PlayerReactionPhase();
                 foreach(var move in game.LegalMoves(unit,reaction).Values)
                 {
                     var h=board.Hex(move.destination);
+                    var center=MapPoint(h.x,h.y);
                     float width=96*scale,height=111*scale;
                     GUI.color=move.charge?new Color(.82f,.31f,.15f,.96f):
                         new Color(.95f,.84f,.49f,.90f);
-                    GUI.DrawTexture(new Rect(pan.x+h.x*scale-width/2,
-                        pan.y+h.y*scale-height/2,width,height),movementHex,ScaleMode.StretchToFill);
+                    GUI.DrawTexture(new Rect(center.x-width/2,center.y-height/2,width,height),
+                        movementHex,ScaleMode.StretchToFill);
                 }
                 GUI.color=Color.white;
             }
@@ -557,7 +595,8 @@ public sealed class HastingsGame : MonoBehaviour
                     var rect=CounterRect(u,SpreadFor(u.hex));
                     var texture=CounterTexture(u);
                     var old=GUI.matrix;
-                    if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60,rect.center);
+                    if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60+
+                        (SaxonView()?180:0),rect.center);
                     if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
                     if(selected.Contains(u.id))DrawSelectionOutline(rect);
                     GUI.matrix=old;
@@ -569,6 +608,26 @@ public sealed class HastingsGame : MonoBehaviour
             DrawMissileImpact(region);
         }
         GUI.EndGroup();
+    }
+    private void DrawBoardTexture()
+    {
+        var full=new Rect(pan.x,pan.y,board.data.width*scale,board.data.height*scale);
+        if(!SaxonView())
+        {
+            GUI.DrawTexture(full,map,ScaleMode.StretchToFill);
+            return;
+        }
+        float field=BoardViewMath.BattlefieldHeight;
+        float strip=board.data.height-field;
+        var battlefield=new Rect(pan.x,pan.y,board.data.width*scale,field*scale);
+        var old=GUI.matrix;
+        GUIUtility.RotateAroundPivot(180,battlefield.center);
+        GUI.DrawTextureWithTexCoords(battlefield,map,
+            new Rect(0,strip/board.data.height,1,field/board.data.height),true);
+        GUI.matrix=old;
+        GUI.DrawTextureWithTexCoords(new Rect(pan.x,pan.y+field*scale,
+            board.data.width*scale,strip*scale),map,
+            new Rect(0,0,1,strip/board.data.height),true);
     }
     private void DrawTrackMarkers()
     {
@@ -634,15 +693,16 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawFireTargetHighlights()
     {
-        if(game.state.phase!=Phase.NormanFire && game.state.phase!=Phase.NormanDefenseFire)return;
+        if(!PlayerFirePhase())return;
         var shooters=SelectedUnits();
         if(shooters.Count==0)return;
-        foreach(var target in game.Living(Side.Saxon).Where(target=>
+        foreach(var target in game.Living(GameEngine.Opposite(PlayerSide())).Where(target=>
             shooters.All(shooter=>game.CanFire(shooter,target,showHigh))))
         {
             var hex=board.Hex(target.hex);
+            var center=MapPoint(hex.x,hex.y);
             float size=Mathf.Max(48f,74*scale);
-            var rect=new Rect(pan.x+hex.x*scale-size/2f,pan.y+hex.y*scale-size/2f,size,size);
+            var rect=new Rect(center.x-size/2f,center.y-size/2f,size,size);
             DrawRectOutline(rect,Mathf.Clamp(3*scale,2f,6f),new Color(1f,.67f,.12f,.92f));
         }
     }
@@ -653,13 +713,13 @@ public sealed class HastingsGame : MonoBehaviour
         float elapsed=Time.unscaledTime-missileEffectStarted;
         float fade=1f-Mathf.Clamp01((elapsed-2.5f)/1.1f);
         var targetHex=board.Hex(missileResult.targetHex);
-        var target=new Vector2(pan.x+targetHex.x*scale,pan.y+targetHex.y*scale);
+        var target=MapPoint(targetHex.x,targetHex.y);
         float travel=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.65f));
         foreach(var shooterHexId in missileResult.shooterHexes)
         {
             if(!board.Has(shooterHexId))continue;
             var shooterHex=board.Hex(shooterHexId);
-            var origin=new Vector2(pan.x+shooterHex.x*scale,pan.y+shooterHex.y*scale);
+            var origin=MapPoint(shooterHex.x,shooterHex.y);
             DrawLine(origin,target,Mathf.Clamp(2.5f*scale,2f,5f),
                 new Color(1f,.82f,.24f,.48f*fade));
             var projectile=Vector2.Lerp(origin,target,travel);
@@ -675,7 +735,7 @@ public sealed class HastingsGame : MonoBehaviour
         float elapsed=Time.unscaledTime-missileEffectStarted;
         float fade=1f-Mathf.Clamp01((elapsed-2.5f)/1.1f);
         var hex=board.Hex(missileResult.targetHex);
-        var target=new Vector2(pan.x+hex.x*scale,pan.y+hex.y*scale);
+        var target=MapPoint(hex.x,hex.y);
         float pulse=.5f+.5f*Mathf.Sin(elapsed*10f);
         float targetSize=Mathf.Max(58f,(76+12*pulse)*scale);
         DrawRectOutline(new Rect(target.x-targetSize/2,target.y-targetSize/2,targetSize,targetSize),
@@ -746,12 +806,13 @@ public sealed class HastingsGame : MonoBehaviour
         float margin=Mathf.Max(60,50*scale);
         foreach(var h in board.data.hexes)
         {
-            float x=pan.x+h.x*scale,y=pan.y+h.y*scale;
+            var center=MapPoint(h.x,h.y);
+            float x=center.x,y=center.y;
             if(x<-margin||x>region.width+margin||y<-margin||y>region.height+margin)continue;
-            var pivot=new Vector2(x+42*scale,y);
+            var pivot=new Vector2(x+(SaxonView()?-42:42)*scale,y);
             var label=new Rect(pivot.x-width*.5f,pivot.y-height*.5f,width,height);
             var old=GUI.matrix;
-            GUIUtility.RotateAroundPivot(90,pivot);
+            GUIUtility.RotateAroundPivot(SaxonView()?-90:90,pivot);
             GUI.Label(new Rect(label.x+scale,label.y+scale,label.width,label.height),h.id,hexNumberShadow);
             GUI.Label(label,h.id,hexNumber);
             GUI.matrix=old;
@@ -826,7 +887,9 @@ public sealed class HastingsGame : MonoBehaviour
         if(s.phase==Phase.Orders)
         {
             GUILayout.Space(5*p);
-            foreach(var id in new[]{"Breton","Norman","Franco-Flemish"})
+            var strategyGroups=PlayerSide()==Side.Norman?
+                new[]{"Breton","Norman","Franco-Flemish"}:new[]{"Left","Center","Right"};
+            foreach(var id in strategyGroups)
             {
                 var group=s.groups.First(g=>g.id==id);
                 var content=new GUIContent(id+"  ·  "+group.strategy,StrategyOverview(group.strategy));
@@ -848,7 +911,13 @@ public sealed class HastingsGame : MonoBehaviour
                 {
                     GUILayout.Label(g.id+" foot",panelMuted);GUILayout.BeginHorizontal();
                     if(GUILayout.Button("Wall",panelButton))ChooseOptionalOrder(g.id,false,Order.ShieldWall);
-                    if(GUILayout.Button("Fire",panelButton))ChooseOptionalOrder(g.id,false,Order.FireInPlace);
+                    if(PlayerSide()==Side.Saxon)
+                    {
+                        if(GUILayout.Button("Attack",panelButton))
+                            ChooseOptionalOrder(g.id,false,Order.AttackPursue);
+                    }
+                    else if(GUILayout.Button("Fire",panelButton))
+                        ChooseOptionalOrder(g.id,false,Order.FireInPlace);
                     if(GUILayout.Button("Advance",panelButton))ChooseOptionalOrder(g.id,false,Order.Advance);
                     GUILayout.EndHorizontal();
                 }
@@ -862,7 +931,7 @@ public sealed class HastingsGame : MonoBehaviour
                 }
             }
         }
-        if((s.phase==Phase.NormanFire||s.phase==Phase.NormanDefenseFire) && !optionsPending)
+        if(PlayerFirePhase() && !optionsPending)
         {
             DrawHighTrajectoryControl(s,p);
             DrawBowFireProgress(p);
@@ -871,6 +940,7 @@ public sealed class HastingsGame : MonoBehaviour
         if(s.phase!=Phase.GameOver)
         {
             string caption=s.phase==Phase.Setup?"Begin battle":s.phase==Phase.Orders?"Roll orders":
+                PlayerSide()==Side.Saxon&&s.phase==Phase.NormanFire&&!optionsPending?"Resolve Norman opening":
                 s.phase==Phase.Reform?"Finish reform":optionsPending?"Choose optional orders above":"Finish segment";
             GUILayout.Space(9*p);
             GUI.enabled=!optionsPending;
@@ -926,7 +996,7 @@ public sealed class HastingsGame : MonoBehaviour
                 if(GUILayout.Button("Turn right  ·  E",panelButton))game.Face(units[0],units[0].facing+1);
                 GUILayout.EndHorizontal();
             }
-            if(s.phase==Phase.NormanMelee && selectedTargets.Count>0)
+            if(PlayerMeleePhase() && selectedTargets.Count>0)
             {
                 GUILayout.Label("Targets: "+string.Join(", ",selectedTargets.Select(id=>unitLabels[id]).ToArray()),panelMuted);
                 if(GUILayout.Button("Resolve selected melee",panelPrimary,GUILayout.Height(45*p)))
@@ -1007,18 +1077,18 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawBowFireProgress(float p)
     {
-        var bows=game.Living(Side.Norman).Where(unit=>
-            UnitTypes.Get(unit).missile=="B" && unit.status==Status.Ready).ToList();
-        int fired=bows.Count(unit=>unit.fired),total=bows.Count;
+        var missiles=game.Living(PlayerSide()).Where(unit=>
+            UnitTypes.Get(unit).missile!="" && unit.status==Status.Ready).ToList();
+        int fired=missiles.Count(unit=>unit.fired),total=missiles.Count;
         bool complete=total>0 && fired==total;
-        string detail=total==0?"No ready bow units are available.":complete?
-            "Every ready bow unit has fired this segment.":
-            (total-fired)+" ready bow unit"+(total-fired==1?" remains.":"s remain.");
+        string detail=total==0?"No ready missile units are available.":complete?
+            "Every ready missile unit has fired this segment.":
+            (total-fired)+" ready missile unit"+(total-fired==1?" remains.":"s remain.");
         string badge=total==0?"NONE":complete?"COMPLETE":fired+" / "+total;
         GUILayout.Space(5*p);
         GUILayout.BeginHorizontal(controlRow);
         GUILayout.BeginVertical();
-        GUILayout.Label("BOW FIRE",controlHeading);
+        GUILayout.Label("MISSILE FIRE",controlHeading);
         GUILayout.Label(detail,controlAction);
         GUILayout.EndVertical();
         GUILayout.FlexibleSpace();
@@ -1223,33 +1293,48 @@ public sealed class HastingsGame : MonoBehaviour
             (h.woods?"  ·  WOODS":"")+
             (h.marsh?"  ·  MARSH":"");
     }
-    private static string PhaseLabel(Phase phase)
+    private string PhaseLabel(Phase phase)
     {
         switch(phase)
         {
             case Phase.Setup:return "Setup";
             case Phase.Orders:return "Choose orders";
             case Phase.NormanMove:return "Norman movement";
-            case Phase.NormanFire:return "Norman missile fire";
+            case Phase.NormanFire:return PlayerSide()==Side.Saxon?"Norman AI opening":"Norman missile fire";
             case Phase.NormanDefenseFire:return "Norman defensive fire";
             case Phase.NormanMelee:return "Norman melee";
             case Phase.NormanReaction:return "Norman reaction";
+            case Phase.SaxonReaction:return "Saxon reaction";
+            case Phase.SaxonDefenseFire:return "Saxon defensive fire";
+            case Phase.SaxonFire:return "Saxon missile fire";
+            case Phase.SaxonMove:return "Saxon movement";
+            case Phase.SaxonMelee:return "Saxon melee";
             case Phase.Reform:return "Reform";
             case Phase.GameOver:return "Battle ended";
             default:return "Battle phase";
         }
     }
-    private static string PhasePrompt(Phase phase)
+    private string PhasePrompt(Phase phase)
     {
         switch(phase)
         {
-            case Phase.Setup:return "Set Norman facings on the map, then begin the battle.";
-            case Phase.Orders:return "Choose a strategy for each Norman contingent.";
+            case Phase.Setup:return PlayerSide()==Side.Norman?
+                "Set Norman facings on the map, then begin the battle.":
+                "The Norman setup is ready. Begin when you are prepared to defend Senlac Hill.";
+            case Phase.Orders:return "Choose a strategy for each "+
+                (PlayerSide()==Side.Norman?"Norman contingent.":"Saxon wing.");
             case Phase.NormanMove:return "Select a Norman unit and click a highlighted destination.";
-            case Phase.NormanFire:
+            case Phase.NormanFire:return PlayerSide()==Side.Saxon?
+                "Continue to resolve Norman missile fire and movement.":
+                "Select missile units, then click an amber-outlined Saxon target.";
             case Phase.NormanDefenseFire:return "Select missile units, then click an amber-outlined Saxon target.";
             case Phase.NormanMelee:return "Select attackers, then click a Saxon defender.";
             case Phase.NormanReaction:return "Select a Norman unit and click a highlighted reaction destination.";
+            case Phase.SaxonReaction:return "Select a Saxon unit and click a highlighted reaction destination.";
+            case Phase.SaxonDefenseFire:return "Select Saxon missile units, then click an amber-outlined Norman target.";
+            case Phase.SaxonFire:return "Select Saxon missile units, then click an amber-outlined Norman target.";
+            case Phase.SaxonMove:return "Select a Saxon unit and click a highlighted destination.";
+            case Phase.SaxonMelee:return "Select Saxon attackers, then click a Norman defender.";
             case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
             case Phase.GameOver:return "The battle is over.";
             default:return "Resolve any available actions, then finish this segment.";
@@ -1300,7 +1385,8 @@ public sealed class HastingsGame : MonoBehaviour
         selected.Clear();
         selectedTargets.Clear();
         if(game.state.phase!=priorPhase &&
-           (game.state.phase==Phase.NormanFire||game.state.phase==Phase.NormanDefenseFire))
+           (game.state.phase==Phase.NormanFire||game.state.phase==Phase.NormanDefenseFire||
+            game.state.phase==Phase.SaxonFire||game.state.phase==Phase.SaxonDefenseFire))
             showHigh=false;
     }
     private void ChooseOptionalOrder(string group,bool knight,Order order)
@@ -1331,7 +1417,8 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.BeginArea(new Rect(rect.x+inset,rect.y+25,rect.width-2*inset,rect.height-50));
         GUILayout.Label("HASTINGS 1066",menuTitle,GUILayout.Height(Mathf.Clamp(Screen.height*.10f,75,115)));
         GUILayout.Label(menuPage=="main"?"The Battle for Senlac Hill":
-            menuPage=="load"?"Load a game":menuPage=="save"?"Save your battle":"Start a new battle?",
+            menuPage=="load"?"Load a game":menuPage=="save"?"Save your battle":
+            menuPage=="newSide"?"Choose your army":"Start a new battle?",
             menuSubtitle,GUILayout.Height(42));
         GUILayout.Space(28);
         if(menuPage=="main")
@@ -1342,7 +1429,7 @@ public sealed class HastingsGame : MonoBehaviour
                 GUILayout.Space(12);
             }
             if(GUILayout.Button("New Game",game==null?menuPrimary:menuButton,GUILayout.Height(buttonHeight)))
-            {if(game==null)StartNewGame();else menuPage="newConfirm";}
+            {menuPage=game==null?"newSide":"newConfirm";}
             GUILayout.Space(12);
             if(game!=null)
             {
@@ -1400,16 +1487,33 @@ public sealed class HastingsGame : MonoBehaviour
         {
             GUILayout.Label("Unsaved progress in the current battle will be lost.",menuSubtitle);
             GUILayout.FlexibleSpace();
-            if(GUILayout.Button("Start New Game",menuPrimary,GUILayout.Height(buttonHeight)))StartNewGame();
+            if(GUILayout.Button("Choose a Side",menuPrimary,GUILayout.Height(buttonHeight)))menuPage="newSide";
             GUILayout.Space(12);
             if(GUILayout.Button("Cancel",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
+        }
+        else if(menuPage=="newSide")
+        {
+            GUILayout.Label("The opposing army will be controlled by the AI.",menuSubtitle,
+                GUILayout.Height(42));
+            GUILayout.Space(18);
+            if(GUILayout.Button("Play as the Normans",menuPrimary,GUILayout.Height(buttonHeight)))
+                StartNewGame(Side.Norman);
+            GUILayout.Label("Attack Senlac Hill with the Breton, Norman, and Franco-Flemish contingents.",
+                small,GUILayout.Height(48));
+            GUILayout.Space(14);
+            if(GUILayout.Button("Play as the Saxons",menuPrimary,GUILayout.Height(buttonHeight)))
+                StartNewGame(Side.Saxon);
+            GUILayout.Label("Defend the ridge with the left, center, and right wings. The battlefield rotates to your viewpoint.",
+                small,GUILayout.Height(52));
+            GUILayout.FlexibleSpace();
+            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
         if(notice!="")GUILayout.Label(notice,small);
         GUILayout.EndArea();
     }
-    private void StartNewGame()
+    private void StartNewGame(Side playerSide)
     {
-        game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks));
+        game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks,playerSide));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
         showUnits=true;showHigh=false;chart="";showOrderResults=false;orderReviewMode=false;
         stackSpread.Clear();hoveredHex="";
@@ -1471,13 +1575,15 @@ public sealed class HastingsGame : MonoBehaviour
         var contentRect=new Rect(27*u,128*u,width-54*u,height-210*u);
         GUILayout.BeginArea(contentRect);
         orderScroll=GUILayout.BeginScrollView(orderScroll);
-        DrawOrderSide("YOUR NORMAN ORDERS",Side.Norman,contentRect.width-22*u);
+        DrawOrderSide(PlayerSide()==Side.Norman?"YOUR NORMAN ORDERS":"NORMAN ORDERS",
+            Side.Norman,contentRect.width-22*u);
         GUILayout.Space(9*u);
-        DrawOrderSide("SAXON ORDERS",Side.Saxon,contentRect.width-22*u);
+        DrawOrderSide(PlayerSide()==Side.Saxon?"YOUR SAXON ORDERS":"SAXON ORDERS",
+            Side.Saxon,contentRect.width-22*u);
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
-        string buttonText=optionsPending?"Choose the optional orders above":"Continue to Norman fire";
+        string buttonText=optionsPending?"Choose the optional orders above":"Continue to battle";
         GUI.enabled=!optionsPending;
         if(GUI.Button(new Rect(27*u,height-68*u,width-54*u,48*u),buttonText,panelPrimary))
             showOrderResults=false;
@@ -1746,8 +1852,8 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label(choicePending?"CHOOSE AN ORDER":OrderDisplay(order),orderName,
             GUILayout.Height(27*u));
         string timing=choicePending?"Optional result · your choice is required":
-            optional?(result.side==Side.Norman?"Optional result · your selected order":
-                "Optional result · Saxon AI selected this order"):
+            optional?(result.side==PlayerSide()?"Optional result · your selected order":
+                "Optional result · AI selected this order"):
             continued?"Continues from last turn · "+duration+" turn remaining":
             duration>1?"Remains in effect for "+duration+" turns":"Applies this turn";
         GUILayout.Label(timing,orderText);
@@ -1769,7 +1875,12 @@ public sealed class HastingsGame : MonoBehaviour
             {
                 if(GUILayout.Button("Shield Wall",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,false,Order.ShieldWall);
-                if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
+                if(result.side==Side.Saxon)
+                {
+                    if(GUILayout.Button("Attack & Pursue",orderChoice,GUILayout.Height(36*u)))
+                        ChooseOptionalOrder(result.group,false,Order.AttackPursue);
+                }
+                else if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,false,Order.FireInPlace);
                 if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,false,Order.Advance);

@@ -47,11 +47,14 @@ namespace Hastings
         public void Begin()
         {
             if(state.phase!=Phase.Setup) return;
-            state.phase=Phase.Orders; Log("Choose Norman strategies.");
+            state.phase=Phase.Orders; Log("Choose "+state.playerSide+" strategies.");
         }
         public void SetStrategy(string group, Strategy strategy)
         {
-            if(state.phase!=Phase.Orders || !new[]{"Norman","Breton","Franco-Flemish"}.Contains(group))return;
+            bool norman=new[]{"Norman","Breton","Franco-Flemish"}.Contains(group);
+            bool saxon=new[]{"Left","Center","Right"}.Contains(group);
+            if(state.phase!=Phase.Orders ||
+               (state.playerSide==Side.Norman?!norman:!saxon))return;
             state.groups.First(g=>g.id==group).strategy=strategy;
         }
         public bool OptionsPending() { return state.groups.Any(g=>g.footOptional||g.knightOptional); }
@@ -65,11 +68,12 @@ namespace Hastings
             {
                 if((group.id=="Left"||group.id=="Center"||group.id=="Right") &&
                     !Living(Side.Saxon).Any(u=>u.group==group.id && !UnitTypes.Get(u).leader))continue;
-                if(group.id=="Left" || group.id=="Center" || group.id=="Right")
-                    group.strategy=ChooseSaxonStrategy(group.id);
+                var side=group.id=="Left"||group.id=="Center"||group.id=="Right"?Side.Saxon:Side.Norman;
+                if(side!=state.playerSide)
+                    group.strategy=side==Side.Saxon?ChooseSaxonStrategy(group.id):
+                        ChooseNormanStrategy(group.id);
                 int footDuration=1, knightDuration=1, footEffect=0, knightEffect=0;
                 bool footOptional=false, knightOptional=false;
-                var side=group.id=="Left"||group.id=="Center"||group.id=="Right"?Side.Saxon:Side.Norman;
                 bool footContinued=group.footDuration>1;
                 bool knightContinued=side==Side.Norman && group.knightDuration>1;
                 int footRoll=footContinued?0:Die()+Die();
@@ -93,10 +97,12 @@ namespace Hastings
                 }
                 group.footDuration=Math.Max(group.footDuration,footDuration);
                 group.knightDuration=Math.Max(group.knightDuration,knightDuration);
-                group.footOptional=footOptional && side==Side.Norman;
-                group.knightOptional=knightOptional && side==Side.Norman;
-                if(footOptional && side==Side.Saxon)
-                    group.footOrder=group.strategy==Strategy.Defensive?Order.ShieldWall:Order.Advance;
+                group.footOptional=footOptional && side==state.playerSide;
+                group.knightOptional=knightOptional && side==state.playerSide;
+                if(footOptional && side!=state.playerSide)
+                    group.footOrder=ChooseOptionalOrder(side,false,group.strategy);
+                if(knightOptional && side!=state.playerSide)
+                    group.knightOrder=ChooseOptionalOrder(side,true,group.strategy);
                 group.effect+=footEffect+knightEffect;
                 state.orderResults.Add(new OrderRollResult {
                     group=group.id,side=side,strategy=group.strategy,roll=footRoll,
@@ -123,6 +129,9 @@ namespace Hastings
             if(state.phase!=Phase.NormanFire)return false;
             var group=state.groups.FirstOrDefault(g=>g.id==groupId);
             if(group==null)return false;
+            var side=groupId=="Left"||groupId=="Center"||groupId=="Right"?
+                Side.Saxon:Side.Norman;
+            if(side!=state.playerSide)return false;
             if(knight)
             {
                 if(!group.knightOptional || (order!=Order.Hold && order!=Order.Advance && order!=Order.Charge))return false;
@@ -130,7 +139,10 @@ namespace Hastings
             }
             else
             {
-                if(!group.footOptional || (order!=Order.ShieldWall && order!=Order.FireInPlace && order!=Order.Advance))return false;
+                bool legal=side==Side.Saxon?
+                    order==Order.ShieldWall||order==Order.AttackPursue||order==Order.Advance:
+                    order==Order.ShieldWall||order==Order.FireInPlace||order==Order.Advance;
+                if(!group.footOptional || !legal)return false;
                 group.footOrder=order;group.footOptional=false;
             }
             var result=state.orderResults==null?null:
@@ -148,6 +160,23 @@ namespace Hastings
             int threats=units.Count(u=>Living(Side.Norman).Any(n=>board.Distance(u.hex,n.hex)<=2));
             if(threats>units.Count/3)return Strategy.Defensive;
             return state.turn<4?Strategy.Cautious:Strategy.Moderate;
+        }
+        private Strategy ChooseNormanStrategy(string group)
+        {
+            var units=Living(Side.Norman).Where(u=>u.group==group && !UnitTypes.Get(u).leader).ToList();
+            int close=units.Count(u=>NearestEnemyDistance(Side.Norman,u.hex)<=3);
+            if(close>units.Count/2)return Strategy.Aggressive;
+            return state.turn<3?Strategy.Moderate:Strategy.Aggressive;
+        }
+        private static Order ChooseOptionalOrder(Side side,bool knight,Strategy strategy)
+        {
+            if(side==Side.Saxon)
+                return strategy==Strategy.Defensive?Order.ShieldWall:
+                    strategy==Strategy.Aggressive?Order.AttackPursue:Order.Advance;
+            if(knight)return strategy==Strategy.Aggressive?Order.Charge:
+                strategy==Strategy.Defensive?Order.Hold:Order.Advance;
+            return strategy==Strategy.Defensive?Order.ShieldWall:
+                strategy==Strategy.Cautious?Order.FireInPlace:Order.Advance;
         }
         private void ReassignSaxonWings()
         {
@@ -176,11 +205,15 @@ namespace Hastings
         }
         public bool CanFace(UnitState unit)
         {
-            return state.phase==Phase.Setup || state.phase==Phase.NormanMove || state.phase==Phase.Reform;
+            if(unit.side!=state.playerSide)return false;
+            if(state.phase==Phase.Setup)return state.playerSide==Side.Norman;
+            return (unit.side==Side.Norman &&
+                    (state.phase==Phase.NormanMove||state.phase==Phase.Reform)) ||
+                   (unit.side==Side.Saxon && state.phase==Phase.SaxonMove);
         }
         public bool Face(UnitState unit,int direction)
         {
-            if(unit.side!=Side.Norman || UnitTypes.Get(unit).leader || !CanFace(unit))return false;
+            if(UnitTypes.Get(unit).leader || !CanFace(unit))return false;
             unit.facing=((direction%6)+6)%6; Log(unit.id+" faces "+unit.facing);return true;
         }
         public bool Controls(UnitState unit,string hex)
@@ -299,9 +332,11 @@ namespace Hastings
         private bool IsDownhill(string from,string to) { return IsUphill(to,from); }
         public bool Move(UnitState unit,string destination,bool reaction=false)
         {
-            if(!board.Has(destination) || (unit.side!=Side.Norman && !reaction))return false;
-            if(reaction && state.phase!=Phase.NormanReaction)return false;
-            if(!reaction && state.phase!=Phase.NormanMove)return false;
+            if(!board.Has(destination) || unit.side!=state.playerSide)return false;
+            if(reaction && !((unit.side==Side.Norman && state.phase==Phase.NormanReaction) ||
+               (unit.side==Side.Saxon && state.phase==Phase.SaxonReaction)))return false;
+            if(!reaction && !((unit.side==Side.Norman && state.phase==Phase.NormanMove) ||
+               (unit.side==Side.Saxon && state.phase==Phase.SaxonMove)))return false;
             MoveOption option;
             if(!LegalMoves(unit,reaction).TryGetValue(destination,out option))return false;
             MoveCore(unit,option,reaction);return true;

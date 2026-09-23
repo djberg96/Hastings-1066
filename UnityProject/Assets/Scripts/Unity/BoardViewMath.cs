@@ -3,6 +3,12 @@ using UnityEngine;
 public static class BoardViewMath
 {
     public const float InitialFocusY = 1080f;
+    public const float BattlefieldHeight = 2200f;
+
+    public static Vector2 OrientBattlefield(Vector2 point,float boardWidth,bool rotated)
+    {
+        return rotated?new Vector2(boardWidth-point.x,BattlefieldHeight-point.y):point;
+    }
 
     public static float FitWidth(float viewportWidth,float boardWidth)
     {

@@ -65,6 +65,12 @@ public static class ProjectChecks
         Check(edgePan==new Vector2(0,-200),"Map pan escaped a board edge");
         var centeredPan=BoardViewMath.ClampPan(new Vector2(999,-999),.5f,1000,800,500,400);
         Check(centeredPan==new Vector2(375,300),"Small map was not centered");
+        var boardPoint=new Vector2(800,1434);
+        var saxonPoint=BoardViewMath.OrientBattlefield(boardPoint,board.data.width,true);
+        var restoredPoint=BoardViewMath.OrientBattlefield(saxonPoint,board.data.width,true);
+        Check(restoredPoint==boardPoint && saxonPoint.x==board.data.width-boardPoint.x &&
+            saxonPoint.y==BoardViewMath.BattlefieldHeight-boardPoint.y,
+            "Saxon battlefield orientation is not a 180 degree rotation");
         foreach(Strategy strategy in Enum.GetValues(typeof(Strategy)))
             for(int dice=2;dice<=12;dice++)
             {
@@ -93,6 +99,9 @@ public static class ProjectChecks
             Check(Resources.Load<Texture2D>("Art/Counters/"+side+"/"+t.art)!=null,"Missing counter art: "+type);
         }
         var state=Setup.New(board,12345);
+        Check((int)Phase.Reform==7 && (int)Phase.GameOver==8,
+            "Existing save phase values changed");
+        Check(state.playerSide==Side.Norman,"Legacy new games did not default to the Normans");
         Check(state.units.Count(u=>u.type=="T")==5,"Thegn setup count");
         Check(state.units.Count(u=>u.type=="HC")==20,"Housecarl setup count");
         Check(state.units.Count(u=>u.side==Side.Norman && !UnitTypes.Get(u).leader)==60,
@@ -193,6 +202,43 @@ public static class ProjectChecks
         Check(originalMoves.SequenceEqual(restoredMoves),"Saved game changed legal moves");
         Check(engine.Die()==restoredEngine.Die() && state.randomState==restored.randomState,
             "Saved game changed subsequent dice");
+        var saxonState=Setup.New(board,24680,Side.Saxon);
+        Check(saxonState.playerSide==Side.Saxon,"Saxon side selection was not stored");
+        var saxonEngine=new GameEngine(board,saxonState);
+        saxonEngine.Begin();
+        saxonEngine.SetStrategy("Left",Strategy.Defensive);
+        saxonEngine.ResolveOrders();
+        Check(saxonState.groups.First(g=>g.id=="Left").strategy==Strategy.Defensive,
+            "Player-selected Saxon strategy was replaced by the AI");
+        foreach(var group in saxonState.groups.Where(g=>g.footOptional||g.knightOptional))
+        {
+            if(group.footOptional)saxonEngine.SetOptionalOrder(group.id,false,Order.Advance);
+            if(group.knightOptional)saxonEngine.SetOptionalOrder(group.id,true,Order.Advance);
+        }
+        saxonEngine.Advance();
+        Check(saxonState.phase==Phase.SaxonReaction,
+            "Norman AI opening did not hand control to the Saxon reaction phase");
+        saxonEngine.Advance();
+        Check(saxonState.phase==Phase.SaxonDefenseFire,"Saxon defensive fire phase missing");
+        saxonEngine.Advance();
+        Check(saxonState.phase==Phase.SaxonFire,"Saxon offensive fire phase missing");
+        saxonEngine.Advance();
+        Check(saxonState.phase==Phase.SaxonMove,"Saxon movement phase missing");
+        saxonEngine.Advance();
+        Check(saxonState.phase==Phase.SaxonMelee,"Saxon melee phase missing");
+        var saxonJson=JsonUtility.ToJson(saxonState);
+        Check(JsonUtility.FromJson<GameState>(saxonJson).playerSide==Side.Saxon,
+            "Saxon side selection did not survive a save round trip");
+        var saxonOptionalState=Setup.New(board,97531,Side.Saxon);
+        saxonOptionalState.phase=Phase.NormanFire;
+        var saxonOptionalGroup=saxonOptionalState.groups.First(g=>g.id=="Left");
+        saxonOptionalGroup.footOptional=true;
+        saxonOptionalState.orderResults.Add(new OrderRollResult {group="Left",side=Side.Saxon,
+            footOptional=true});
+        var saxonOptionalEngine=new GameEngine(board,saxonOptionalState);
+        Check(saxonOptionalEngine.SetOptionalOrder("Left",false,Order.AttackPursue) &&
+            saxonOptionalGroup.footOrder==Order.AttackPursue && !saxonOptionalGroup.footOptional,
+            "Saxon optional order choice was not applied");
         string slot="HastingsVerification"+Guid.NewGuid().ToString("N");
         try
         {
@@ -246,11 +292,12 @@ public static class ProjectChecks
     public static void RunSimulation()
     {
         var board=new Board(JsonUtility.FromJson<MapData>(Resources.Load<TextAsset>("Data/Map").text));
-        foreach(uint seed in new uint[]{4077,1819,2026})Simulate(board,seed);
+        foreach(uint seed in new uint[]{4077,1819,2026})Simulate(board,seed,Side.Norman);
+        Simulate(board,1066,Side.Saxon);
     }
-    private static void Simulate(Board board,uint seed)
+    private static void Simulate(Board board,uint seed,Side playerSide)
     {
-        var engine=new GameEngine(board,Setup.New(board,seed));engine.Begin();
+        var engine=new GameEngine(board,Setup.New(board,seed,playerSide));engine.Begin();
         for(int step=0;step<300 && engine.state.phase!=Phase.GameOver;step++)
         {
             var s=engine.state;
@@ -287,7 +334,7 @@ public static class ProjectChecks
                 " FK056 "+string.Join(" | ",s.log.Where(x=>x.Contains("FK-056")).ToArray()));
         }
         Check(engine.state.phase==Phase.GameOver,"Game did not finish in 300 segments");
-        Debug.Log("HASTINGS SIMULATION PASSED seed "+seed+": "+engine.state.result+
+        Debug.Log("HASTINGS SIMULATION PASSED "+playerSide+" seed "+seed+": "+engine.state.result+
                   ", "+engine.state.log.Count+" events");
     }
     private static void Check(bool condition,string message)

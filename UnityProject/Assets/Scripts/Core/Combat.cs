@@ -14,7 +14,9 @@ namespace Hastings
                !board.Has(shooter.hex)||!board.Has(target.hex))return false;
             if(shooter.reacted && type.missile!="B")return false;
             if(shooter.side==Side.Norman && state.phase!=Phase.NormanFire && state.phase!=Phase.NormanDefenseFire)return false;
-            if(shooter.side==Side.Norman && OptionsPending())return false;
+            if(shooter.side==Side.Saxon && state.playerSide==Side.Saxon &&
+               state.phase!=Phase.SaxonFire && state.phase!=Phase.SaxonDefenseFire)return false;
+            if(OptionsPending())return false;
             int range=board.Distance(shooter.hex,target.hex);
             if(RuleTables.MissileStrength(type.missile,range)==0)return false;
             int direction=board.Direction(shooter.hex,target.hex);
@@ -107,10 +109,12 @@ namespace Hastings
         }
         public bool Melee(List<UnitState> attackers,List<UnitState> defenders)
         {
-            if(state.phase!=Phase.NormanMelee || attackers.Count==0 || defenders.Count==0 ||
-               attackers.Any(a=>a.side!=Side.Norman) ||
+            Side active=state.phase==Phase.NormanMelee?Side.Norman:
+                state.phase==Phase.SaxonMelee?Side.Saxon:(Side)(-1);
+            if(active!=state.playerSide || attackers.Count==0 || defenders.Count==0 ||
+               attackers.Any(a=>a.side!=active) ||
                attackers.Any(a=>!defenders.Any(d=>CanMelee(a,d))) ||
-                defenders.Any(d=>d.side!=Side.Saxon || !attackers.Any(a=>CanMelee(a,d))) ||
+                defenders.Any(d=>d.side!=Opposite(active) || !attackers.Any(a=>CanMelee(a,d))) ||
                 attackers.Any(a=>a.engaged) || defenders.Any(d=>d.engaged))return false;
             ResolveMelee(attackers,defenders);return true;
         }

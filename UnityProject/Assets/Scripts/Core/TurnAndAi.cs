@@ -8,6 +8,11 @@ namespace Hastings
     {
         public void Advance()
         {
+            if(state.playerSide==Side.Saxon)
+            {
+                AdvanceSaxonPlayer();
+                return;
+            }
             switch(state.phase)
             {
                 case Phase.NormanFire:
@@ -15,18 +20,46 @@ namespace Hastings
                     state.phase=Phase.NormanMove;Log("Norman movement segment");break;
                 case Phase.NormanMove:
                     ResolveUnmovedCharges();
-                    AiReaction();ResetFire();AiFire();
+                    AiReaction(Side.Saxon);ResetFire();AiFire(Side.Saxon);
                     foreach(var u in Living(Side.Saxon))u.reacted=false;
                     state.phase=Phase.NormanMelee;Log("Norman melee segment");break;
                 case Phase.NormanMelee:
                     ResolveRemainingMandatory(Side.Norman);
-                    Rally(Side.Saxon);ResetFire();AiFire();AiMove();
+                    Rally(Side.Saxon);ResetFire();AiFire(Side.Saxon);AiMove(Side.Saxon);
                     state.phase=Phase.NormanReaction;Log("Norman reaction segment");break;
                 case Phase.NormanReaction:
                     ResetFire();state.phase=Phase.NormanDefenseFire;
                     Log("Norman defensive missile segment");break;
                 case Phase.NormanDefenseFire:
-                    AiMelee();EndTurn();break;
+                    AiMelee(Side.Saxon);EndTurn();break;
+            }
+        }
+        private void AdvanceSaxonPlayer()
+        {
+            switch(state.phase)
+            {
+                case Phase.NormanFire:
+                    if(OptionsPending())return;
+                    AiFire(Side.Norman);
+                    state.phase=Phase.NormanMove;Log("Norman movement segment");
+                    AiMove(Side.Norman);ResolveUnmovedCharges();
+                    state.phase=Phase.SaxonReaction;Log("Saxon reaction segment");break;
+                case Phase.SaxonReaction:
+                    ResetFire();state.phase=Phase.SaxonDefenseFire;
+                    Log("Saxon defensive missile segment");break;
+                case Phase.SaxonDefenseFire:
+                    AiMelee(Side.Norman);
+                    Rally(Side.Saxon);ResetFire();state.phase=Phase.SaxonFire;
+                    Log("Saxon missile fire segment");break;
+                case Phase.SaxonFire:
+                    state.phase=Phase.SaxonMove;Log("Saxon movement segment");break;
+                case Phase.SaxonMove:
+                    AiReaction(Side.Norman);ResetFire();
+                    state.phase=Phase.NormanDefenseFire;AiFire(Side.Norman);
+                    foreach(var u in Living(Side.Norman))u.reacted=false;
+                    state.phase=Phase.SaxonMelee;Log("Saxon melee segment");break;
+                case Phase.SaxonMelee:
+                    ResolveRemainingMandatory(Side.Saxon);EndTurn();break;
             }
         }
         private void ResolveUnmovedCharges()
@@ -89,13 +122,18 @@ namespace Hastings
             {
                 PrepareReform();
                 state.phase=Phase.Reform;Log("First assault ends. Reform Norman units south of Senlac Hill.");
+                if(state.playerSide==Side.Saxon)
+                {
+                    AutoReformNormans();
+                    FinishReform();
+                }
                 return;
             }
             if(state.period==2 && state.turn>8)
             {
                 state.result="Saxon strategic victory";state.phase=Phase.GameOver;Log(state.result);return;
             }
-            state.phase=Phase.Orders;Log("New battle turn. Choose Norman strategies.");
+            state.phase=Phase.Orders;Log("New battle turn. Choose "+state.playerSide+" strategies.");
         }
         private bool IsEncircled()
         {
@@ -154,9 +192,9 @@ namespace Hastings
                 }
             }
         }
-        private void AiReaction()
+        private void AiReaction(Side side)
         {
-            foreach(var unit in Living(Side.Saxon).Where(u=>u.status==Status.Ready &&
+            foreach(var unit in Living(side).Where(u=>u.status==Status.Ready &&
                 NearestEnemyDistance(u.side,u.hex)<=1).ToList())
             {
                 var options=LegalMoves(unit,true).Values.ToList();
@@ -170,14 +208,14 @@ namespace Hastings
                 MoveCore(unit,best,true);
             }
         }
-        private void AiFire()
+        private void AiFire(Side side)
         {
-            foreach(var shooter in Living(Side.Saxon).Where(u=>UnitTypes.Get(u).missile!="" &&
+            foreach(var shooter in Living(side).Where(u=>UnitTypes.Get(u).missile!="" &&
                 u.status==Status.Ready).ToList())
             {
                 UnitState target=null;bool high=false;double best=-10000;
-                foreach(var enemy in Living(Side.Norman).Where(u=>!UnitTypes.Get(u).leader ||
-                    UnitAt(u.hex,Side.Norman)==null))
+                foreach(var enemy in Living(Opposite(side)).Where(u=>!UnitTypes.Get(u).leader ||
+                    UnitAt(u.hex,Opposite(side))==null))
                 {
                     bool h=false;
                     if(!CanFire(shooter,enemy,false))
@@ -185,16 +223,17 @@ namespace Hastings
                     int strength=RuleTables.MissileStrength(UnitTypes.Get(shooter).missile,
                         board.Distance(shooter.hex,enemy.hex));
                     double score=(double)strength/Defense(enemy,false)*10+
-                        (enemy.type=="WG"?4:0)+(enemy.reduced?2:0)-board.Distance(shooter.hex,enemy.hex)*.1;
+                        (enemy.type=="WG"||enemy.type=="Harold"?4:0)+
+                        (enemy.reduced?2:0)-board.Distance(shooter.hex,enemy.hex)*.1;
                     if(score>best){best=score;target=enemy;high=h;}
                 }
                 if(target!=null)Fire(new List<UnitState>{shooter},target,high);
             }
         }
-        private void AiMove()
+        private void AiMove(Side side)
         {
-            EnterReinforcements();
-            var units=Living(Side.Saxon).Where(u=>u.status==Status.Ready && !UnitTypes.Get(u).leader)
+            if(side==Side.Saxon)EnterReinforcements();
+            var units=Living(side).Where(u=>u.status==Status.Ready && !UnitTypes.Get(u).leader)
                 .OrderBy(u=>u.hex).ToList();
             foreach(var unit in units)
             {
@@ -211,38 +250,40 @@ namespace Hastings
                     MoveCore(unit,best,false);
             }
             // Commanders remain near their wing and off exposed road approaches.
-            foreach(var leader in Living(Side.Saxon).Where(u=>UnitTypes.Get(u).leader && u.status==Status.Ready))
+            foreach(var leader in Living(side).Where(u=>UnitTypes.Get(u).leader && u.status==Status.Ready))
             {
-                var friendly=Living(Side.Saxon).Where(u=>!UnitTypes.Get(u).leader && u.group==leader.group).ToList();
+                var friendly=Living(side).Where(u=>!UnitTypes.Get(u).leader && u.group==leader.group).ToList();
                 if(friendly.Count==0)continue;
-                var options=LegalMoves(leader).Values.Where(o=>UnitAt(o.destination,Side.Saxon)!=null).ToList();
+                var options=LegalMoves(leader).Values.Where(o=>UnitAt(o.destination,side)!=null).ToList();
                 if(options.Count==0)continue;
                 var best=options.OrderByDescending(o=>friendly.Count(u=>board.Distance(o.destination,u.hex)<=3))
-                    .ThenBy(o=>NearestEnemyDistance(Side.Saxon,o.destination)).First();
+                    .ThenBy(o=>NearestEnemyDistance(side,o.destination)).First();
                 if(friendly.Count(u=>board.Distance(best.destination,u.hex)<=3)>
                    friendly.Count(u=>board.Distance(leader.hex,u.hex)<=3))MoveCore(leader,best,false);
             }
         }
         private double AiPositionScore(UnitState unit,string hex)
         {
-            var h=board.Hex(hex);int enemy=NearestEnemyDistance(Side.Saxon,hex);
+            var h=board.Hex(hex);int enemy=NearestEnemyDistance(unit.side,hex);
             double score=h.level*2+(h.road?3:0)+(h.woods?1:0)+(h.marsh?-3:0);
-            if(int.Parse(hex.Substring(0,2))>9)score-=7;
+            int row=int.Parse(hex.Substring(0,2));
+            if(unit.side==Side.Saxon && row>9)score-=7;
+            if(unit.side==Side.Norman)score-=row*.18;
             if(UnitTypes.Get(unit).missile=="B" || UnitTypes.Get(unit).missile=="S")
                 score+=enemy>=2 && enemy<=3?2:enemy==1?-3:0;
             else score+=enemy==1?2:enemy==2?1:enemy>5?-1:0;
-            if(h.level>=4 && int.Parse(hex.Substring(0,2))<=8)score+=2;
+            if(h.level>=4 && row<=8)score+=unit.side==Side.Saxon?2:3;
             return score;
         }
-        private void AiMelee()
+        private void AiMelee(Side side)
         {
-            var attackers=Living(Side.Saxon).Where(u=>!UnitTypes.Get(u).leader && u.status==Status.Ready)
+            var attackers=Living(side).Where(u=>!UnitTypes.Get(u).leader && u.status==Status.Ready)
                 .OrderByDescending(u=>UnitTypes.Get(u).attack).ToList();
             foreach(var attacker in attackers)
             {
                 if(state.phase==Phase.GameOver)return;
                 if(attacker.engaged)continue;
-                var targets=Living(Side.Norman).Where(d=>!UnitTypes.Get(d).leader && !d.engaged &&
+                var targets=Living(Opposite(side)).Where(d=>!UnitTypes.Get(d).leader && !d.engaged &&
                     CanMelee(attacker,d)).OrderBy(d=>Defense(d,true)).ToList();
                 if(targets.Count==0)continue;
                 var target=targets[0];
@@ -251,7 +292,7 @@ namespace Hastings
                 var group=new List<UnitState>{attacker};group.AddRange(partners);
                 ResolveMelee(group,new List<UnitState>{target});
             }
-            ResolveRemainingMandatory(Side.Saxon);
+            ResolveRemainingMandatory(side);
         }
         private void EnterReinforcements()
         {
@@ -269,6 +310,19 @@ namespace Hastings
                 unit.entrySpent=1+(board.Hex(destination).woods||board.Hex(destination).marsh?1:0)+arrived;
                 arrived++;
                 Log(unit.id+" reinforces at "+destination);
+            }
+        }
+        private void AutoReformNormans()
+        {
+            var sites=board.data.hexes.Where(h=>
+                int.Parse(h.id.Substring(2,2))>=6 && int.Parse(h.id.Substring(2,2))<=26 &&
+                board.data.hexes.Where(x=>x.level>=4 && int.Parse(x.id.Substring(0,2))<=9)
+                    .Min(x=>board.Distance(h.id,x.id))>=4)
+                .OrderByDescending(h=>h.y).ThenBy(h=>h.id).ToList();
+            foreach(var unit in Living(Side.Norman).OrderBy(u=>UnitTypes.Get(u).leader?1:0).ToList())
+            {
+                foreach(var site in sites)
+                    if(ReformMove(unit,site.id))break;
             }
         }
         public bool ReformMove(UnitState unit,string hex)
