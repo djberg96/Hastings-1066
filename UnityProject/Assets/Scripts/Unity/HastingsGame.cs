@@ -688,6 +688,7 @@ public sealed class HastingsGame : MonoBehaviour
                     if(PlayerMovePhase() && u.side==PlayerSide() && u.moved)
                         DrawUnitMovedMarker(rect);
                 }
+                DrawChargeRequirementHighlights();
                 DrawFireDesignationHighlights();
                 DrawMeleeDesignationHighlights();
             }
@@ -787,6 +788,20 @@ public sealed class HastingsGame : MonoBehaviour
         Fill(marker,new Color(.42f,.31f,.22f,.96f));
         movedMarker.fontSize=Mathf.Clamp(Mathf.RoundToInt(size*.62f),11,18);
         GUI.Label(marker,"M",movedMarker);
+    }
+    private void DrawChargeRequirementHighlights()
+    {
+        if(!PlayerMovePhase() || PlayerSide()!=Side.Norman)return;
+        foreach(var unit in game.RequiredChargeMoves(PlayerSide()))
+        {
+            var rect=CounterRect(unit,SpreadFor(unit.hex));
+            DrawRectOutline(new Rect(rect.x-5,rect.y-5,rect.width+10,rect.height+10),4f,
+                new Color(.82f,.15f,.09f,.94f));
+            var badge=new Rect(rect.center.x-28f,rect.y-25f,56f,20f);
+            Fill(badge,new Color(.52f,.10f,.07f,.96f));
+            missileMapResult.fontSize=10;
+            GUI.Label(badge,"MOVE",missileMapResult);
+        }
     }
     private void DrawFireDesignationHighlights()
     {
@@ -1660,7 +1675,15 @@ public sealed class HastingsGame : MonoBehaviour
                 "The Norman setup is ready. Begin when you are prepared to defend Senlac Hill.";
             case Phase.Orders:return "Choose a strategy for each "+
                 (PlayerSide()==Side.Norman?"Norman contingent.":"Saxon wing.");
-            case Phase.NormanMove:return "Select a Norman unit and click a highlighted destination.";
+            case Phase.NormanMove:
+            {
+                int requiredCharges=PlayerSide()==Side.Norman?
+                    game.RequiredChargeMoves(Side.Norman).Count:0;
+                return requiredCharges>0?
+                    requiredCharges+" Charge-order knight"+(requiredCharges==1?" must":"s must")+
+                    " move toward the enemy. Red outlines mark the required units.":
+                    "Select a Norman unit and click a highlighted destination.";
+            }
             case Phase.NormanFire:return PlayerSide()==Side.Saxon?
                 "Continue to resolve Norman missile fire and movement.":
                 "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Saxon target.";
@@ -1705,6 +1728,16 @@ public sealed class HastingsGame : MonoBehaviour
     private void Advance()
     {
         if(game==null)return;
+        if(PlayerMovePhase() && PlayerSide()==Side.Norman)
+        {
+            int required=game.RequiredChargeMoves(Side.Norman).Count;
+            if(required>0)
+            {
+                notice=required+" Charge-order knight"+(required==1?" must":"s must")+
+                    " still move toward the enemy before this segment can end.";
+                return;
+            }
+        }
         var priorPhase=game.state.phase;
         notice="";
         switch(game.state.phase)

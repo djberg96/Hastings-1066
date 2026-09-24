@@ -295,7 +295,9 @@ namespace Hastings
                         if((initial==Order.ShieldWall||initial==Order.Hold) && after<=before)continue;
                         if(initial==Order.FireInPlace && after==before)continue;
                     }
-                    if(initial==Order.AttackPursue && NearestEnemyDistance(unit.side,to)>NearestEnemyDistance(unit.side,unit.hex))continue;
+                    int startingEnemyDistance=NearestEnemyDistance(unit.side,unit.hex);
+                    int destinationEnemyDistance=NearestEnemyDistance(unit.side,to);
+                    if(initial==Order.AttackPursue && destinationEnemyDistance>startingEnemyDistance)continue;
                     if(best.ContainsKey(to) && best[to]<=cost)continue;
                     best[to]=cost;
                     var path=new List<string>(current.path){to};
@@ -304,6 +306,15 @@ namespace Hastings
                     if(UnitAt(to,unit.side)==null || UnitTypes.Get(unit).leader)result[to]=option;
                     if(!zoc)open.Enqueue(option);
                 }
+            }
+            if(initial==Order.Charge && result.Count>0)
+            {
+                int starting=NearestEnemyDistance(unit.side,unit.hex);
+                int closest=result.Values.Min(option=>NearestEnemyDistance(unit.side,option.destination));
+                if(closest>=starting)result.Clear();
+                else foreach(var destination in result.Where(pair=>
+                        NearestEnemyDistance(unit.side,pair.Value.destination)>closest)
+                        .Select(pair=>pair.Key).ToList())result.Remove(destination);
             }
             return result;
         }

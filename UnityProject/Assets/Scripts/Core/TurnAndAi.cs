@@ -64,16 +64,20 @@ namespace Hastings
         }
         private void ResolveUnmovedCharges()
         {
-            foreach(var unit in Living(Side.Norman).Where(u=>UnitTypes.Get(u).knight &&
-                u.status==Status.Ready && !u.moved && OrderFor(u)==Order.Charge).ToList())
+            foreach(var unit in RequiredChargeMoves(Side.Norman))
             {
-                var options=LegalMoves(unit).Values.Where(o=>NearestEnemyDistance(unit.side,o.destination)<
-                    NearestEnemyDistance(unit.side,unit.hex)).ToList();
+                var options=LegalMoves(unit).Values.ToList();
                 if(options.Count==0)continue;
                 var best=options.OrderBy(o=>NearestEnemyDistance(unit.side,o.destination))
                     .ThenByDescending(o=>o.charge).ThenBy(o=>o.destination).First();
                 MoveCore(unit,best,false);
             }
+        }
+        public List<UnitState> RequiredChargeMoves(Side side)
+        {
+            return Living(side).Where(unit=>UnitTypes.Get(unit).knight &&
+                unit.status==Status.Ready && !unit.moved && OrderFor(unit)==Order.Charge &&
+                LegalMoves(unit).Count>0).ToList();
         }
         private void ResetFire()
         {

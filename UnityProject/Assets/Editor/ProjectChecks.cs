@@ -255,6 +255,22 @@ public static class ProjectChecks
             string path=Path.Combine(Application.persistentDataPath,"Saves",slot+".json");
             if(File.Exists(path))File.Delete(path);
         }
+        var chargeState=Setup.New(board,86420);chargeState.phase=Phase.NormanMove;
+        chargeState.groups.First(group=>group.id=="Breton").knightOrder=Order.Charge;
+        var chargeEngine=new GameEngine(board,chargeState);
+        var chargeUnit=chargeState.units.First(unit=>unit.type=="BK");
+        int chargeStartDistance=chargeEngine.NearestEnemyDistance(Side.Norman,chargeUnit.hex);
+        var chargeMoves=chargeEngine.LegalMoves(chargeUnit).Values.ToList();
+        Check(chargeMoves.Count>0 && chargeMoves.All(move=>
+                chargeEngine.NearestEnemyDistance(Side.Norman,move.destination)<chargeStartDistance) &&
+              chargeMoves.Select(move=>chargeEngine.NearestEnemyDistance(Side.Norman,move.destination))
+                .Distinct().Count()==1,
+            "Charge-order movement did not require the closest reachable destinations");
+        Check(chargeEngine.RequiredChargeMoves(Side.Norman).Any(unit=>unit.id==chargeUnit.id),
+            "Unmoved Charge-order knight was not reported as required movement");
+        chargeUnit.moved=true;
+        Check(!chargeEngine.RequiredChargeMoves(Side.Norman).Any(unit=>unit.id==chargeUnit.id),
+            "Moved Charge-order knight remained in the required movement list");
         var fireState=Setup.New(board,37);fireState.phase=Phase.NormanFire;
         var fireEngine=new GameEngine(board,fireState);
         var bowman=fireState.units.First(u=>u.type=="NB");
