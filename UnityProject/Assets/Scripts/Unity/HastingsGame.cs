@@ -164,7 +164,7 @@ public sealed class HastingsGame : MonoBehaviour
             menuTitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.055f),42,76),
                 fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleCenter};
             menuSubtitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.024f),21,34),
-                alignment=TextAnchor.MiddleCenter};
+                alignment=TextAnchor.MiddleCenter,wordWrap=true};
             menuTitle.normal.textColor=new Color(.25f,.12f,.08f);
             menuSubtitle.normal.textColor=new Color(.35f,.21f,.13f);
             menuDescription=new GUIStyle(GUI.skin.label){fontSize=20,wordWrap=true,
@@ -1834,7 +1834,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label("HASTINGS 1066",menuTitle,GUILayout.Height(Mathf.Clamp(Screen.height*.10f,75,115)));
         GUILayout.Label(menuPage=="main"?"The Battle for Senlac Hill":
             menuPage=="load"?"Load a game":menuPage=="save"?"Save your battle":
-            menuPage=="newSide"?"Choose your army":"Start a new battle?",
+            menuPage=="newSide"?"14 October 1066":"Start a new battle?",
             menuSubtitle,GUILayout.Height(42));
         GUILayout.Space(28);
         if(menuPage=="main")
@@ -1912,19 +1912,21 @@ public sealed class HastingsGame : MonoBehaviour
         else if(menuPage=="newSide")
         {
             const string normanDescription=
-                "Attack Senlac Hill with the Breton, Norman, and Franco-Flemish contingents.";
+                "William, Duke of Normandy, has crossed the Channel to press his claim to the English throne.";
             const string saxonDescription=
-                "Defend the ridge with the left, center, and right wings. The battlefield rotates to your viewpoint.";
+                "Harold Godwinson, King of England, has marched south after victory at Stamford Bridge.";
             float descriptionWidth=rect.width-2*inset;
-            GUILayout.Label("The opposing army will be controlled by the AI.",menuSubtitle,
-                GUILayout.Height(42));
+            const string battleDescription=
+                "The armies of Harold Godwinson and William of Normandy meet near Hastings with the English crown at stake.";
+            GUILayout.Label(battleDescription,menuSubtitle,GUILayout.Height(
+                menuSubtitle.CalcHeight(new GUIContent(battleDescription),descriptionWidth)+8f));
             GUILayout.Space(18);
-            if(GUILayout.Button("Play as the Normans",menuPrimary,GUILayout.Height(buttonHeight)))
+            if(GUILayout.Button("Normans",menuPrimary,GUILayout.Height(buttonHeight)))
                 StartNewGame(Side.Norman);
             GUILayout.Label(normanDescription,menuDescription,GUILayout.Height(
                 menuDescription.CalcHeight(new GUIContent(normanDescription),descriptionWidth)+8f));
             GUILayout.Space(14);
-            if(GUILayout.Button("Play as the Saxons",menuPrimary,GUILayout.Height(buttonHeight)))
+            if(GUILayout.Button("Saxons",menuPrimary,GUILayout.Height(buttonHeight)))
                 StartNewGame(Side.Saxon);
             GUILayout.Label(saxonDescription,menuDescription,GUILayout.Height(
                 menuDescription.CalcHeight(new GUIContent(saxonDescription),descriptionWidth)+8f));
