@@ -179,11 +179,10 @@ namespace Hastings
                 attackerStatusBefore=attackers.Select(u=>u.status).ToArray(),
                 defenderStatusBefore=defenders.Select(u=>u.status).ToArray()
             };
-            int column=RuleTables.MeleeColumn(difference);
-            if(attackers.Any(a=>StrategyEffects.PenalizesCombat(UnitTypes.Get(a).knight,Group(a).effect)))column--;
-            if(defenders.Any(d=>StrategyEffects.PenalizesCombat(UnitTypes.Get(d).knight,Group(d).effect)))column++;
-            column=Math.Max(0,Math.Min(10,column));
-            int die=Die();string raw=difference<-6?"1/-":RuleTables.Melee[die-1,column];
+            int columnShift=0;
+            if(attackers.Any(a=>StrategyEffects.PenalizesCombat(UnitTypes.Get(a).knight,Group(a).effect)))columnShift--;
+            if(defenders.Any(d=>StrategyEffects.PenalizesCombat(UnitTypes.Get(d).knight,Group(d).effect)))columnShift++;
+            int die=Die();string raw=RuleTables.MeleeResult(difference,die,columnShift);
             meleeResult.roll=die;meleeResult.tableResult=raw;
             Log(attackers.Count+" attacks "+defenders.Count+" at "+difference+", roll "+die+" → "+raw);
             var parts=raw.Split('/');

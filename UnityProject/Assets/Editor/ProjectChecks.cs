@@ -97,6 +97,9 @@ public static class ProjectChecks
                 RuleTables.RollOrder(Side.Norman,false,strategy,dice,out duration,out effect,out optional);
                 RuleTables.RollOrder(Side.Norman,true,strategy,dice,out duration,out effect,out optional);
             }
+        Check(Enumerable.Range(1,6).All(roll=>RuleTables.MeleeResult(-6,roll)=="1/-") &&
+              RuleTables.MeleeResult(-5,6)=="M/-",
+            "A melee differential of exactly -6 was not an automatic attacker step loss");
         Check(StrategyEffects.Code(false,-9)=='B' && StrategyEffects.Code(false,-8)=='A' &&
             StrategyEffects.Code(false,-7)=='A' && StrategyEffects.Code(false,-6)=='-' &&
             StrategyEffects.Code(true,-9)=='B' && StrategyEffects.Code(true,-8)=='B' &&

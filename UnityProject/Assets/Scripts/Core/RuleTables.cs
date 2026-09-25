@@ -92,6 +92,12 @@ namespace Hastings
             if (differential <= 5) return 9;
             return 10;
         }
+        public static string MeleeResult(int differential, int roll, int columnShift=0)
+        {
+            if (differential <= -6) return "1/-";
+            int column=Math.Max(0,Math.Min(10,MeleeColumn(differential)+columnShift));
+            return Melee[Math.Max(1,Math.Min(6,roll))-1,column];
+        }
         public static readonly string[,] Missile = {
             {"-","-","-","-","-","M","M","M","D","D"},
             {"-","-","-","-","M","M","M","D","D","D"},
