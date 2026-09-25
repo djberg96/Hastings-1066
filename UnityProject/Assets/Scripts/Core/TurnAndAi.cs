@@ -402,6 +402,7 @@ namespace Hastings
                 group.fireSegments=0;group.effect=0;group.footDuration=0;group.knightDuration=0;
                 group.footPendingEffect=0;group.knightPendingEffect=0;
                 group.footOptional=false;group.knightOptional=false;
+                group.footReroll=false;group.knightReroll=false;
             }
             foreach(var leader in state.units.Where(u=>UnitTypes.Get(u).leader && u.status!=Status.Eliminated))
                 leader.leaderCondition=0;

@@ -1416,7 +1416,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label("YOUR NEXT ACTION",panelSection);
         GUILayout.Label(waitingForOrders?"Complete battle orders":PhaseLabel(s.phase),panelValue);
         GUILayout.Label(waitingForOrders?
-            "Choose each optional order below. Missile fire begins after every section has an order.":
+            "Complete each order choice below. Missile fire begins after every section is settled.":
             PhasePrompt(s.phase),panelMuted);
         GUILayout.EndVertical();
         var actionIcon=themeSkin.Icon(PlayerFirePhase()?"missile":
@@ -1453,7 +1453,26 @@ public sealed class HastingsGame : MonoBehaviour
         if(optionsPending)
         {
             GUILayout.Space(6*p);
-            GUILayout.Label("OPTIONAL ORDERS",panelSection);
+            GUILayout.Label("ORDER DECISIONS",panelSection);
+            foreach(var g in s.groups.Where(g=>g.footReroll||g.knightReroll))
+            {
+                if(g.footReroll)
+                {
+                    GUILayout.Label(g.id+" foot may reroll "+OrderDisplay(g.footOrder),panelMuted);
+                    GUILayout.BeginHorizontal();
+                    if(GUILayout.Button("Keep",panelButton))game.ResolveExtendedReroll(g.id,false,false);
+                    if(GUILayout.Button("Reroll",panelButton))game.ResolveExtendedReroll(g.id,false,true);
+                    GUILayout.EndHorizontal();
+                }
+                if(g.knightReroll)
+                {
+                    GUILayout.Label(g.id+" knights may reroll "+OrderDisplay(g.knightOrder),panelMuted);
+                    GUILayout.BeginHorizontal();
+                    if(GUILayout.Button("Keep",panelButton))game.ResolveExtendedReroll(g.id,true,false);
+                    if(GUILayout.Button("Reroll",panelButton))game.ResolveExtendedReroll(g.id,true,true);
+                    GUILayout.EndHorizontal();
+                }
+            }
             foreach(var g in s.groups.Where(g=>g.footOptional||g.knightOptional))
             {
                 if(g.footOptional)
@@ -1498,7 +1517,7 @@ public sealed class HastingsGame : MonoBehaviour
         {
             string caption=s.phase==Phase.Setup?"Begin battle":s.phase==Phase.Orders?"Roll orders":
                 PlayerSide()==Side.Saxon&&s.phase==Phase.NormanFire&&!optionsPending?"Resolve Norman opening":
-                s.phase==Phase.Reform?"Finish reform":optionsPending?"Choose optional orders above":"Finish segment";
+                s.phase==Phase.Reform?"Finish reform":optionsPending?"Complete order choices above":"Finish segment";
             GUILayout.Space(9*p);
             GUI.enabled=!optionsPending;
             if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(54*p)))Advance();
@@ -2392,7 +2411,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
-        string buttonText=optionsPending?"Choose the optional orders above":"Continue to battle";
+        string buttonText=optionsPending?"Complete the order choices above":"Continue to battle";
         GUI.enabled=!optionsPending;
         if(GUI.Button(new Rect(27*u,height-68*u,width-54*u,48*u),buttonText,panelPrimary))
             showOrderResults=false;
@@ -2613,11 +2632,11 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Space(5*u);
         GUILayout.BeginHorizontal();
         float columnWidth=(contentWidth-58*u)/(result.hasKnights?2f:1f);
-        DrawOrderColumn(result,"FOOT",false,group.footOptional,columnWidth);
+        DrawOrderColumn(result,"FOOT",false,group.footOptional,group.footReroll,columnWidth);
         if(result.hasKnights)
         {
             GUILayout.Space(12*u);
-            DrawOrderColumn(result,"KNIGHTS",true,group.knightOptional,columnWidth);
+            DrawOrderColumn(result,"KNIGHTS",true,group.knightOptional,group.knightReroll,columnWidth);
         }
         GUILayout.EndHorizontal();
         GUILayout.Space(8*u);
@@ -2640,7 +2659,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
     }
     private void DrawOrderColumn(OrderRollResult result,string unitKind,bool knight,
-        bool choicePending,float width)
+        bool choicePending,bool rerollPending,float width)
     {
         float u=orderScale;
         bool optional=knight?result.knightOptional:result.footOptional;
@@ -2662,8 +2681,10 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label(choicePending?"CHOOSE AN ORDER":OrderDisplay(order),orderName,
             GUILayout.Height(27*u));
         string timing=choicePending?"Optional result · your choice is required":
+            rerollPending?"Extended assault · keep this order or reroll":
             optional?(result.side==PlayerSide()?"Optional result · your selected order":
                 "Optional result · AI selected this order"):
+            (knight?result.knightRerolled:result.footRerolled)?"Extended-assault reroll":
             continued?"Continues from last turn · "+duration+" turn remaining":
             duration>1?"Remains in effect for "+duration+" turns":"Applies this turn";
         GUILayout.Label(timing,orderText);
@@ -2697,6 +2718,16 @@ public sealed class HastingsGame : MonoBehaviour
                 if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,false,Order.Advance);
             }
+            GUILayout.EndHorizontal();
+        }
+        else if(rerollPending)
+        {
+            GUILayout.Label("This result may be rerolled once:",orderText);
+            GUILayout.BeginHorizontal();
+            if(GUILayout.Button("Keep",orderChoice,GUILayout.Height(36*u)))
+                game.ResolveExtendedReroll(result.group,knight,false);
+            if(GUILayout.Button("Reroll",orderChoice,GUILayout.Height(36*u)))
+                game.ResolveExtendedReroll(result.group,knight,true);
             GUILayout.EndHorizontal();
         }
         else GUILayout.Label(OrderDescription(order),orderText);

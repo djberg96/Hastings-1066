@@ -65,7 +65,8 @@ namespace Hastings
                (state.playerSide==Side.Norman?!norman:!saxon))return;
             state.groups.First(g=>g.id==group).strategy=strategy;
         }
-        public bool OptionsPending() { return state.groups.Any(g=>g.footOptional||g.knightOptional); }
+        public bool OptionsPending() { return state.groups.Any(g=>g.footOptional||g.knightOptional||
+            g.footReroll||g.knightReroll); }
         public void ResolveOrders()
         {
             if(state.phase!=Phase.Orders)return;
@@ -84,6 +85,7 @@ namespace Hastings
                 if((group.id=="Left"||group.id=="Center"||group.id=="Right") &&
                     !Living(Side.Saxon).Any(u=>u.group==group.id && !UnitTypes.Get(u).leader))continue;
                 var side=group.id=="Left"||group.id=="Center"||group.id=="Right"?Side.Saxon:Side.Norman;
+                group.footReroll=false;group.knightReroll=false;
                 if(side!=state.playerSide)
                     group.strategy=side==Side.Saxon?ChooseSaxonStrategy(group.id):
                         ChooseNormanStrategy(group.id);
@@ -121,16 +123,33 @@ namespace Hastings
                 if(knightOptional && side!=state.playerSide)
                     group.knightOrder=ChooseOptionalOrder(side,true,group.strategy);
                 group.effect+=footEffect+knightEffect;
-                state.orderResults.Add(new OrderRollResult {
+                bool extended=state.period==1 && state.turn>8;
+                bool footRerollEligible=extended && !footContinued &&
+                    ((side==Side.Norman && group.footOrder==Order.ShieldWall) ||
+                     (side==Side.Saxon && group.footOrder==Order.AttackPursue));
+                bool knightRerollEligible=extended && side==Side.Norman && !knightContinued &&
+                    group.knightOrder==Order.Hold;
+                var result=new OrderRollResult {
                     group=group.id,side=side,strategy=group.strategy,roll=orderRoll,
                     footRoll=footRoll,knightRoll=knightRoll,
                     footOrder=group.footOrder,knightOrder=group.knightOrder,
                     footDuration=group.footDuration,knightDuration=group.knightDuration,
                     effectChange=footEffect+knightEffect,totalEffect=group.effect,
+                    footEffectChange=footEffect,knightEffectChange=knightEffect,
                     hasKnights=side==Side.Norman,footOptional=footOptional,
                     knightOptional=knightOptional,footContinued=footContinued,
-                    knightContinued=knightContinued
-                });
+                    knightContinued=knightContinued,
+                    footRerollEligible=footRerollEligible,
+                    knightRerollEligible=knightRerollEligible
+                };
+                state.orderResults.Add(result);
+                group.footReroll=footRerollEligible;
+                group.knightReroll=knightRerollEligible;
+                if(side!=state.playerSide)
+                {
+                    if(group.footReroll)ApplyExtendedReroll(result,false);
+                    if(group.knightReroll)ApplyExtendedReroll(result,true);
+                }
                 Log(group.id+" chooses "+group.strategy+", "+
                     (orderRoll>0?"rolls "+orderRoll+"; ":"")+
                     (footContinued?"foot continues "+group.footOrder:
@@ -141,6 +160,52 @@ namespace Hastings
             }
             Rally(Side.Norman);
             state.phase=Phase.NormanFire;
+        }
+        public bool ResolveExtendedReroll(string groupId,bool knight,bool reroll)
+        {
+            if(state.phase!=Phase.NormanFire)return false;
+            var group=state.groups.FirstOrDefault(candidate=>candidate.id==groupId);
+            var result=state.orderResults.LastOrDefault(candidate=>candidate.group==groupId);
+            if(group==null || result==null || (knight?!group.knightReroll:!group.footReroll))
+                return false;
+            if(knight)group.knightReroll=false;else group.footReroll=false;
+            if(reroll)ApplyExtendedReroll(result,knight);
+            else Log(groupId+" keeps its extended-assault "+(knight?"knight":"foot")+" order");
+            return true;
+        }
+        private void ApplyExtendedReroll(OrderRollResult result,bool knight)
+        {
+            var group=state.groups.First(candidate=>candidate.id==result.group);
+            if(knight)group.knightReroll=false;else group.footReroll=false;
+            int roll=Die()+Die(),duration,effect;bool optional;
+            var order=RuleTables.RollOrder(result.side,knight,result.strategy,roll,
+                out duration,out effect,out optional);
+            int previous=knight?result.knightEffectChange:result.footEffectChange;
+            group.effect+=effect-previous;
+            if(knight)
+            {
+                group.knightOrder=optional && result.side!=state.playerSide?
+                    ChooseOptionalOrder(result.side,true,result.strategy):order;
+                group.knightDuration=duration;group.knightPendingEffect=duration>1?effect:0;
+                group.knightOptional=optional && result.side==state.playerSide;
+                result.knightRoll=roll;result.knightOrder=group.knightOrder;
+                result.knightDuration=duration;result.knightEffectChange=effect;
+                result.knightOptional=optional;result.knightRerolled=true;
+            }
+            else
+            {
+                group.footOrder=optional && result.side!=state.playerSide?
+                    ChooseOptionalOrder(result.side,false,result.strategy):order;
+                group.footDuration=duration;group.footPendingEffect=duration>1?effect:0;
+                group.footOptional=optional && result.side==state.playerSide;
+                result.footRoll=roll;result.footOrder=group.footOrder;
+                result.footDuration=duration;result.footEffectChange=effect;
+                result.footOptional=optional;result.footRerolled=true;
+            }
+            result.effectChange=result.footEffectChange+result.knightEffectChange;
+            result.totalEffect=group.effect;
+            Log(result.group+" rerolls its "+(knight?"knight":"foot")+
+                " order: "+roll+" → "+(knight?group.knightOrder:group.footOrder));
         }
         public bool SetOptionalOrder(string groupId,bool knight,Order order)
         {

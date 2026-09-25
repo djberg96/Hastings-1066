@@ -207,6 +207,53 @@ public static class ProjectChecks
         Check(state.orderResults.Where(r=>r.side==Side.Norman)
             .All(r=>r.footRoll==r.knightRoll),
             "Norman foot and knight sections did not reuse the nationality roll");
+        GameState extendedNormanState=null;GameEngine extendedNormanEngine=null;
+        GroupState normanRerollGroup=null;OrderRollResult normanRerollResult=null;
+        for(uint extendedSeed=1;extendedSeed<=100 && normanRerollGroup==null;extendedSeed++)
+        {
+            var candidate=Setup.New(board,extendedSeed,Side.Norman);
+            candidate.period=1;candidate.turn=9;candidate.extendedTo=10;candidate.phase=Phase.Orders;
+            var candidateEngine=new GameEngine(board,candidate);candidateEngine.ResolveOrders();
+            var pending=candidate.groups.FirstOrDefault(group=>group.footReroll||group.knightReroll);
+            if(pending==null)continue;
+            extendedNormanState=candidate;extendedNormanEngine=candidateEngine;
+            normanRerollGroup=pending;
+            normanRerollResult=candidate.orderResults.Last(result=>result.group==pending.id);
+        }
+        Check(normanRerollGroup!=null && extendedNormanEngine.OptionsPending(),
+            "Extended Norman Shield Wall/Hold result did not offer a reroll");
+        bool rerollKnights=normanRerollGroup.knightReroll;
+        int originalSectionRoll=rerollKnights?normanRerollResult.knightRoll:normanRerollResult.footRoll;
+        Check(extendedNormanEngine.ResolveExtendedReroll(normanRerollGroup.id,
+                rerollKnights,true) &&
+              (rerollKnights?normanRerollResult.knightRerolled:normanRerollResult.footRerolled) &&
+              (rerollKnights?normanRerollResult.knightRoll:normanRerollResult.footRoll)>=2 &&
+              normanRerollResult.totalEffect==normanRerollGroup.effect,
+            "Extended Norman section reroll did not replace its order roll and effect");
+        Check(originalSectionRoll>=2,"Extended Norman reroll lost its original section roll");
+        foreach(var pending in extendedNormanState.groups.Where(group=>group.footReroll||
+            group.knightReroll).ToList())
+        {
+            if(pending.footReroll)extendedNormanEngine.ResolveExtendedReroll(pending.id,false,false);
+            if(pending.knightReroll)extendedNormanEngine.ResolveExtendedReroll(pending.id,true,false);
+        }
+        GameState extendedSaxonState=null;GameEngine extendedSaxonEngine=null;
+        GroupState saxonRerollGroup=null;OrderRollResult saxonRerollResult=null;
+        for(uint extendedSeed=101;extendedSeed<=250 && saxonRerollGroup==null;extendedSeed++)
+        {
+            var candidate=Setup.New(board,extendedSeed,Side.Saxon);
+            candidate.period=1;candidate.turn=9;candidate.extendedTo=10;candidate.phase=Phase.Orders;
+            var candidateEngine=new GameEngine(board,candidate);candidateEngine.ResolveOrders();
+            var pending=candidate.groups.FirstOrDefault(group=>group.footReroll);
+            if(pending==null)continue;
+            extendedSaxonState=candidate;extendedSaxonEngine=candidateEngine;
+            saxonRerollGroup=pending;
+            saxonRerollResult=candidate.orderResults.Last(result=>result.group==pending.id);
+        }
+        Check(saxonRerollGroup!=null && saxonRerollResult.footOrder==Order.AttackPursue &&
+              extendedSaxonEngine.ResolveExtendedReroll(saxonRerollGroup.id,false,false) &&
+              !saxonRerollGroup.footReroll && !saxonRerollResult.footRerolled,
+            "Extended Saxon Attack & Pursue result did not offer a keep-or-reroll choice");
         var optionalState=Setup.New(board,54321);optionalState.phase=Phase.NormanFire;
         var optionalGroup=optionalState.groups.First(g=>g.id=="Breton");
         optionalGroup.footOptional=true;
@@ -720,6 +767,11 @@ public static class ProjectChecks
                 {
                     if(group.footOptional)engine.SetOptionalOrder(group.id,false,Order.Advance);
                     if(group.knightOptional)engine.SetOptionalOrder(group.id,true,Order.Advance);
+                }
+                foreach(var group in s.groups.Where(g=>g.footReroll||g.knightReroll).ToList())
+                {
+                    if(group.footReroll)engine.ResolveExtendedReroll(group.id,false,true);
+                    if(group.knightReroll)engine.ResolveExtendedReroll(group.id,true,true);
                 }
                 engine.Advance();
             }

@@ -51,6 +51,7 @@ namespace Hastings
         public int footPendingEffect, knightPendingEffect;
         public bool firedThisSegment;
         public bool footOptional, knightOptional;
+        public bool footReroll, knightReroll;
     }
     [Serializable] public class RoadState
     {
@@ -65,9 +66,10 @@ namespace Hastings
         public int roll, footRoll, knightRoll;
         public Order footOrder, knightOrder;
         public int footDuration, knightDuration;
-        public int effectChange, totalEffect;
+        public int effectChange, totalEffect, footEffectChange, knightEffectChange;
         public bool hasKnights, footOptional, knightOptional;
         public bool footContinued, knightContinued;
+        public bool footRerollEligible, knightRerollEligible, footRerolled, knightRerolled;
     }
     public sealed class MissileFireResult
     {
