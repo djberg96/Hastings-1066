@@ -33,6 +33,9 @@ public sealed class HastingsGame : MonoBehaviour
     private int orderReviewTab;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main",
         highTrajectoryTargetId="";
+    private InterfaceTheme interfaceTheme;
+    private InterfaceThemeSkin themeSkin;
+    private Font periodFont,defaultFont;
     private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
         menuTitle, menuSubtitle, menuDescription, menuButton, menuPrimary, menuTextField,
@@ -56,6 +59,10 @@ public sealed class HastingsGame : MonoBehaviour
     private void Awake()
     {
         RestoreWindowedDisplay();
+        interfaceTheme=InterfaceThemeCatalog.Load();
+        themeSkin=InterfaceThemeCatalog.Get(interfaceTheme);
+        periodFont=Font.CreateDynamicFontFromOSFont(
+            new[]{"Palatino","Baskerville","Georgia","Times New Roman"},18);
         var asset=Resources.Load<TextAsset>("Data/Map");
         if(asset==null){Debug.LogError("Map.json is missing");return;}
         board=new Board(JsonUtility.FromJson<MapData>(asset.text));
@@ -147,22 +154,29 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(board==null||map==null){GUI.Label(new Rect(20,20,700,40),"Hastings assets are missing. Run Tools/generate_assets.py.");return;}
         int body=Mathf.Clamp(Mathf.RoundToInt(Screen.height/65f),17,23);
+        if(defaultFont==null)defaultFont=GUI.skin.label.font;
         GUI.skin.label.fontSize=body;
         GUI.skin.button.fontSize=body;
         GUI.skin.button.padding=new RectOffset(10,10,8,8);
         GUI.skin.toggle.fontSize=body;
         GUI.skin.textField.fontSize=body;
+        if(periodFont!=null)
+        {
+            GUI.skin.label.font=periodFont;GUI.skin.button.font=periodFont;
+            GUI.skin.toggle.font=periodFont;GUI.skin.textField.font=periodFont;
+        }
         if(panelTitle==null)
         {
             small=new GUIStyle(GUI.skin.label){fontSize=body-3,wordWrap=true};
             hexNumber=new GUIStyle(GUI.skin.label){alignment=TextAnchor.MiddleCenter,
                 fontStyle=FontStyle.Normal,wordWrap=false,clipping=TextClipping.Clip,
                 padding=new RectOffset(0,0,0,0)};
+            hexNumber.font=defaultFont;
             hexNumber.normal.textColor=new Color(.19f,.20f,.13f,.86f);
             hexNumberShadow=new GUIStyle(hexNumber);
             hexNumberShadow.normal.textColor=new Color(.98f,.96f,.78f,.60f);
             menuTitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.055f),42,76),
-                fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleCenter};
+                fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleCenter,richText=true};
             menuSubtitle=new GUIStyle(GUI.skin.label){fontSize=Mathf.Clamp(Mathf.RoundToInt(Screen.height*.024f),21,34),
                 alignment=TextAnchor.MiddleCenter,wordWrap=true};
             menuTitle.normal.textColor=new Color(.25f,.12f,.08f);
@@ -185,6 +199,7 @@ public sealed class HastingsGame : MonoBehaviour
             menuTextField=new GUIStyle(GUI.skin.textField){fontSize=menuButton.fontSize,
                 alignment=TextAnchor.MiddleCenter};
             panelTitle=LabelStyle(27,true,new Color(.18f,.13f,.10f));
+            panelTitle.richText=true;
             panelStatus=LabelStyle(17,false,new Color(.38f,.30f,.23f));
             panelSection=LabelStyle(13,true,new Color(.56f,.19f,.14f));
             panelBody=LabelStyle(16,false,new Color(.20f,.16f,.12f));
@@ -308,6 +323,7 @@ public sealed class HastingsGame : MonoBehaviour
             trackMarkerText.padding=new RectOffset(0,0,0,0);
             trackMarkerTextShadow=new GUIStyle(trackMarkerText);
             trackMarkerTextShadow.normal.textColor=new Color(.10f,.06f,.04f,.70f);
+            ApplyInterfaceThemeStyles();
         }
         panelScale=PanelUiScale();
         UpdatePanelStyles();
@@ -407,6 +423,70 @@ public sealed class HastingsGame : MonoBehaviour
         style.active.textColor=textColor;
         return style;
     }
+    private void ApplyInterfaceThemeStyles()
+    {
+        var t=themeSkin??InterfaceThemeCatalog.Get(interfaceTheme);
+        SetText(menuTitle,t.ink);SetText(menuSubtitle,t.mutedInk);SetText(menuDescription,t.ink);
+        SetButtonTheme(menuButton,false);SetButtonTheme(menuPrimary,true);
+        menuTextField.normal.background=t.cardTexture;menuTextField.border=t.border;
+        SetText(menuTextField,t.ink);
+
+        SetText(panelTitle,t.panelInk);SetText(panelStatus,t.panelInk);
+        SetText(panelSection,t.accent);SetText(panelBody,t.ink);SetText(panelMuted,t.mutedInk);
+        SetText(panelValue,t.ink);SetBoxTheme(panelCard,t.cardTexture);
+        SetButtonTheme(panelButton,false);SetButtonTheme(panelNavButton,false);
+        SetButtonTheme(panelPrimary,true);SetButtonTheme(panelLink,false);
+        SetButtonTheme(fireModeButton,false);SetButtonTheme(fireModeSelected,true);
+        SetButtonTheme(strategyToggle,false);
+        SetText(strategyHeading,t.accent);SetText(strategyScale,t.ink);
+        SetText(strategyLegend,t.mutedInk);SetText(strategyBand,t.ink);
+        SetText(strategyEffectNote,t.mutedInk);
+        SetText(controlHeading,t.accent);SetText(controlAction,t.ink);
+        SetBoxTheme(controlRow,t.subtleTexture);
+
+        SetText(orderTitle,t.accentText);SetText(orderSubtitle,t.mutedInk);
+        SetText(orderSection,t.accent);SetBoxTheme(orderCard,t.cardTexture);
+        SetText(orderCardTitle,t.ink);SetText(orderType,t.accent);SetText(orderName,t.ink);
+        SetText(orderText,t.mutedInk);SetButtonTheme(orderChoice,false);
+        SetBoxTheme(orderEffect,t.subtleTexture);SetText(orderEffectHeading,t.accent);
+        SetText(orderEffectValue,t.ink);orderEffectValue.normal.background=t.buttonTexture;
+        SetText(orderEffectDetail,t.mutedInk);SetText(orderEffectWarning,t.accent);
+
+        SetText(chartTitle,t.accentText);SetText(chartSection,t.accent);
+        SetText(chartHeader,t.accentText);SetText(chartRowHeader,t.ink);
+        SetText(chartCell,t.ink);SetText(chartMuted,t.mutedInk);SetText(chartNote,t.mutedInk);
+        SetButtonTheme(chartTab,false);SetButtonTheme(chartTabSelected,true);
+        SetButtonTheme(chartClose,false);
+    }
+    private static void SetText(GUIStyle style,Color color)
+    {
+        if(style==null)return;
+        style.normal.textColor=color;style.hover.textColor=color;
+        style.active.textColor=color;style.focused.textColor=color;
+        style.onNormal.textColor=color;style.onHover.textColor=color;
+        style.onActive.textColor=color;style.onFocused.textColor=color;
+    }
+    private void SetButtonTheme(GUIStyle style,bool primary)
+    {
+        if(style==null)return;
+        var t=themeSkin;
+        style.normal.background=primary?t.primaryTexture:t.buttonTexture;
+        style.hover.background=primary?t.primaryHoverTexture:t.buttonHoverTexture;
+        style.active.background=primary?t.primaryTexture:t.buttonActiveTexture;
+        style.focused.background=style.hover.background;
+        style.onNormal.background=style.normal.background;
+        style.onHover.background=style.hover.background;
+        style.onActive.background=style.active.background;
+        style.border=new RectOffset(t.border.left,t.border.right,t.border.top,t.border.bottom);
+        SetText(style,primary?t.accentText:t.ink);
+    }
+    private void SetBoxTheme(GUIStyle style,Texture2D texture)
+    {
+        if(style==null)return;
+        style.normal.background=texture;
+        style.border=new RectOffset(themeSkin.border.left,themeSkin.border.right,
+            themeSkin.border.top,themeSkin.border.bottom);
+    }
     private void UpdatePanelStyles()
     {
         float p=panelScale;
@@ -453,6 +533,111 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.color=color;
         GUI.DrawTexture(rect,Texture2D.whiteTexture);
         GUI.color=old;
+    }
+    private static void DrawSurface(Rect rect,Texture2D texture,Color fallback)
+    {
+        if(texture==null){Fill(rect,fallback);return;}
+        var old=GUI.color;GUI.color=Color.white;
+        GUI.DrawTextureWithTexCoords(rect,texture,
+            new Rect(0,0,Mathf.Max(1,rect.width/96f),Mathf.Max(1,rect.height/96f)));
+        GUI.color=old;
+    }
+    private void DrawThemeFrame(Rect rect)
+    {
+        var t=themeSkin;
+        float line=Mathf.Clamp(Mathf.Min(rect.width,rect.height)*.009f,3f,8f);
+        if(interfaceTheme==InterfaceTheme.CampaignChest)
+        {
+            DrawBorder(rect,line*1.6f,t.frame);
+            DrawBorder(new Rect(rect.x+line*1.8f,rect.y+line*1.8f,
+                rect.width-line*3.6f,rect.height-line*3.6f),1.5f,t.frameHighlight);
+            float plate=line*3.2f,rivet=Mathf.Max(3f,line*.65f);
+            foreach(var corner in new[]{
+                new Vector2(rect.x,rect.y),new Vector2(rect.xMax-plate,rect.y),
+                new Vector2(rect.x,rect.yMax-plate),new Vector2(rect.xMax-plate,rect.yMax-plate)})
+            {
+                Fill(new Rect(corner.x,corner.y,plate,plate),t.frame);
+                Fill(new Rect(corner.x+(plate-rivet)/2f,corner.y+(plate-rivet)/2f,rivet,rivet),
+                    t.frameHighlight);
+            }
+            return;
+        }
+        DrawBorder(rect,line,t.frame);
+        DrawBorder(new Rect(rect.x+line*1.7f,rect.y+line*1.7f,
+            rect.width-line*3.4f,rect.height-line*3.4f),1.2f,
+            interfaceTheme==InterfaceTheme.Chronicle?t.secondary:t.frameHighlight);
+        if(interfaceTheme==InterfaceTheme.Tapestry)
+        {
+            float band=line*1.55f,stepY=Mathf.Max(12f,line*1.8f);
+            Fill(new Rect(rect.x,rect.y,band,rect.height),t.frame);
+            Fill(new Rect(rect.xMax-band,rect.y,band,rect.height),t.frame);
+            int verticalCount=Mathf.FloorToInt(rect.height/stepY);
+            for(int i=0;i<=verticalCount;i++)
+            {
+                Color color=i%3==0?t.accent:i%3==1?t.secondary:t.frameHighlight;
+                float y=rect.y+i*stepY;
+                Fill(new Rect(rect.x+2,y+2,band-4,stepY-4),color);
+                Fill(new Rect(rect.xMax-band+2,y+2,band-4,stepY-4),color);
+            }
+        }
+        float step=interfaceTheme==InterfaceTheme.Tapestry?18f:30f;
+        float size=Mathf.Max(3f,line*.72f);
+        int count=Mathf.FloorToInt((rect.width-line*4)/step);
+        for(int i=0;i<=count;i++)
+        {
+            float x=rect.x+line*2+i*step;
+            Color color=i%2==0?t.accent:t.secondary;
+            Fill(new Rect(x,rect.y+line*.15f,size,line*.7f),color);
+            Fill(new Rect(x,rect.yMax-line*.85f,size,line*.7f),color);
+        }
+    }
+    private static void DrawBorder(Rect rect,float width,Color color)
+    {
+        Fill(new Rect(rect.x,rect.y,rect.width,width),color);
+        Fill(new Rect(rect.x,rect.yMax-width,rect.width,width),color);
+        Fill(new Rect(rect.x,rect.y,width,rect.height),color);
+        Fill(new Rect(rect.xMax-width,rect.y,width,rect.height),color);
+    }
+    private void DrawThemeOrnament(Rect rect,float alpha)
+    {
+        if(themeSkin==null || themeSkin.ornament==null)return;
+        var old=GUI.color;
+        GUI.color=new Color(1,1,1,alpha);
+        GUI.DrawTexture(rect,themeSkin.ornament,ScaleMode.ScaleToFit,true);
+        GUI.color=old;
+    }
+    private void DrawThemeDivider(float height,float alpha=1f)
+    {
+        var rect=GUILayoutUtility.GetRect(1f,height,GUILayout.ExpandWidth(true));
+        if(Event.current.type!=EventType.Repaint || themeSkin.divider==null)return;
+        var old=GUI.color;GUI.color=new Color(1,1,1,alpha);
+        GUI.DrawTexture(rect,themeSkin.divider,ScaleMode.ScaleToFit,true);
+        GUI.color=old;
+    }
+    private string ThemeTitle()
+    {
+        if(interfaceTheme==InterfaceTheme.Tapestry)
+            return "<color=#873426>HASTINGS</color> <color=#315369>1066</color>";
+        if(interfaceTheme==InterfaceTheme.Chronicle)
+            return "<color=#922C21>H</color>ASTINGS <color=#876323>1066</color>";
+        return "HASTINGS 1066";
+    }
+    private bool ThemedButton(string text,string iconName,GUIStyle style,
+        params GUILayoutOption[] options)
+    {
+        bool clicked=GUILayout.Button(text,style,options);
+        if(Event.current.type!=EventType.Repaint)return clicked;
+        var icon=themeSkin.Icon(iconName);
+        if(icon==null)return clicked;
+        var rect=GUILayoutUtility.GetLastRect();
+        float size=Mathf.Clamp(rect.height*.72f,24f,52f);
+        var iconRect=new Rect(rect.x+Mathf.Max(9f,rect.height*.18f),
+            rect.center.y-size/2f,size,size);
+        var old=GUI.color;
+        if(!GUI.enabled)GUI.color=new Color(1,1,1,.38f);
+        GUI.DrawTexture(iconRect,icon,ScaleMode.ScaleToFit,true);
+        GUI.color=old;
+        return clicked;
     }
     private void DrawTitleBackground()
     {
@@ -1113,10 +1298,13 @@ public sealed class HastingsGame : MonoBehaviour
     private void DrawPanel(Rect region)
     {
         float p=panelScale;
-        Fill(region,new Color(.90f,.86f,.76f));
-        Fill(new Rect(region.x,region.y,5*p,region.height),new Color(.59f,.22f,.17f));
+        DrawSurface(region,themeSkin.panelTexture,themeSkin.panel);
+        DrawThemeFrame(region);
+        float ornamentWidth=Mathf.Min(region.width*.40f,285*p);
+        DrawThemeOrnament(new Rect(region.xMax-ornamentWidth-15*p,region.y+4*p,
+            ornamentWidth,76*p),.84f);
         GUILayout.BeginArea(new Rect(region.x+20*p,16*p,region.width-40*p,region.height-32*p));
-        GUILayout.Label("HASTINGS 1066",panelTitle,GUILayout.Height(36*p));
+        GUILayout.Label(ThemeTitle(),panelTitle,GUILayout.Height(36*p));
         var s=game.state;
         bool optionsPending=game.OptionsPending();
         var unitLabels=UnitDisplayNames.Build(s);
@@ -1126,32 +1314,44 @@ public sealed class HastingsGame : MonoBehaviour
         float controlGap=6*p;
         float controlWidth=(region.width-40*p-controlGap)/2f;
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Menu",panelNavButton,GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
+        if(ThemedButton("Menu","menu",panelNavButton,
+            GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
         {showMenu=true;menuPage="main";chart="";}
         GUILayout.Space(controlGap);
-        if(GUILayout.Button(showUnits?"Hide units":"Show units",panelNavButton,
+        if(ThemedButton(showUnits?"Hide units":"Show units","hide",panelNavButton,
             GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
         {showUnits=!showUnits;selected.Clear();selectedTargets.Clear();}
         GUILayout.EndHorizontal();
         GUILayout.Space(5*p);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Focus battle",panelNavButton,GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
+        if(ThemedButton("Focus battle","focus",panelNavButton,
+            GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
         {fullMapMode=false;lastMapWidth=0;scale=0;}
         GUILayout.Space(controlGap);
-        if(GUILayout.Button("Fit map",panelNavButton,GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
+        if(ThemedButton("Fit map","fit",panelNavButton,
+            GUILayout.Width(controlWidth),GUILayout.Height(42*p)))
         {fullMapMode=true;lastMapWidth=0;}
         GUILayout.EndHorizontal();
         GUILayout.Space(8*p);
         GUILayout.Label(HoverDescription(),panelStatus,GUILayout.Height(28*p));
-        GUILayout.Space(7*p);
+        DrawThemeDivider(23*p,.95f);
+        GUILayout.Space(3*p);
         panelScroll=GUILayout.BeginScrollView(panelScroll);
         GUILayout.BeginVertical(panelCard);
-        GUILayout.Label("YOUR NEXT ACTION",panelSection);
         bool waitingForOrders=optionsPending && s.phase==Phase.NormanFire;
+        GUILayout.BeginHorizontal();
+        GUILayout.BeginVertical();
+        GUILayout.Label("YOUR NEXT ACTION",panelSection);
         GUILayout.Label(waitingForOrders?"Complete battle orders":PhaseLabel(s.phase),panelValue);
         GUILayout.Label(waitingForOrders?
             "Choose each optional order below. Missile fire begins after every section has an order.":
             PhasePrompt(s.phase),panelMuted);
+        GUILayout.EndVertical();
+        var actionIcon=themeSkin.Icon(PlayerFirePhase()?"missile":
+            PlayerMeleePhase()?"melee":s.phase==Phase.Orders?"morale":"focus");
+        if(actionIcon!=null)
+            GUILayout.Label(actionIcon,GUILayout.Width(66*p),GUILayout.Height(66*p));
+        GUILayout.EndHorizontal();
         if(s.phase!=Phase.Orders && s.orderResults!=null && s.orderResults.Count>0)
         {
             GUILayout.Space(5*p);
@@ -1300,24 +1500,30 @@ public sealed class HastingsGame : MonoBehaviour
         }
         GUILayout.BeginVertical(panelCard);
         GUILayout.Label("REFERENCE",panelSection);
+        DrawThemeDivider(17*p,.85f);
         float referenceWidth=Mathf.Max(120f,(region.width-85*p-controlGap)/2f);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Melee",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("melee");
+        if(ThemedButton("Melee","melee",panelNavButton,
+            GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("melee");
         GUILayout.Space(controlGap);
-        if(GUILayout.Button("Missile",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("missile");
+        if(ThemedButton("Missile","missile",panelNavButton,
+            GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("missile");
         GUILayout.EndHorizontal();
         GUILayout.Space(5*p);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Morale",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("morale");
+        if(ThemedButton("Morale","morale",panelNavButton,
+            GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("morale");
         GUILayout.Space(controlGap);
-        if(GUILayout.Button("Terrain",panelNavButton,GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("terrain");
+        if(ThemedButton("Terrain","terrain",panelNavButton,
+            GUILayout.Width(referenceWidth),GUILayout.Height(42*p)))OpenChart("terrain");
         GUILayout.EndHorizontal();
         GUILayout.Space(5*p);
         GUILayout.BeginHorizontal();
-        if(GUILayout.Button("Rulebook PDF",panelLink,GUILayout.Width(referenceWidth),GUILayout.Height(38*p)))
+        if(ThemedButton("Rulebook PDF","rulebook",panelLink,
+            GUILayout.Width(referenceWidth),GUILayout.Height(38*p)))
             Application.OpenURL(new Uri(Path.Combine(Application.streamingAssetsPath,"Hastings_1066.pdf")).AbsoluteUri);
         GUILayout.Space(controlGap);
-        if(GUILayout.Button(showHelp?"Hide guide":"Controls",panelLink,
+        if(ThemedButton(showHelp?"Hide guide":"Controls","controls",panelLink,
             GUILayout.Width(referenceWidth),GUILayout.Height(38*p)))showHelp=!showHelp;
         GUILayout.EndHorizontal();
         if(showHelp)DrawControlsGuide();
@@ -1327,6 +1533,9 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.BeginHorizontal();
         GUILayout.Label("NORMAN  "+s.normanCasualties,panelValue);
         GUILayout.Label("SAXON  "+s.saxonCasualties,panelValue);
+        var casualtyIcon=themeSkin.Icon("melee");
+        if(casualtyIcon!=null)
+            GUILayout.Label(casualtyIcon,GUILayout.Width(45*p),GUILayout.Height(45*p));
         GUILayout.EndHorizontal();
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
@@ -1336,6 +1545,7 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Label("•  "+UnitDisplayNames.InEvent(line,unitLabels),panelMuted);
             GUILayout.Space(4);
         }
+        DrawThemeDivider(16*p,.72f);
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();
@@ -1473,8 +1683,8 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawStrategyEffectsTrack(Rect region)
     {
-        Fill(region,new Color(.91f,.87f,.77f));
-        Fill(new Rect(region.x,region.y,region.width,3),new Color(.59f,.22f,.17f));
+        DrawSurface(region,themeSkin.cardTexture,themeSkin.card);
+        Fill(new Rect(region.x,region.y,region.width,3),themeSkin.accent);
         float headerHeight=showStrategyTrack?48f:region.height;
         string toggleText=showStrategyTrack?
             "STRATEGY EFFECTS     ▲  HIDE":
@@ -1818,23 +2028,25 @@ public sealed class HastingsGame : MonoBehaviour
             GUI.color=Color.white;
         }
         float width=Mathf.Clamp(Screen.width*.47f,620f,1250f);
-        float preferredHeight=game==null && menuPage=="main"?
-            Mathf.Clamp(Screen.height*.45f,540f,760f):
+        float preferredHeight=menuPage=="main"?
+            Mathf.Clamp(Screen.height*.58f,650f,900f):
             Mathf.Clamp(Screen.height*.62f,650f,1060f);
         float height=Mathf.Min(Screen.height-30f,preferredHeight);
         var rect=new Rect((Screen.width-width)/2,(Screen.height-height)/2,width,height);
-        GUI.color=new Color(.22f,.10f,.07f,.98f);
-        GUI.DrawTexture(rect,Texture2D.whiteTexture);
-        GUI.color=new Color(.94f,.87f,.72f,.96f);
-        GUI.DrawTexture(new Rect(rect.x+5,rect.y+5,rect.width-10,rect.height-10),Texture2D.whiteTexture);
-        GUI.color=Color.white;
+        DrawSurface(rect,themeSkin.panelTexture,themeSkin.panel);
+        DrawSurface(new Rect(rect.x+9,rect.y+9,rect.width-18,rect.height-18),
+            themeSkin.cardTexture,themeSkin.card);
+        DrawThemeFrame(rect);
+        DrawThemeOrnament(new Rect(rect.x+rect.width*.57f,rect.y+12,
+            rect.width*.38f,132),.72f);
         float inset=Mathf.Clamp(width*.08f,35,80);
         float buttonHeight=Mathf.Clamp(Screen.height*.055f,54,96);
         GUILayout.BeginArea(new Rect(rect.x+inset,rect.y+25,rect.width-2*inset,rect.height-50));
-        GUILayout.Label("HASTINGS 1066",menuTitle,GUILayout.Height(Mathf.Clamp(Screen.height*.10f,75,115)));
+        GUILayout.Label(ThemeTitle(),menuTitle,GUILayout.Height(Mathf.Clamp(Screen.height*.10f,75,115)));
         GUILayout.Label(menuPage=="main"?"The Battle for Senlac Hill":
             menuPage=="load"?"Load a game":menuPage=="save"?"Save your battle":
-            menuPage=="newSide"?"14 October 1066":"Start a new battle?",
+            menuPage=="newSide"?"14 October 1066":menuPage=="theme"?"Interface style":
+            "Start a new battle?",
             menuSubtitle,GUILayout.Height(42));
         GUILayout.Space(28);
         if(menuPage=="main")
@@ -1853,6 +2065,9 @@ public sealed class HastingsGame : MonoBehaviour
                 GUILayout.Space(12);
             }
             if(GUILayout.Button("Load Game",menuButton,GUILayout.Height(buttonHeight)))menuPage="load";
+            GUILayout.Space(12);
+            if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
+            {menuPage="theme";menuScroll=Vector2.zero;}
             GUILayout.FlexibleSpace();
             if(GUILayout.Button("Quit",menuButton,GUILayout.Height(buttonHeight)))Application.Quit();
         }
@@ -1933,8 +2148,39 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.FlexibleSpace();
             if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
+        else if(menuPage=="theme")
+        {
+            GUILayout.Label("Choose a presentation. The menu changes as soon as you select one.",
+                menuDescription);
+            GUILayout.Space(16);
+            menuScroll=GUILayout.BeginScrollView(menuScroll);
+            foreach(var option in InterfaceThemeCatalog.All)
+            {
+                var optionSkin=InterfaceThemeCatalog.Get(option);
+                bool selectedTheme=option==interfaceTheme;
+                string caption=optionSkin.displayName+(selectedTheme?"  ·  SELECTED":"");
+                if(GUILayout.Button(caption,selectedTheme?menuPrimary:menuButton,
+                    GUILayout.Height(buttonHeight)))SetInterfaceTheme(option);
+                GUILayout.Label(optionSkin.description,menuDescription,GUILayout.Height(
+                    menuDescription.CalcHeight(new GUIContent(optionSkin.description),
+                        rect.width-2*inset)+5f));
+                GUILayout.Space(10);
+            }
+            GUILayout.EndScrollView();
+            GUILayout.Space(10);
+            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
+        }
         if(notice!="")GUILayout.Label(notice,small);
         GUILayout.EndArea();
+    }
+    private void SetInterfaceTheme(InterfaceTheme theme)
+    {
+        if(interfaceTheme==theme)return;
+        interfaceTheme=theme;
+        themeSkin=InterfaceThemeCatalog.Get(theme);
+        InterfaceThemeCatalog.Save(theme);
+        panelTitle=null;
+        GUI.changed=true;
     }
     private static void RestoreWindowedDisplay()
     {
@@ -1996,12 +2242,13 @@ public sealed class HastingsGame : MonoBehaviour
         orderEffectValue.padding=new RectOffset(Mathf.RoundToInt(8*u),Mathf.RoundToInt(8*u),
             Mathf.RoundToInt(4*u),Mathf.RoundToInt(4*u));
 
-        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.12f,.09f,.06f,.68f));
+        Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
         float width=Mathf.Min(Screen.width-40f,1240f*u);
         float height=Mathf.Min(Screen.height-40f,900f*u);
         var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
-        Fill(rect,new Color(.94f,.90f,.81f));
-        Fill(new Rect(rect.x,rect.y,rect.width,66*u),new Color(.60f,.21f,.16f));
+        DrawSurface(rect,themeSkin.cardTexture,themeSkin.card);
+        Fill(new Rect(rect.x,rect.y,rect.width,66*u),themeSkin.accent);
+        DrawThemeFrame(rect);
         GUI.BeginGroup(rect);
         GUI.Label(new Rect(27*u,17*u,width-210*u,42*u),"BATTLE ORDERS",orderTitle);
         bool optionsPending=game.OptionsPending();
@@ -2043,12 +2290,13 @@ public sealed class HastingsGame : MonoBehaviour
         chartCell.fontSize=Mathf.RoundToInt(13*u);
         chartMuted.fontSize=Mathf.RoundToInt(12*u);
 
-        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.12f,.09f,.06f,.68f));
+        Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
         float width=Mathf.Min(Screen.width-50f,960f*u);
         float height=Mathf.Min(Screen.height-50f,520f*u);
         var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
-        Fill(rect,new Color(.94f,.90f,.81f));
-        Fill(new Rect(rect.x,rect.y,rect.width,64*u),new Color(.60f,.21f,.16f));
+        DrawSurface(rect,themeSkin.cardTexture,themeSkin.card);
+        Fill(new Rect(rect.x,rect.y,rect.width,64*u),themeSkin.accent);
+        DrawThemeFrame(rect);
         GUI.BeginGroup(rect);
         GUI.Label(new Rect(27*u,15*u,width-205*u,42*u),"BATTLE ORDERS",orderTitle);
         if(GUI.Button(new Rect(width-120*u,16*u,94*u,34*u),"Close  ×",panelLink))
@@ -2083,7 +2331,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.Label(new Rect(rect.x,rect.y,rect.width,headingHeight),
             groupId.ToUpperInvariant()+"  ·  "+result.strategy.ToString().ToUpperInvariant()+
             " STRATEGY  ·  EFFECT "+Signed(result.totalEffect),chartRowHeader);
-        chartRowHeader.normal.textColor=new Color(.27f,.19f,.14f);
+        SetText(chartRowHeader,themeSkin.ink);
         float trackHeight=(rect.height-headingHeight-gap)/2f;
         DrawOrderTrack(new Rect(rect.x,rect.y+headingHeight,rect.width,trackHeight),
             "FOOT",new[]{"SHIELD\nWALL","ADVANCE","ADVANCE\n2 TURNS","FIRE IN\nPLACE"},
@@ -2102,13 +2350,13 @@ public sealed class HastingsGame : MonoBehaviour
         float headingWidth=Mathf.Clamp(rect.width*.20f,165*u,220*u);
         float columnWidth=(rect.width-headingWidth)/columns.Length;
         float headerHeight=58*u,rowHeight=(rect.height-headerHeight)/3f;
-        Color border=new Color(.35f,.27f,.20f),slot=new Color(.93f,.90f,.82f);
+        Color border=themeSkin.frame,slot=themeSkin.card;
         Fill(rect,border);
         DrawOrderReviewCell(new Rect(rect.x+1,rect.y+1,headingWidth-2,headerHeight-2),
-            new Color(.55f,.23f,.17f),"SAXON WING",chartHeader);
+            themeSkin.accent,"SAXON WING",chartHeader);
         for(int column=0;column<columns.Length;column++)
             DrawOrderReviewCell(new Rect(rect.x+headingWidth+column*columnWidth+1,rect.y+1,
-                columnWidth-2,headerHeight-2),new Color(.55f,.23f,.17f),columns[column],chartHeader);
+                columnWidth-2,headerHeight-2),themeSkin.accent,columns[column],chartHeader);
         foreach(var pair in groups.Select((group,index)=>new{group,index}))
         {
             var result=game.state.orderResults.LastOrDefault(item=>item.group==pair.group &&
@@ -2137,7 +2385,7 @@ public sealed class HastingsGame : MonoBehaviour
         float headingWidth=Mathf.Clamp(rect.width*.18f,150*u,205*u);
         float columnWidth=(rect.width-headingWidth)/columns.Length;
         float headerHeight=52*u,slotHeight=rect.height-headerHeight;
-        Color border=new Color(.35f,.27f,.20f),slot=new Color(.93f,.90f,.82f);
+        Color border=themeSkin.frame,slot=themeSkin.card;
         Fill(rect,border);
         DrawOrderRowHeading(new Rect(rect.x+1,rect.y+1,headingWidth-2,rect.height-2),
             rowTitle,OrderCounterTexture(result,knight),markerColor,"",u);
@@ -2146,7 +2394,7 @@ public sealed class HastingsGame : MonoBehaviour
             var header=new Rect(rect.x+headingWidth+column*columnWidth+1,rect.y+1,
                 columnWidth-2,headerHeight-2);
             var cell=new Rect(header.x,rect.y+headerHeight+1,columnWidth-2,slotHeight-2);
-            DrawOrderReviewCell(header,new Color(.55f,.23f,.17f),columns[column],chartHeader);
+            DrawOrderReviewCell(header,themeSkin.accent,columns[column],chartHeader);
             DrawOrderReviewCell(cell,slot,"",chartCell);
             if(column==selected)DrawOrderMarker(cell,markerColor,OrderReviewRoll(result,knight),u);
         }
@@ -2169,7 +2417,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void DrawOrderRowHeading(Rect rect,string label,Texture2D texture,Color accent,
         string footer,float u)
     {
-        Fill(rect,new Color(.88f,.84f,.75f));
+        Fill(rect,themeSkin.subtle);
         Fill(new Rect(rect.x,rect.y,8*u,rect.height),accent);
         float labelHeight=25*u,footerHeight=footer==""?0:19*u;
         GUI.Label(new Rect(rect.x+10*u,rect.y+3*u,rect.width-14*u,labelHeight),
@@ -2415,12 +2663,13 @@ public sealed class HastingsGame : MonoBehaviour
         chartTabSelected.fontSize=Mathf.RoundToInt(18*chartScale);
         chartClose.fontSize=Mathf.RoundToInt(14*chartScale);
         float u=chartScale;
-        Fill(new Rect(0,0,Screen.width,Screen.height),new Color(.12f,.09f,.06f,.65f));
+        Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
         float width=Mathf.Min(Screen.width-40f,1180f*u);
         float height=Mathf.Min(Screen.height-40f,720f*u);
         var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
-        Fill(rect,new Color(.95f,.92f,.84f));
-        Fill(new Rect(rect.x,rect.y,rect.width,56*u),new Color(.60f,.21f,.16f));
+        DrawSurface(rect,themeSkin.cardTexture,themeSkin.card);
+        Fill(new Rect(rect.x,rect.y,rect.width,56*u),themeSkin.accent);
+        DrawThemeFrame(rect);
         GUI.BeginGroup(rect);
         GUI.Label(new Rect(25*u,18*u,width-180*u,38*u),"BATTLE REFERENCE",chartTitle);
         if(GUI.Button(new Rect(width-116*u,20*u,90*u,32*u),"Close  ×",chartClose))
@@ -2460,7 +2709,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.Label(new Rect(0,y,width,32*u),title,chartSection);
         y+=38*u;
         float firstWidth=92*u,rowHeight=39*u,cellWidth=(width-firstWidth)/columns.Length;
-        Fill(new Rect(0,y,width,rowHeight),new Color(.55f,.23f,.17f));
+        Fill(new Rect(0,y,width,rowHeight),themeSkin.accent);
         GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowHeading,chartHeader);
         for(int col=0;col<columns.Length;col++)
             GUI.Label(new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight),columns[col],chartHeader);
@@ -2468,7 +2717,7 @@ public sealed class HastingsGame : MonoBehaviour
         for(int row=0;row<rows;row++)
         {
             Fill(new Rect(0,y,width,rowHeight),row%2==0?
-                new Color(.99f,.975f,.93f):new Color(.92f,.89f,.81f));
+                themeSkin.card:themeSkin.subtle);
             GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowName(row),chartRowHeader);
             for(int col=0;col<columns.Length;col++)
             {
@@ -2487,7 +2736,7 @@ public sealed class HastingsGame : MonoBehaviour
     {
         float u=chartScale;
         float noteHeight=chartNote.CalcHeight(new GUIContent(text),width-28*u)+20*u;
-        Fill(new Rect(0,y,width,noteHeight),new Color(.88f,.83f,.71f));
+        Fill(new Rect(0,y,width,noteHeight),themeSkin.subtle);
         GUI.Label(new Rect(14*u,y+10*u,width-28*u,noteHeight-20*u),text,chartNote);
         return y+noteHeight+16*u;
     }
@@ -2538,12 +2787,11 @@ public sealed class HastingsGame : MonoBehaviour
     {
         float u=chartScale,h=80*u;
         float terrainWidth=225*u,movementWidth=170*u,combatWidth=305*u;
-        Fill(new Rect(0,y,width,h),index%2==0?
-            new Color(.99f,.975f,.93f):new Color(.93f,.90f,.83f));
+        Fill(new Rect(0,y,width,h),index%2==0?themeSkin.card:themeSkin.subtle);
         Fill(new Rect(0,y,7*u,h),accent);
         foreach(float x in new[]{terrainWidth,terrainWidth+movementWidth,
                  terrainWidth+movementWidth+combatWidth})
-            Fill(new Rect(x,y,1*u,h),new Color(.80f,.74f,.64f));
+            Fill(new Rect(x,y,1*u,h),Color.Lerp(themeSkin.frame,themeSkin.card,.65f));
         Texture2D sample;
         if(terrainSwatches.TryGetValue(swatch,out sample) && sample!=null)
             GUI.DrawTexture(new Rect(16*u,y+9*u,72*u,62*u),sample,ScaleMode.ScaleToFit,true);
@@ -2560,7 +2808,7 @@ public sealed class HastingsGame : MonoBehaviour
         float u=chartScale;
         GUI.Label(new Rect(0,0,width,36*u),"TERRAIN EFFECTS",chartSection);
         float y=42*u,terrainWidth=225*u,movementWidth=170*u,combatWidth=305*u;
-        Fill(new Rect(0,y,width,46*u),new Color(.55f,.23f,.17f));
+        Fill(new Rect(0,y,width,46*u),themeSkin.accent);
         GUI.Label(new Rect(0,y,terrainWidth,46*u),"TERRAIN",chartHeader);
         GUI.Label(new Rect(terrainWidth,y,movementWidth,46*u),"MOVEMENT",chartHeader);
         GUI.Label(new Rect(terrainWidth+movementWidth,y,combatWidth,46*u),"COMBAT",chartHeader);

@@ -320,6 +320,24 @@ public static class ProjectChecks
         foreach(var hc in housecarlState.units.Where(u=>u.type=="HC"))hc.status=Status.Eliminated;
         new GameEngine(board,housecarlState).CheckVictory();
         Check(housecarlState.result=="Norman strategic victory","Housecarl strategic victory failed");
+        Check(InterfaceThemeCatalog.All.Length==3 &&
+            InterfaceThemeCatalog.All.Distinct().Count()==3,"Expected three interface themes");
+        foreach(var theme in InterfaceThemeCatalog.All)
+        {
+            var skin=InterfaceThemeCatalog.Get(theme);
+            Check(skin!=null && !string.IsNullOrEmpty(skin.displayName) &&
+                !string.IsNullOrEmpty(skin.description),"Interface theme metadata missing: "+theme);
+            Check(skin.panelTexture!=null && skin.cardTexture!=null &&
+                skin.buttonTexture!=null && skin.primaryTexture!=null,
+                "Interface theme textures missing: "+theme);
+            Check(skin.ornament!=null && skin.divider!=null,
+                "Interface theme ornament missing: "+theme);
+            foreach(var icon in new[]{"menu","hide","focus","fit","melee","missile",
+                "morale","terrain","rulebook","controls"})
+                Check(skin.Icon(icon)!=null,"Interface theme icon missing: "+theme+" "+icon);
+            Check(skin.buttonTexture.width==80 && skin.buttonTexture.height==48,
+                "Interface button texture has the wrong dimensions: "+theme);
+        }
         Debug.Log("HASTINGS CHECKS PASSED: map, tables, art, setup and state round trip");
     }
     public static void RunSimulation()
