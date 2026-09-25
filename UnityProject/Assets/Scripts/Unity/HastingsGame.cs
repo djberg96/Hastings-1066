@@ -21,6 +21,7 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly Dictionary<string,float> stackSpread=new Dictionary<string,float>();
     private readonly List<string> selected=new List<string>();
     private readonly List<string> selectedTargets=new List<string>();
+    private readonly HashSet<string> chargeHighlightIds=new HashSet<string>();
     private readonly Stack<MovementUndoEntry> movementUndo=new Stack<MovementUndoEntry>();
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
@@ -28,9 +29,10 @@ public sealed class HastingsGame : MonoBehaviour
     private float missileEffectStarted, missileEffectUntil,meleeEffectStarted,meleeEffectUntil;
     private MissileFireResult missileResult;
     private MeleeCombatResult meleeResult;
-    private bool showMenu=true, showUnits=true, showHelp, showOrderResults,
+    private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
         orderReviewMode, showStrategyTrack, fullMapMode;
     private int orderReviewTab;
+    private int chargeHighlightSignature=int.MinValue;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main",
         highTrajectoryTargetId="";
     private InterfaceTheme interfaceTheme;
@@ -977,7 +979,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void DrawChargeRequirementHighlights()
     {
         if(!PlayerMovePhase() || PlayerSide()!=Side.Norman)return;
-        foreach(var unit in game.RequiredChargeMoves(PlayerSide()))
+        foreach(var unit in CachedChargeHighlightUnits())
         {
             var rect=CounterRect(unit,SpreadFor(unit.hex));
             DrawRectOutline(new Rect(rect.x-5,rect.y-5,rect.width+10,rect.height+10),4f,
@@ -987,6 +989,36 @@ public sealed class HastingsGame : MonoBehaviour
             missileMapResult.fontSize=10;
             GUI.Label(badge,"MOVE",missileMapResult);
         }
+    }
+    private IEnumerable<UnitState> CachedChargeHighlightUnits()
+    {
+        unchecked
+        {
+            int signature=game.GetHashCode();
+            signature=signature*31+(int)game.state.phase;
+            foreach(var group in game.state.groups)
+            {
+                signature=signature*31+(int)group.knightOrder;
+                signature=signature*31+group.effect;
+            }
+            foreach(var unit in game.state.units)
+            {
+                signature=signature*31+(unit.hex==null?0:unit.hex.GetHashCode());
+                signature=signature*31+(int)unit.status;
+                signature=signature*31+unit.facing;
+                signature=signature*31+(unit.moved?1:0);
+                signature=signature*31+unit.entrySpent;
+            }
+            if(signature!=chargeHighlightSignature)
+            {
+                chargeHighlightSignature=signature;
+                chargeHighlightIds.Clear();
+                foreach(var unit in game.RequiredChargeMoves(PlayerSide()))
+                    chargeHighlightIds.Add(unit.id);
+            }
+        }
+        return game.state.units.Where(unit=>chargeHighlightIds.Contains(unit.id) &&
+            unit.status!=Status.Eliminated && board.Has(unit.hex));
     }
     private void DrawFireDesignationHighlights()
     {
@@ -1528,23 +1560,35 @@ public sealed class HastingsGame : MonoBehaviour
         if(showHelp)DrawControlsGuide();
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
-        GUILayout.Label("CASUALTIES",panelSection);
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("NORMAN  "+s.normanCasualties,panelValue);
-        GUILayout.Label("SAXON  "+s.saxonCasualties,panelValue);
+        GUILayout.BeginHorizontal(GUILayout.Height(32*p));
+        GUILayout.Label("CASUALTIES",panelSection,GUILayout.Width(88*p),GUILayout.Height(32*p));
+        GUILayout.Label("NORMAN  "+s.normanCasualties,panelValue,
+            GUILayout.Width(105*p),GUILayout.Height(32*p));
+        GUILayout.Label("SAXON  "+s.saxonCasualties,panelValue,
+            GUILayout.Width(96*p),GUILayout.Height(32*p));
+        GUILayout.FlexibleSpace();
         var casualtyIcon=themeSkin.Icon("melee");
         if(casualtyIcon!=null)
-            GUILayout.Label(casualtyIcon,GUILayout.Width(45*p),GUILayout.Height(45*p));
+            GUILayout.Label(casualtyIcon,GUILayout.Width(30*p),GUILayout.Height(30*p));
         GUILayout.EndHorizontal();
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
-        GUILayout.Label("RECENT EVENTS",panelSection);
-        foreach(var line in s.log.Skip(Math.Max(0,s.log.Count-25)).Reverse())
+        GUILayout.BeginHorizontal(GUILayout.Height(30*p));
+        GUILayout.Label("RECENT EVENTS",panelSection,GUILayout.Height(30*p));
+        GUILayout.FlexibleSpace();
+        string eventToggle=(showEventLog?"Hide":"Show")+" ("+s.log.Count+")";
+        if(GUILayout.Button(eventToggle,panelLink,GUILayout.Width(92*p),GUILayout.Height(28*p)))
+            showEventLog=!showEventLog;
+        GUILayout.EndHorizontal();
+        if(showEventLog)
         {
-            GUILayout.Label("•  "+UnitDisplayNames.InEvent(line,unitLabels),panelMuted);
-            GUILayout.Space(4);
+            foreach(var line in s.log.Skip(Math.Max(0,s.log.Count-25)).Reverse())
+            {
+                GUILayout.Label("•  "+UnitDisplayNames.InEvent(line,unitLabels),panelMuted);
+                GUILayout.Space(4);
+            }
+            DrawThemeDivider(16*p,.72f);
         }
-        DrawThemeDivider(16*p,.72f);
         GUILayout.EndVertical();
         GUILayout.EndScrollView();
         GUILayout.EndArea();

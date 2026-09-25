@@ -266,6 +266,30 @@ namespace Hastings
             }
             if(unit.moved || unit.status!=Status.Ready)return result;
             int allowance=MovementAllowance(unit);var initial=OrderFor(unit);
+            var type=UnitTypes.Get(unit);
+            var enemySide=Opposite(unit.side);
+            var friendlyOccupied=new HashSet<string>(Living(unit.side)
+                .Where(other=>!UnitTypes.Get(other).leader).Select(other=>other.hex));
+            var allEnemyUnits=Living(enemySide).ToList();
+            var enemyUnits=allEnemyUnits.Where(other=>!UnitTypes.Get(other).leader).ToList();
+            var enemyOccupied=new HashSet<string>(enemyUnits.Select(other=>other.hex));
+            var enemyZoc=new HashSet<string>();
+            foreach(var enemy in enemyUnits.Where(enemy=>enemy.status==Status.Ready))
+                foreach(var adjacent in board.Adjacent(enemy.hex))
+                    if(Controls(enemy,adjacent))enemyZoc.Add(adjacent);
+            var distanceCache=new Dictionary<string,int>();
+            Func<string,int> enemyDistance=hex=>
+            {
+                int distance;
+                if(distanceCache.TryGetValue(hex,out distance))return distance;
+                distance=enemyUnits.Count==0?999:enemyUnits.Min(enemy=>board.Distance(hex,enemy.hex));
+                distanceCache[hex]=distance;return distance;
+            };
+            bool canCharge=type.knight && (initial==Order.Charge || type.guard);
+            var enemyAdjacent=new HashSet<string>();
+            if(canCharge)foreach(var enemy in allEnemyUnits)
+                foreach(var adjacent in board.Adjacent(enemy.hex))enemyAdjacent.Add(adjacent);
+            var uphillCache=new Dictionary<string,bool>();
             var open=new Queue<MoveOption>();open.Enqueue(new MoveOption{destination=unit.hex,cost=0,path=new List<string>{unit.hex}});
             var best=new Dictionary<string,int>{{unit.hex,0}};
             while(open.Count>0)
@@ -273,17 +297,18 @@ namespace Hastings
                 var current=open.Dequeue();
                 foreach(var to in board.Adjacent(current.destination))
                 {
-                    if(UnitAt(to,Opposite(unit.side))!=null)continue;
+                    if(enemyOccupied.Contains(to))continue;
                     if(current.path.Contains(to))continue;
-                    if(InEnemyZoc(unit.side,current.destination)&&current.destination!=unit.hex)continue;
-                    if(InEnemyZoc(unit.side,current.destination)&&InEnemyZoc(unit.side,to))continue;
-                    bool zoc=InEnemyZoc(unit.side,to);
-                    if(zoc && (!UnitTypes.Get(unit).leader && UnitTypes.Get(unit).missile=="B"))continue;
-                    if(zoc && UnitAt(to,unit.side)!=null)continue;
+                    bool currentZoc=enemyZoc.Contains(current.destination);
+                    if(currentZoc&&current.destination!=unit.hex)continue;
+                    bool zoc=enemyZoc.Contains(to);
+                    if(currentZoc&&zoc)continue;
+                    if(zoc && (!type.leader && type.missile=="B"))continue;
+                    if(zoc && friendlyOccupied.Contains(to))continue;
                     var crossing=board.Edge(current.destination,to);
-                    if(UnitTypes.Get(unit).knight && UnitAt(to,unit.side)!=null &&
+                    if(type.knight && friendlyOccupied.Contains(to) &&
                         ((crossing!=null && crossing.ridge)||board.Hex(to).marsh))continue;
-                    if(UnitTypes.Get(unit).leader && zoc && UnitAt(to,unit.side)==null)continue;
+                    if(type.leader && zoc && !friendlyOccupied.Contains(to))continue;
                     int cost=(initial==Order.ShieldWall||initial==Order.Hold||initial==Order.FireInPlace)?
                         1:MoveCost(unit,current.destination,to)+current.cost;
                     if(cost>allowance)continue;
@@ -291,41 +316,48 @@ namespace Hastings
                     {
                         if(current.path.Count>1)continue;
                         if(zoc)continue;
-                        int before=NearestEnemyDistance(unit.side,unit.hex),after=NearestEnemyDistance(unit.side,to);
+                        int before=enemyDistance(unit.hex),after=enemyDistance(to);
                         if((initial==Order.ShieldWall||initial==Order.Hold) && after<=before)continue;
                         if(initial==Order.FireInPlace && after==before)continue;
                     }
-                    int startingEnemyDistance=NearestEnemyDistance(unit.side,unit.hex);
-                    int destinationEnemyDistance=NearestEnemyDistance(unit.side,to);
+                    int startingEnemyDistance=enemyDistance(unit.hex);
+                    int destinationEnemyDistance=enemyDistance(to);
                     if(initial==Order.AttackPursue && destinationEnemyDistance>startingEnemyDistance)continue;
                     if(best.ContainsKey(to) && best[to]<=cost)continue;
                     best[to]=cost;
                     var path=new List<string>(current.path){to};
                     var option=new MoveOption{destination=to,cost=cost,path=path,
-                        charge=UnitTypes.Get(unit).knight && (initial==Order.Charge || UnitTypes.Get(unit).guard) && ChargePath(path)};
-                    if(UnitAt(to,unit.side)==null || UnitTypes.Get(unit).leader)result[to]=option;
+                        charge=canCharge && ChargePath(path,enemyAdjacent,uphillCache)};
+                    if(!friendlyOccupied.Contains(to) || type.leader)result[to]=option;
                     if(!zoc)open.Enqueue(option);
                 }
             }
             if(initial==Order.Charge && result.Count>0)
             {
-                int starting=NearestEnemyDistance(unit.side,unit.hex);
-                int closest=result.Values.Min(option=>NearestEnemyDistance(unit.side,option.destination));
+                int starting=enemyDistance(unit.hex);
+                int closest=result.Values.Min(option=>enemyDistance(option.destination));
                 if(closest>=starting)result.Clear();
                 else foreach(var destination in result.Where(pair=>
-                        NearestEnemyDistance(unit.side,pair.Value.destination)>closest)
+                        enemyDistance(pair.Value.destination)>closest)
                         .Select(pair=>pair.Key).ToList())result.Remove(destination);
             }
             return result;
         }
-        private bool ChargePath(List<string> path)
+        private bool ChargePath(List<string> path,HashSet<string> enemyAdjacent,
+            Dictionary<string,bool> uphillCache)
         {
-            if(path.Count<2 || !Living(Side.Saxon).Any(s=>board.Adjacent(path[path.Count-1]).Contains(s.hex)))return false;
+            if(path.Count<2 || !enemyAdjacent.Contains(path[path.Count-1]))return false;
             for(int i=1;i<path.Count;i++)
             {
                 var e=board.Edge(path[i-1],path[i]);var h=board.Hex(path[i]);
                 if((e!=null && (e.ridge||e.stream))||h.woods||h.marsh)return false;
-                if(i>=path.Count-2 && IsUphill(path[i-1],path[i]))return false;
+                if(i>=path.Count-2)
+                {
+                    string key=path[i-1]+">"+path[i];bool uphill;
+                    if(!uphillCache.TryGetValue(key,out uphill))
+                    {uphill=IsUphill(path[i-1],path[i]);uphillCache[key]=uphill;}
+                    if(uphill)return false;
+                }
             }
             return true;
         }
