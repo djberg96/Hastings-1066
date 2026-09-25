@@ -366,6 +366,35 @@ public static class ProjectChecks
             meleeEngine.lastMeleeResult.attack>0 && meleeEngine.lastMeleeResult.defense>0 &&
             !string.IsNullOrEmpty(meleeEngine.lastMeleeResult.tableResult),
             "Melee did not expose a visual result");
+        var downhillState=Setup.New(board,380);downhillState.phase=Phase.NormanMelee;
+        downhillState.playerSide=Side.Norman;
+        foreach(var unit in downhillState.units)unit.hex="";
+        var downhillKnight=downhillState.units.First(unit=>unit.type=="NK");
+        var downhillDefender=downhillState.units.First(unit=>unit.type=="HC");
+        string downhillOrigin=board.data.hexes.Select(hex=>hex.id).First(from=>
+            board.Adjacent(from).Any(to=>board.Hex(from).level>board.Hex(to).level &&
+                (board.Edge(from,to)==null || !board.Edge(from,to).ridge)));
+        string downhillTarget=board.Adjacent(downhillOrigin).First(to=>
+            board.Hex(downhillOrigin).level>board.Hex(to).level &&
+            (board.Edge(downhillOrigin,to)==null || !board.Edge(downhillOrigin,to).ridge));
+        downhillKnight.hex=downhillOrigin;downhillDefender.hex=downhillTarget;
+        downhillKnight.facing=board.Direction(downhillOrigin,downhillTarget);
+        downhillDefender.facing=board.Direction(downhillTarget,downhillOrigin);
+        downhillState.groups.First(group=>group.id==downhillKnight.group).knightOrder=Order.Advance;
+        var chargedDownhillState=JsonUtility.FromJson<GameState>(JsonUtility.ToJson(downhillState));
+        var downhillEngine=new GameEngine(board,downhillState);
+        Check(downhillEngine.Melee(new List<UnitState>{downhillKnight},
+                new List<UnitState>{downhillDefender}),
+            "Legal downhill knight melee was rejected");
+        int ordinaryDownhillAttack=downhillEngine.lastMeleeResult.attack;
+        var chargedDownhillKnight=chargedDownhillState.units.First(unit=>unit.id==downhillKnight.id);
+        var chargedDownhillDefender=chargedDownhillState.units.First(unit=>unit.id==downhillDefender.id);
+        chargedDownhillKnight.charged=true;
+        var chargedDownhillEngine=new GameEngine(board,chargedDownhillState);
+        Check(chargedDownhillEngine.Melee(new List<UnitState>{chargedDownhillKnight},
+                new List<UnitState>{chargedDownhillDefender}) &&
+              chargedDownhillEngine.lastMeleeResult.attack==ordinaryDownhillAttack+1,
+            "A downhill charge received both the ordinary downhill and charge bonuses");
         var obligationState=Setup.New(board,381);obligationState.phase=Phase.NormanMelee;
         obligationState.playerSide=Side.Norman;
         foreach(var unit in obligationState.units)unit.hex="";

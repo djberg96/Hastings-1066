@@ -262,8 +262,9 @@ namespace Hastings
                 if(d.level>a.level)value-=type.knight?2:1;
                 else if(d.level<a.level && !type.knight)value++;
             }
-            if(type.knight && IsDownhill(attacker.hex,defender.hex))value++;
-            if(attacker.charged)value+=IsDownhill(attacker.hex,defender.hex)?2:1;
+            bool downhill=type.knight && IsDownhill(attacker.hex,defender.hex);
+            if(downhill)value+=attacker.charged?2:1;
+            else if(attacker.charged)value++;
             return Math.Max(0,value);
         }
         private int Defense(UnitState unit,bool melee)
