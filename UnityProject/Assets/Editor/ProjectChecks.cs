@@ -240,8 +240,15 @@ public static class ProjectChecks
         Check(saxonState.phase==Phase.SaxonDefenseFire,"Saxon defensive fire phase missing");
         saxonEngine.Advance();
         Check(saxonState.phase==Phase.SaxonFire,"Saxon offensive fire phase missing");
+        var dueReinforcements=saxonState.units.Where(u=>u.side==Side.Saxon && u.hex=="" &&
+            u.reservePeriod==saxonState.period && u.reserveTurn==saxonState.turn).ToList();
+        Check(dueReinforcements.Count==2,"Opening Saxon reinforcements were not scheduled");
         saxonEngine.Advance();
-        Check(saxonState.phase==Phase.SaxonMove,"Saxon movement phase missing");
+        Check(saxonState.phase==Phase.SaxonMove &&
+              dueReinforcements.All(u=>board.Has(u.hex) && u.reservePeriod==0 && u.reserveOrder),
+            "Human Saxon reinforcements did not enter during their movement segment");
+        Check(dueReinforcements.Select(u=>u.hex).Distinct().Count()==dueReinforcements.Count,
+            "Human Saxon reinforcements entered in the same hex");
         saxonEngine.Advance();
         Check(saxonState.phase==Phase.SaxonMelee,"Saxon melee phase missing");
         var saxonJson=JsonUtility.ToJson(saxonState);

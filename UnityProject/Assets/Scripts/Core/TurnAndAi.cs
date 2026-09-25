@@ -52,7 +52,8 @@ namespace Hastings
                     Rally(Side.Saxon);ResetFire();state.phase=Phase.SaxonFire;
                     Log("Saxon missile fire segment");break;
                 case Phase.SaxonFire:
-                    state.phase=Phase.SaxonMove;Log("Saxon movement segment");break;
+                    state.phase=Phase.SaxonMove;EnterReinforcements();
+                    Log("Saxon movement segment");break;
                 case Phase.SaxonMove:
                     AiReaction(Side.Norman);ResetFire();
                     state.phase=Phase.NormanDefenseFire;AiFire(Side.Norman);
