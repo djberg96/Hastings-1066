@@ -36,6 +36,11 @@ namespace Hastings
             if(type.missile=="B" && order==Order.ShieldWall)return Order.FireInPlace;
             return order;
         }
+        private bool IndependentGuard(UnitState unit)
+        {
+            return UnitTypes.Get(unit).guard &&
+                Living(Side.Norman).Any(other=>other.type=="William");
+        }
         public int Die()
         {
             uint x=state.randomState; if(x==0)x=1;
@@ -240,7 +245,7 @@ namespace Hastings
             if(unit.status!=Status.Ready)return 0;
             var order=OrderFor(unit);
             if(order==Order.ShieldWall || order==Order.Hold || order==Order.FireInPlace)return 1;
-            int result=type.knight?(order==Order.Charge?6:4):3;
+            int result=type.knight?(order==Order.Charge||IndependentGuard(unit)?6:4):3;
             result-=StrategyEffects.MovementPenalty(type.knight,Group(unit).effect);
             return Math.Max(0,result-unit.entrySpent);
         }
@@ -291,7 +296,7 @@ namespace Hastings
                 distance=enemyUnits.Count==0?999:enemyUnits.Min(enemy=>board.Distance(hex,enemy.hex));
                 distanceCache[hex]=distance;return distance;
             };
-            bool canCharge=type.knight && (initial==Order.Charge || type.guard);
+            bool canCharge=type.knight && (initial==Order.Charge || IndependentGuard(unit));
             var enemyAdjacent=new HashSet<string>();
             if(canCharge)foreach(var enemy in allEnemyUnits)
                 foreach(var adjacent in board.Adjacent(enemy.hex))enemyAdjacent.Add(adjacent);

@@ -318,6 +318,22 @@ public static class ProjectChecks
         chargeUnit.moved=true;
         Check(!chargeEngine.RequiredChargeMoves(Side.Norman).Any(unit=>unit.id==chargeUnit.id),
             "Moved Charge-order knight remained in the required movement list");
+        var guardState=Setup.New(board,86421);guardState.phase=Phase.NormanMove;
+        var guardEngine=new GameEngine(board,guardState);
+        var guard=guardState.units.First(unit=>unit.type=="WG");
+        var guardGroup=guardState.groups.First(group=>group.id==guard.group);
+        guardGroup.knightOrder=Order.Advance;
+        Check(guardEngine.OrderFor(guard)==Order.Advance &&
+              guardEngine.MovementAllowance(guard)==6,
+            "William's living Guard did not receive its independent charge allowance");
+        guardState.units.First(unit=>unit.type=="William").status=Status.Eliminated;
+        Check(guardEngine.OrderFor(guard)==Order.Advance &&
+              guardEngine.MovementAllowance(guard)==4,
+            "William's Guard retained its independent charge allowance after William was lost");
+        guardGroup.knightOrder=Order.Charge;
+        Check(guardEngine.OrderFor(guard)==Order.Charge &&
+              guardEngine.MovementAllowance(guard)==6,
+            "William's Guard did not follow the Norman knight order after William was lost");
         var pursueState=Setup.New(board,97531);pursueState.phase=Phase.SaxonMove;
         foreach(var unit in pursueState.units)unit.status=Status.Eliminated;
         var pursueUnit=pursueState.units.First(unit=>unit.type=="F1");
