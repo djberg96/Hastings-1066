@@ -33,7 +33,7 @@ public sealed class HastingsGame : MonoBehaviour
     private MovementResult movementResult;
     private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
         orderReviewMode, showStrategyTrack, fullMapMode;
-    private int orderReviewTab;
+    private int orderReviewTab, orderResolutionTab;
     private int requiredMovementHighlightSignature=int.MinValue;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main",
         highTrajectoryTargetId="";
@@ -2217,6 +2217,7 @@ public sealed class HastingsGame : MonoBehaviour
                 {notice=game.SaxonWingProblem();return;}
                 game.ResolveOrders();
                 orderReviewMode=false;
+                orderResolutionTab=PlayerSide()==Side.Norman?0:1;
                 showOrderResults=game.state.orderResults!=null && game.state.orderResults.Count>0;
                 orderScroll=Vector2.zero;
                 break;
@@ -2474,6 +2475,7 @@ public sealed class HastingsGame : MonoBehaviour
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks,playerSide));
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
         showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
+        orderResolutionTab=playerSide==Side.Norman?0:1;
         highTrajectoryTargetId="";
         movementUndo.Clear();
         movementResult=null;
@@ -2491,63 +2493,78 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawOrderResolution()
     {
-        orderScale=Mathf.Clamp(Screen.height/1000f,1f,1.55f);
+        orderScale=Mathf.Clamp(Screen.height/1100f,.88f,1.15f);
         float u=orderScale;
-        orderTitle.fontSize=Mathf.RoundToInt(28*u);
-        orderSubtitle.fontSize=Mathf.RoundToInt(15*u);
-        orderSection.fontSize=Mathf.RoundToInt(17*u);
-        orderCardTitle.fontSize=Mathf.RoundToInt(20*u);
-        orderRoll.fontSize=Mathf.RoundToInt(13*u);
-        orderType.fontSize=Mathf.RoundToInt(11*u);
-        orderName.fontSize=Mathf.RoundToInt(17*u);
-        orderText.fontSize=Mathf.RoundToInt(13*u);
-        orderChoice.fontSize=Mathf.RoundToInt(13*u);
-        orderEffectHeading.fontSize=Mathf.RoundToInt(12*u);
-        orderEffectValue.fontSize=Mathf.RoundToInt(12*u);
-        orderEffectDetail.fontSize=Mathf.RoundToInt(12*u);
+        orderTitle.fontSize=Mathf.RoundToInt(25*u);
+        orderSubtitle.fontSize=Mathf.RoundToInt(13*u);
+        orderSection.fontSize=Mathf.RoundToInt(15*u);
+        orderCardTitle.fontSize=Mathf.RoundToInt(18*u);
+        orderRoll.fontSize=Mathf.RoundToInt(11*u);
+        orderType.fontSize=Mathf.RoundToInt(10*u);
+        orderName.fontSize=Mathf.RoundToInt(15*u);
+        orderText.fontSize=Mathf.RoundToInt(11*u);
+        orderChoice.fontSize=Mathf.RoundToInt(11*u);
+        orderEffectHeading.fontSize=Mathf.RoundToInt(10*u);
+        orderEffectValue.fontSize=Mathf.RoundToInt(10*u);
+        orderEffectDetail.fontSize=Mathf.RoundToInt(10*u);
         orderEffectWarning.fontSize=orderEffectDetail.fontSize;
-        orderCard.padding=new RectOffset(Mathf.RoundToInt(18*u),Mathf.RoundToInt(18*u),
-            Mathf.RoundToInt(14*u),Mathf.RoundToInt(16*u));
-        orderCard.margin=new RectOffset(0,0,0,Mathf.RoundToInt(10*u));
-        orderRoll.padding=new RectOffset(Mathf.RoundToInt(10*u),Mathf.RoundToInt(10*u),
-            Mathf.RoundToInt(5*u),Mathf.RoundToInt(5*u));
-        orderEffect.padding=new RectOffset(Mathf.RoundToInt(11*u),Mathf.RoundToInt(11*u),
-            Mathf.RoundToInt(9*u),Mathf.RoundToInt(9*u));
-        orderEffectValue.padding=new RectOffset(Mathf.RoundToInt(8*u),Mathf.RoundToInt(8*u),
-            Mathf.RoundToInt(4*u),Mathf.RoundToInt(4*u));
+        orderCard.padding=new RectOffset(Mathf.RoundToInt(14*u),Mathf.RoundToInt(14*u),
+            Mathf.RoundToInt(9*u),Mathf.RoundToInt(11*u));
+        orderCard.margin=new RectOffset(0,0,0,Mathf.RoundToInt(7*u));
+        orderRoll.padding=new RectOffset(Mathf.RoundToInt(8*u),Mathf.RoundToInt(8*u),
+            Mathf.RoundToInt(3*u),Mathf.RoundToInt(3*u));
+        orderEffect.padding=new RectOffset(Mathf.RoundToInt(9*u),Mathf.RoundToInt(9*u),
+            Mathf.RoundToInt(6*u),Mathf.RoundToInt(6*u));
+        orderEffectValue.padding=new RectOffset(Mathf.RoundToInt(6*u),Mathf.RoundToInt(6*u),
+            Mathf.RoundToInt(3*u),Mathf.RoundToInt(3*u));
+        chartTab.fontSize=Mathf.RoundToInt(13*u);
+        chartTabSelected.fontSize=Mathf.RoundToInt(13*u);
 
         Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
-        float width=Mathf.Min(Screen.width-40f,1240f*u);
-        float height=Mathf.Min(Screen.height-40f,900f*u);
+        float width=Mathf.Min(Screen.width-32f,1120f*u);
+        float height=Mathf.Min(Screen.height-32f,760f*u);
         var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
         DrawSurface(rect,themeSkin.cardTexture,themeSkin.card);
-        Fill(new Rect(rect.x,rect.y,rect.width,66*u),themeSkin.accent);
+        Fill(new Rect(rect.x,rect.y,rect.width,58*u),themeSkin.accent);
         DrawThemeFrame(rect);
         GUI.BeginGroup(rect);
-        GUI.Label(new Rect(27*u,17*u,width-210*u,42*u),"BATTLE ORDERS",orderTitle);
+        GUI.Label(new Rect(24*u,13*u,width-190*u,38*u),"BATTLE ORDERS",orderTitle);
         bool optionsPending=game.OptionsPending();
         GUI.enabled=!optionsPending;
-        if(GUI.Button(new Rect(width-120*u,18*u,94*u,34*u),"Close  ×",panelLink))
+        if(GUI.Button(new Rect(width-108*u,13*u,84*u,32*u),"Close  ×",panelLink))
         {showOrderResults=false;GUI.EndGroup();return;}
         GUI.enabled=true;
-        GUI.Label(new Rect(30*u,76*u,width-60*u,48*u),
-            "Each Norman nationality rolls 2d6 once and reads that roll for both foot and knights. Their strategy effects are combined. Saxon wings each use one roll.",
-            orderSubtitle);
+        Side displayedSide=orderResolutionTab==0?Side.Norman:Side.Saxon;
+        string explanation=displayedSide==Side.Norman?
+            "Each nationality rolls 2d6 once; that roll sets both its foot and knight orders.":
+            "Each Saxon wing rolls 2d6 once to determine its foot order.";
+        GUI.Label(new Rect(25*u,65*u,width-50*u,28*u),explanation,orderSubtitle);
 
-        var contentRect=new Rect(27*u,128*u,width-54*u,height-210*u);
+        float tabsX=25*u,tabsY=96*u,tabsWidth=width-50*u,gap=7*u;
+        float tabWidth=(tabsWidth-gap)/2f;
+        string[] tabs={PlayerSide()==Side.Norman?"YOUR NORMANS":"NORMANS",
+            PlayerSide()==Side.Saxon?"YOUR SAXONS":"SAXONS"};
+        for(int index=0;index<tabs.Length;index++)
+        {
+            if(GUI.Button(new Rect(tabsX+index*(tabWidth+gap),tabsY,tabWidth,36*u),
+                tabs[index],index==orderResolutionTab?chartTabSelected:chartTab))
+            {
+                orderResolutionTab=index;
+                orderScroll=Vector2.zero;
+            }
+        }
+
+        var contentRect=new Rect(25*u,142*u,width-50*u,height-202*u);
         GUILayout.BeginArea(contentRect);
         orderScroll=GUILayout.BeginScrollView(orderScroll);
-        DrawOrderSide(PlayerSide()==Side.Norman?"YOUR NORMAN ORDERS":"NORMAN ORDERS",
-            Side.Norman,contentRect.width-22*u);
-        GUILayout.Space(9*u);
-        DrawOrderSide(PlayerSide()==Side.Saxon?"YOUR SAXON ORDERS":"SAXON ORDERS",
-            Side.Saxon,contentRect.width-22*u);
+        DrawOrderSide(displayedSide==PlayerSide()?"YOUR CURRENT ORDERS":"CURRENT ORDERS",
+            displayedSide,contentRect.width-22*u);
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
         string buttonText=optionsPending?"Complete the order choices above":"Continue to battle";
         GUI.enabled=!optionsPending;
-        if(GUI.Button(new Rect(27*u,height-68*u,width-54*u,48*u),buttonText,panelPrimary))
+        if(GUI.Button(new Rect(25*u,height-54*u,width-50*u,40*u),buttonText,panelPrimary))
             showOrderResults=false;
         GUI.enabled=true;
         GUI.EndGroup();
@@ -2746,7 +2763,7 @@ public sealed class HastingsGame : MonoBehaviour
         float u=orderScale;
         var results=game.state.orderResults.Where(result=>result.side==side).ToList();
         if(results.Count==0)return;
-        GUILayout.Label(heading,orderSection,GUILayout.Height(27*u));
+        GUILayout.Label(heading,orderSection,GUILayout.Height(23*u));
         foreach(var result in results)DrawOrderResultCard(result,contentWidth);
     }
     private void DrawOrderResultCard(OrderRollResult result,float contentWidth)
@@ -2757,34 +2774,34 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.BeginHorizontal();
         var oldTitleColor=orderCardTitle.normal.textColor;
         orderCardTitle.normal.textColor=FactionColor(result.group,result.side);
-        GUILayout.Label(result.group.ToUpperInvariant(),orderCardTitle,GUILayout.Height(31*u));
+        GUILayout.Label(result.group.ToUpperInvariant(),orderCardTitle,GUILayout.Height(26*u));
         orderCardTitle.normal.textColor=oldTitleColor;
         GUILayout.FlexibleSpace();
         GUILayout.Label(result.strategy.ToString().ToUpperInvariant(),
-            orderRoll,GUILayout.Height(31*u));
+            orderRoll,GUILayout.Height(26*u));
         GUILayout.EndHorizontal();
-        GUILayout.Space(5*u);
+        GUILayout.Space(3*u);
         GUILayout.BeginHorizontal();
-        float columnWidth=(contentWidth-58*u)/(result.hasKnights?2f:1f);
+        float columnWidth=(contentWidth-46*u)/(result.hasKnights?2f:1f);
         DrawOrderColumn(result,"FOOT",false,group.footOptional,group.footReroll,columnWidth);
         if(result.hasKnights)
         {
-            GUILayout.Space(12*u);
+            GUILayout.Space(9*u);
             DrawOrderColumn(result,"KNIGHTS",true,group.knightOptional,group.knightReroll,columnWidth);
         }
         GUILayout.EndHorizontal();
-        GUILayout.Space(8*u);
+        GUILayout.Space(5*u);
         GUILayout.BeginVertical(orderEffect);
         GUILayout.BeginHorizontal();
-        GUILayout.Label("STRATEGY EFFECT",orderEffectHeading,GUILayout.Height(30*u));
+        GUILayout.Label("STRATEGY EFFECT",orderEffectHeading,GUILayout.Height(25*u));
         GUILayout.FlexibleSpace();
         GUILayout.Label(Signed(result.effectChange)+"  THIS TURN",orderEffectValue,
-            GUILayout.Width(128*u),GUILayout.Height(30*u));
-        GUILayout.Space(7*u);
-        GUILayout.Label(Signed(result.totalEffect)+"  TOTAL",orderEffectValue,
-            GUILayout.Width(108*u),GUILayout.Height(30*u));
-        GUILayout.EndHorizontal();
+            GUILayout.Width(112*u),GUILayout.Height(25*u));
         GUILayout.Space(5*u);
+        GUILayout.Label(Signed(result.totalEffect)+"  TOTAL",orderEffectValue,
+            GUILayout.Width(94*u),GUILayout.Height(25*u));
+        GUILayout.EndHorizontal();
+        GUILayout.Space(2*u);
         bool penalty=StrategyEffects.Code(false,result.totalEffect)!='-' ||
             (result.hasKnights && StrategyEffects.Code(true,result.totalEffect)!='-');
         GUILayout.Label(EffectExplanation(result.totalEffect,result.hasKnights),
@@ -2804,16 +2821,16 @@ public sealed class HastingsGame : MonoBehaviour
         var counter=OrderCounterTexture(result,knight);
         if(counter!=null)
         {
-            GUILayout.Label(counter,GUILayout.Width(76*u),GUILayout.Height(76*u));
-            GUILayout.Space(10*u);
+            GUILayout.Label(counter,GUILayout.Width(62*u),GUILayout.Height(62*u));
+            GUILayout.Space(8*u);
         }
         GUILayout.BeginVertical();
         int sectionRoll=knight?result.knightRoll:result.footRoll;
         if(sectionRoll<=0 && !continued)sectionRoll=result.roll;
         GUILayout.Label(unitKind+"   ·   "+(continued?"CONTINUED ORDER":"2D6: "+sectionRoll),
-            orderType,GUILayout.Height(18*u));
+            orderType,GUILayout.Height(15*u));
         GUILayout.Label(choicePending?"CHOOSE AN ORDER":OrderDisplay(order),orderName,
-            GUILayout.Height(27*u));
+            GUILayout.Height(22*u));
         string timing=choicePending?"Optional result · your choice is required":
             rerollPending?"Extended assault · keep this order or reroll":
             optional?(result.side==PlayerSide()?"Optional result · your selected order":
@@ -2822,34 +2839,34 @@ public sealed class HastingsGame : MonoBehaviour
             continued?"Continues from last turn · "+duration+" turn remaining":
             duration>1?"Remains in effect for "+duration+" turns":"Applies this turn";
         GUILayout.Label(timing,orderText);
-        GUILayout.Space(3*u);
+        GUILayout.Space(2*u);
         if(choicePending)
         {
             GUILayout.Label("Choose this section's order:",orderText);
             GUILayout.BeginHorizontal();
             if(knight)
             {
-                if(GUILayout.Button("Hold",orderChoice,GUILayout.Height(36*u)))
+                if(GUILayout.Button("Hold",orderChoice,GUILayout.Height(31*u)))
                     ChooseOptionalOrder(result.group,true,Order.Hold);
-                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
+                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(31*u)))
                     ChooseOptionalOrder(result.group,true,Order.Advance);
-                if(GUILayout.Button("Charge",orderChoice,GUILayout.Height(36*u)))
+                if(GUILayout.Button("Charge",orderChoice,GUILayout.Height(31*u)))
                     ChooseOptionalOrder(result.group,true,Order.Charge);
             }
             else
             {
-                if(GUILayout.Button("Shield Wall",orderChoice,GUILayout.Height(36*u)))
+                if(GUILayout.Button("Shield Wall",orderChoice,GUILayout.Height(31*u)))
                     ChooseOptionalOrder(result.group,false,Order.ShieldWall);
                 if(result.side==Side.Saxon)
                 {
-                    if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
+                    if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(31*u)))
                         ChooseOptionalOrder(result.group,false,Order.FireInPlace);
-                    if(GUILayout.Button("Attack & Pursue",orderChoice,GUILayout.Height(36*u)))
+                    if(GUILayout.Button("Attack & Pursue",orderChoice,GUILayout.Height(31*u)))
                         ChooseOptionalOrder(result.group,false,Order.AttackPursue);
                 }
-                else if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
+                else if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(31*u)))
                     ChooseOptionalOrder(result.group,false,Order.FireInPlace);
-                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
+                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(31*u)))
                     ChooseOptionalOrder(result.group,false,Order.Advance);
             }
             GUILayout.EndHorizontal();
@@ -2858,9 +2875,9 @@ public sealed class HastingsGame : MonoBehaviour
         {
             GUILayout.Label("This result may be rerolled once:",orderText);
             GUILayout.BeginHorizontal();
-            if(GUILayout.Button("Keep",orderChoice,GUILayout.Height(36*u)))
+            if(GUILayout.Button("Keep",orderChoice,GUILayout.Height(31*u)))
                 game.ResolveExtendedReroll(result.group,knight,false);
-            if(GUILayout.Button("Reroll",orderChoice,GUILayout.Height(36*u)))
+            if(GUILayout.Button("Reroll",orderChoice,GUILayout.Height(31*u)))
                 game.ResolveExtendedReroll(result.group,knight,true);
             GUILayout.EndHorizontal();
         }
