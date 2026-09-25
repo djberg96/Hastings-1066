@@ -670,7 +670,7 @@ public sealed class HastingsGame : MonoBehaviour
                 var unit=SelectedUnits().FirstOrDefault();
                 if(unit!=null)
                 {
-                    int direction=unit.facing+(e.keyCode==KeyCode.E?1:-1);
+                    int direction=BoardViewMath.TurnFacing(unit.facing,e.keyCode==KeyCode.E);
                     if(PlayerMovePhase())FaceWithUndo(unit,direction);
                     else game.Face(unit,direction);
                 }
@@ -876,8 +876,8 @@ public sealed class HastingsGame : MonoBehaviour
                     var rect=CounterRect(u,SpreadFor(u.hex));
                     var texture=CounterTexture(u);
                     var old=GUI.matrix;
-                    if(!type.leader)GUIUtility.RotateAroundPivot((u.facing-1)*60+
-                        (SaxonView()?180:0),rect.center);
+                    if(!type.leader)GUIUtility.RotateAroundPivot(
+                        BoardViewMath.FacingRotationDegrees(u.facing,SaxonView()),rect.center);
                     if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
                     if(selected.Contains(u.id))DrawSelectionOutline(rect);
                     GUI.matrix=old;
@@ -2061,7 +2061,9 @@ public sealed class HastingsGame : MonoBehaviour
         int requiredTargets=game.RequiredMeleeTargets(attackers).Count;
         if(requiredTargets>1)
             return "This combat must include all "+requiredTargets+" defenders in the selected units' zones of control.";
-        return "That defender is outside one or more attackers' two frontal hexes.";
+        return attackers.Count==1?
+            "That defender is outside this unit's two frontal hexes. Set its facing with Q/E during movement.":
+            "That defender is outside one or more selected units' two frontal hexes.";
     }
     private string UnitStatusCause(UnitState unit,Dictionary<string,string> unitLabels)
     {

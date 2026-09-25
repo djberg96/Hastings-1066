@@ -12,6 +12,17 @@ public static class BoardViewMath
         return rotated?new Vector2(boardWidth-point.x,BattlefieldHeight-point.y):point;
     }
 
+    public static float FacingRotationDegrees(int facing,bool rotated)
+    {
+        int normalized=((facing%6)+6)%6;
+        return (1-normalized)*60f+(rotated?180f:0f);
+    }
+
+    public static int TurnFacing(int facing,bool right)
+    {
+        return ((facing+(right?-1:1))%6+6)%6;
+    }
+
     public static float FitWidth(float viewportWidth,float boardWidth)
     {
         return Mathf.Max(.12f,(viewportWidth-24f)/boardWidth);

@@ -71,6 +71,24 @@ public static class ProjectChecks
         Check(restoredPoint==boardPoint && saxonPoint.x==board.data.width-boardPoint.x &&
             saxonPoint.y==BoardViewMath.BattlefieldHeight-boardPoint.y,
             "Saxon battlefield orientation is not a 180 degree rotation");
+        string facingHex="1112";
+        for(int facing=0;facing<6;facing++)
+        {
+            var origin=new Vector2(board.Hex(facingHex).x,board.Hex(facingHex).y);
+            var front=board.Adjacent(facingHex).Where(hex=>
+                board.Direction(facingHex,hex)==facing ||
+                board.Direction(facingHex,hex)==(facing+1)%6)
+                .Select(hex=>new Vector2(board.Hex(hex).x,board.Hex(hex).y)-origin).ToArray();
+            float rotation=BoardViewMath.FacingRotationDegrees(facing,false)*Mathf.Deg2Rad;
+            var arrow=new Vector2(Mathf.Sin(rotation),-Mathf.Cos(rotation));
+            Check(front.Length==2 && Vector2.Dot(arrow.normalized,(front[0]+front[1]).normalized)>.99f,
+                "Counter art facing disagrees with frontal hexes for direction "+facing);
+            Check(Mathf.DeltaAngle(BoardViewMath.FacingRotationDegrees(facing,true),
+                    BoardViewMath.FacingRotationDegrees(facing,false)+180f)==0,
+                "Rotated counter facing disagrees with the Saxon view");
+        }
+        Check(BoardViewMath.TurnFacing(1,true)==0 && BoardViewMath.TurnFacing(1,false)==2,
+            "Q/E facing controls do not turn right and left as labeled");
         foreach(Strategy strategy in Enum.GetValues(typeof(Strategy)))
             for(int dice=2;dice<=12;dice++)
             {
