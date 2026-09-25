@@ -21,7 +21,7 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly Dictionary<string,float> stackSpread=new Dictionary<string,float>();
     private readonly List<string> selected=new List<string>();
     private readonly List<string> selectedTargets=new List<string>();
-    private readonly HashSet<string> chargeHighlightIds=new HashSet<string>();
+    private readonly HashSet<string> requiredMovementHighlightIds=new HashSet<string>();
     private readonly Stack<MovementUndoEntry> movementUndo=new Stack<MovementUndoEntry>();
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
@@ -32,7 +32,7 @@ public sealed class HastingsGame : MonoBehaviour
     private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
         orderReviewMode, showStrategyTrack, fullMapMode;
     private int orderReviewTab;
-    private int chargeHighlightSignature=int.MinValue;
+    private int requiredMovementHighlightSignature=int.MinValue;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main",
         highTrajectoryTargetId="";
     private InterfaceTheme interfaceTheme;
@@ -886,7 +886,7 @@ public sealed class HastingsGame : MonoBehaviour
                     if(PlayerMovePhase() && u.side==PlayerSide() && u.moved)
                         DrawUnitMovedMarker(rect);
                 }
-                DrawChargeRequirementHighlights();
+                DrawRequiredMovementHighlights();
                 DrawFireDesignationHighlights();
                 DrawMeleeDesignationHighlights();
             }
@@ -987,10 +987,10 @@ public sealed class HastingsGame : MonoBehaviour
         movedMarker.fontSize=Mathf.Clamp(Mathf.RoundToInt(size*.62f),11,18);
         GUI.Label(marker,"M",movedMarker);
     }
-    private void DrawChargeRequirementHighlights()
+    private void DrawRequiredMovementHighlights()
     {
-        if(!PlayerMovePhase() || PlayerSide()!=Side.Norman)return;
-        foreach(var unit in CachedChargeHighlightUnits())
+        if(!PlayerMovePhase())return;
+        foreach(var unit in CachedRequiredMovementHighlightUnits())
         {
             var rect=CounterRect(unit,SpreadFor(unit.hex));
             DrawRectOutline(new Rect(rect.x-5,rect.y-5,rect.width+10,rect.height+10),4f,
@@ -1001,7 +1001,7 @@ public sealed class HastingsGame : MonoBehaviour
             GUI.Label(badge,"MOVE",missileMapResult);
         }
     }
-    private IEnumerable<UnitState> CachedChargeHighlightUnits()
+    private IEnumerable<UnitState> CachedRequiredMovementHighlightUnits()
     {
         unchecked
         {
@@ -1020,15 +1020,15 @@ public sealed class HastingsGame : MonoBehaviour
                 signature=signature*31+(unit.moved?1:0);
                 signature=signature*31+unit.entrySpent;
             }
-            if(signature!=chargeHighlightSignature)
+            if(signature!=requiredMovementHighlightSignature)
             {
-                chargeHighlightSignature=signature;
-                chargeHighlightIds.Clear();
-                foreach(var unit in game.RequiredChargeMoves(PlayerSide()))
-                    chargeHighlightIds.Add(unit.id);
+                requiredMovementHighlightSignature=signature;
+                requiredMovementHighlightIds.Clear();
+                foreach(var unit in game.RequiredMovementUnits(PlayerSide()))
+                    requiredMovementHighlightIds.Add(unit.id);
             }
         }
-        return game.state.units.Where(unit=>chargeHighlightIds.Contains(unit.id) &&
+        return game.state.units.Where(unit=>requiredMovementHighlightIds.Contains(unit.id) &&
             unit.status!=Status.Eliminated && board.Has(unit.hex));
     }
     private void DrawFireDesignationHighlights()
@@ -1937,11 +1937,11 @@ public sealed class HastingsGame : MonoBehaviour
                 (PlayerSide()==Side.Norman?"Norman contingent.":"Saxon wing.");
             case Phase.NormanMove:
             {
-                int requiredCharges=PlayerSide()==Side.Norman?
-                    game.RequiredChargeMoves(Side.Norman).Count:0;
-                return requiredCharges>0?
-                    requiredCharges+" Charge-order knight"+(requiredCharges==1?" must":"s must")+
-                    " move toward the enemy. Red outlines mark the required units.":
+                int required=PlayerSide()==Side.Norman?
+                    game.RequiredMovementUnits(Side.Norman).Count:0;
+                return required>0?
+                    required+" unit"+(required==1?" must":"s must")+
+                    " move toward the enemy under its battle order. Red outlines mark the required units.":
                     "Select a Norman unit and click a highlighted destination.";
             }
             case Phase.NormanFire:return PlayerSide()==Side.Saxon?
@@ -1960,7 +1960,15 @@ public sealed class HastingsGame : MonoBehaviour
             case Phase.SaxonReaction:return "Select a Saxon unit and click a highlighted reaction destination.";
             case Phase.SaxonDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
             case Phase.SaxonFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
-            case Phase.SaxonMove:return "Select a Saxon unit and click a highlighted destination.";
+            case Phase.SaxonMove:
+            {
+                int required=PlayerSide()==Side.Saxon?
+                    game.RequiredMovementUnits(Side.Saxon).Count:0;
+                return required>0?
+                    required+" unit"+(required==1?" must":"s must")+
+                    " move toward the enemy under its battle order. Red outlines mark the required units.":
+                    "Select a Saxon unit and click a highlighted destination.";
+            }
             case Phase.SaxonMelee:
             {
                 int required=PlayerSide()==Side.Saxon?
@@ -2002,13 +2010,13 @@ public sealed class HastingsGame : MonoBehaviour
     private void Advance()
     {
         if(game==null)return;
-        if(PlayerMovePhase() && PlayerSide()==Side.Norman)
+        if(PlayerMovePhase())
         {
-            int required=game.RequiredChargeMoves(Side.Norman).Count;
+            int required=game.RequiredMovementUnits(PlayerSide()).Count;
             if(required>0)
             {
-                notice=required+" Charge-order knight"+(required==1?" must":"s must")+
-                    " still move toward the enemy before this segment can end.";
+                notice=required+" unit"+(required==1?" must":"s must")+
+                    " still move toward the enemy under its battle order before this segment can end.";
                 return;
             }
         }

@@ -297,6 +297,39 @@ public static class ProjectChecks
         chargeUnit.moved=true;
         Check(!chargeEngine.RequiredChargeMoves(Side.Norman).Any(unit=>unit.id==chargeUnit.id),
             "Moved Charge-order knight remained in the required movement list");
+        var pursueState=Setup.New(board,97531);pursueState.phase=Phase.SaxonMove;
+        foreach(var unit in pursueState.units)unit.status=Status.Eliminated;
+        var pursueUnit=pursueState.units.First(unit=>unit.type=="F1");
+        var pursueTarget=pursueState.units.First(unit=>unit.type=="NF");
+        pursueUnit.status=Status.Ready;pursueUnit.hex="1112";
+        pursueTarget.status=Status.Ready;
+        pursueTarget.hex=board.data.hexes.Select(hex=>hex.id)
+            .First(hex=>board.Distance(pursueUnit.hex,hex)==4);
+        pursueState.groups.First(group=>group.id==pursueUnit.group).footOrder=Order.AttackPursue;
+        var pursueEngine=new GameEngine(board,pursueState);
+        int pursueStartDistance=pursueEngine.NearestEnemyDistance(Side.Saxon,pursueUnit.hex);
+        var pursueMoves=pursueEngine.LegalMoves(pursueUnit).Values.ToList();
+        Check(pursueMoves.Count>0 && pursueMoves.All(move=>
+                pursueEngine.NearestEnemyDistance(Side.Saxon,move.destination)<pursueStartDistance) &&
+              pursueMoves.Select(move=>pursueEngine.NearestEnemyDistance(
+                    Side.Saxon,move.destination)).Distinct().Count()==1,
+            "Attack & Pursue movement did not require the closest reachable destinations");
+        Check(pursueEngine.RequiredAttackPursueMoves(Side.Saxon)
+                .Any(unit=>unit.id==pursueUnit.id),
+            "Unmoved Attack & Pursue unit was not reported as required movement");
+        pursueTarget.hex="1112";
+        pursueUnit.hex=board.Adjacent(pursueTarget.hex).First();
+        pursueTarget.facing=board.Direction(pursueTarget.hex,pursueUnit.hex);
+        string adjacentDestination=board.Adjacent(pursueTarget.hex).First(hex=>
+            hex!=pursueUnit.hex && board.Direction(pursueTarget.hex,hex)==
+                (pursueTarget.facing+1)%6);
+        var adjacentPursueMoves=pursueEngine.LegalMoves(pursueUnit);
+        Check(adjacentPursueMoves.ContainsKey(adjacentDestination) &&
+              adjacentPursueMoves.Values.All(move=>
+                pursueEngine.NearestEnemyDistance(Side.Saxon,move.destination)==1) &&
+              !pursueEngine.RequiredAttackPursueMoves(Side.Saxon)
+                .Any(unit=>unit.id==pursueUnit.id),
+            "Attack & Pursue did not permit optional movement between adjacent enemy hexes");
         var fireState=Setup.New(board,37);fireState.phase=Phase.NormanFire;
         var fireEngine=new GameEngine(board,fireState);
         var bowman=fireState.units.First(u=>u.type=="NB");

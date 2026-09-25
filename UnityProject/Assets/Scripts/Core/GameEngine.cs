@@ -305,7 +305,8 @@ namespace Hastings
                     bool currentZoc=enemyZoc.Contains(current.destination);
                     if(currentZoc&&current.destination!=unit.hex)continue;
                     bool zoc=enemyZoc.Contains(to);
-                    if(currentZoc&&zoc)continue;
+                    if(currentZoc&&zoc &&
+                       !(initial==Order.AttackPursue && current.destination==unit.hex))continue;
                     if(zoc && (!type.leader && type.missile=="B"))continue;
                     if(zoc && friendlyOccupied.Contains(to))continue;
                     var crossing=board.Edge(current.destination,to);
@@ -323,9 +324,6 @@ namespace Hastings
                         if((initial==Order.ShieldWall||initial==Order.Hold) && after<=before)continue;
                         if(initial==Order.FireInPlace && after==before)continue;
                     }
-                    int startingEnemyDistance=enemyDistance(unit.hex);
-                    int destinationEnemyDistance=enemyDistance(to);
-                    if(initial==Order.AttackPursue && destinationEnemyDistance>startingEnemyDistance)continue;
                     if(best.ContainsKey(to) && best[to]<=cost)continue;
                     best[to]=cost;
                     var path=new List<string>(current.path){to};
@@ -341,6 +339,15 @@ namespace Hastings
                 int closest=result.Values.Min(option=>enemyDistance(option.destination));
                 if(closest>=starting)result.Clear();
                 else foreach(var destination in result.Where(pair=>
+                        enemyDistance(pair.Value.destination)>closest)
+                        .Select(pair=>pair.Key).ToList())result.Remove(destination);
+            }
+            if(initial==Order.AttackPursue && result.Count>0)
+            {
+                int starting=enemyDistance(unit.hex);
+                int closest=starting==1?1:
+                    result.Values.Min(option=>enemyDistance(option.destination));
+                foreach(var destination in result.Where(pair=>
                         enemyDistance(pair.Value.destination)>closest)
                         .Select(pair=>pair.Key).ToList())result.Remove(destination);
             }

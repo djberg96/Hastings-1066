@@ -19,13 +19,14 @@ namespace Hastings
                     if(OptionsPending())return;
                     state.phase=Phase.NormanMove;Log("Norman movement segment");break;
                 case Phase.NormanMove:
-                    ResolveUnmovedCharges();
+                    ResolveUnmovedRequiredMoves(Side.Norman);
                     AiReaction(Side.Saxon);ResetFire();AiFire(Side.Saxon);
                     foreach(var u in Living(Side.Saxon))u.reacted=false;
                     state.phase=Phase.NormanMelee;Log("Norman melee segment");break;
                 case Phase.NormanMelee:
                     ResolveRemainingMandatory(Side.Norman);
                     Rally(Side.Saxon);ResetFire();AiFire(Side.Saxon);AiMove(Side.Saxon);
+                    ResolveUnmovedRequiredMoves(Side.Saxon);
                     state.phase=Phase.NormanReaction;Log("Norman reaction segment");break;
                 case Phase.NormanReaction:
                     ResetFire();state.phase=Phase.NormanDefenseFire;
@@ -42,7 +43,7 @@ namespace Hastings
                     if(OptionsPending())return;
                     AiFire(Side.Norman);
                     state.phase=Phase.NormanMove;Log("Norman movement segment");
-                    AiMove(Side.Norman);ResolveUnmovedCharges();
+                    AiMove(Side.Norman);ResolveUnmovedRequiredMoves(Side.Norman);
                     state.phase=Phase.SaxonReaction;Log("Saxon reaction segment");break;
                 case Phase.SaxonReaction:
                     ResetFire();state.phase=Phase.SaxonDefenseFire;
@@ -55,6 +56,7 @@ namespace Hastings
                     state.phase=Phase.SaxonMove;EnterReinforcements();
                     Log("Saxon movement segment");break;
                 case Phase.SaxonMove:
+                    ResolveUnmovedRequiredMoves(Side.Saxon);
                     AiReaction(Side.Norman);ResetFire();
                     state.phase=Phase.NormanDefenseFire;AiFire(Side.Norman);
                     foreach(var u in Living(Side.Norman))u.reacted=false;
@@ -63,9 +65,9 @@ namespace Hastings
                     ResolveRemainingMandatory(Side.Saxon);EndTurn();break;
             }
         }
-        private void ResolveUnmovedCharges()
+        private void ResolveUnmovedRequiredMoves(Side side)
         {
-            foreach(var unit in RequiredChargeMoves(Side.Norman))
+            foreach(var unit in RequiredChargeMoves(side).Concat(RequiredAttackPursueMoves(side)))
             {
                 var options=LegalMoves(unit).Values.ToList();
                 if(options.Count==0)continue;
@@ -79,6 +81,17 @@ namespace Hastings
             return Living(side).Where(unit=>UnitTypes.Get(unit).knight &&
                 unit.status==Status.Ready && !unit.moved && OrderFor(unit)==Order.Charge &&
                 LegalMoves(unit).Count>0).ToList();
+        }
+        public List<UnitState> RequiredAttackPursueMoves(Side side)
+        {
+            return Living(side).Where(unit=>!UnitTypes.Get(unit).leader &&
+                unit.status==Status.Ready && !unit.moved &&
+                OrderFor(unit)==Order.AttackPursue &&
+                NearestEnemyDistance(side,unit.hex)>1 && LegalMoves(unit).Count>0).ToList();
+        }
+        public List<UnitState> RequiredMovementUnits(Side side)
+        {
+            return RequiredChargeMoves(side).Concat(RequiredAttackPursueMoves(side)).ToList();
         }
         private void ResetFire()
         {
