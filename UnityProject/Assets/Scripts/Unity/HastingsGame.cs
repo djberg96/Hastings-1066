@@ -2341,7 +2341,7 @@ public sealed class HastingsGame : MonoBehaviour
         {showOrderResults=false;GUI.EndGroup();return;}
         GUI.enabled=true;
         GUI.Label(new Rect(30*u,76*u,width-60*u,48*u),
-            "Each Norman foot and knight section rolls 2d6 separately. Their strategy effects are combined for the nationality. Saxon wings each use one roll.",
+            "Each Norman nationality rolls 2d6 once and reads that roll for both foot and knights. Their strategy effects are combined. Saxon wings each use one roll.",
             orderSubtitle);
 
         var contentRect=new Rect(27*u,128*u,width-54*u,height-210*u);

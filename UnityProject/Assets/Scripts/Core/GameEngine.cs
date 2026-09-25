@@ -77,8 +77,10 @@ namespace Hastings
                 bool footOptional=false, knightOptional=false;
                 bool footContinued=group.footDuration>1;
                 bool knightContinued=side==Side.Norman && group.knightDuration>1;
-                int footRoll=footContinued?0:Die()+Die();
-                int knightRoll=side==Side.Norman&&!knightContinued?Die()+Die():0;
+                bool needsRoll=!footContinued || (side==Side.Norman && !knightContinued);
+                int orderRoll=needsRoll?Die()+Die():0;
+                int footRoll=footContinued?0:orderRoll;
+                int knightRoll=side==Side.Norman&&!knightContinued?orderRoll:0;
                 if(footContinued){group.footDuration--;footEffect=group.footPendingEffect;}
                 else
                 {
@@ -106,7 +108,7 @@ namespace Hastings
                     group.knightOrder=ChooseOptionalOrder(side,true,group.strategy);
                 group.effect+=footEffect+knightEffect;
                 state.orderResults.Add(new OrderRollResult {
-                    group=group.id,side=side,strategy=group.strategy,roll=footRoll,
+                    group=group.id,side=side,strategy=group.strategy,roll=orderRoll,
                     footRoll=footRoll,knightRoll=knightRoll,
                     footOrder=group.footOrder,knightOrder=group.knightOrder,
                     footDuration=group.footDuration,knightDuration=group.knightDuration,
@@ -116,10 +118,11 @@ namespace Hastings
                     knightContinued=knightContinued
                 });
                 Log(group.id+" chooses "+group.strategy+", "+
+                    (orderRoll>0?"rolls "+orderRoll+"; ":"")+
                     (footContinued?"foot continues "+group.footOrder:
-                        "foot rolls "+footRoll+": "+group.footOrder)+
+                        "foot: "+group.footOrder)+
                     (side==Side.Norman?(knightContinued?"; knights continue "+group.knightOrder:
-                        "; knights roll "+knightRoll+": "+group.knightOrder):"")+
+                        "; knights: "+group.knightOrder):"")+
                     "; effect "+group.effect);
             }
             Rally(Side.Norman);

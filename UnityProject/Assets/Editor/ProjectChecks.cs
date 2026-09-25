@@ -183,13 +183,14 @@ public static class ProjectChecks
                 out knightDuration,out knightEffect,out knightOptional);
             Check(result.footRoll>=2 && result.footRoll<=12 &&
                 result.knightRoll>=2 && result.knightRoll<=12 &&
+                result.footRoll==result.knightRoll && result.roll==result.footRoll &&
                 result.footOrder==expectedFoot && result.knightOrder==expectedKnights &&
                 result.effectChange==footEffect+knightEffect,
-                result.group+" did not resolve its separate foot and knight rolls");
+                result.group+" did not read one nationality roll for foot and knights");
         }
         Check(state.orderResults.Where(r=>r.side==Side.Norman)
-            .Any(r=>r.footRoll!=r.knightRoll),
-            "Norman foot and knight sections reused the same dice roll");
+            .All(r=>r.footRoll==r.knightRoll),
+            "Norman foot and knight sections did not reuse the nationality roll");
         var optionalState=Setup.New(board,54321);optionalState.phase=Phase.NormanFire;
         var optionalGroup=optionalState.groups.First(g=>g.id=="Breton");
         optionalGroup.footOptional=true;
