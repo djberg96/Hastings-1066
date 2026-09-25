@@ -255,7 +255,7 @@ namespace Hastings
             var type=UnitTypes.Get(attacker);var a=board.Hex(attacker.hex);var d=board.Hex(defender.hex);
             bool wall=OrderFor(attacker)==Order.ShieldWall;
             int value=wall?type.wallAttack:type.attack;
-            value+=FlankBonus(attacker,defender,false)+LeaderBonus(attacker.hex,attacker.side);
+            value+=FlankBonus(attacker,defender,false)+LeaderBonus(attacker);
             var edge=board.Edge(attacker.hex,defender.hex);
             if(edge!=null && edge.ridge)
             {
@@ -278,7 +278,7 @@ namespace Hastings
             if(melee)
             {
                 if(h.woods)result+=2;
-                result+=LeaderBonus(unit.hex,unit.side);
+                result+=LeaderBonus(unit);
             }
             return Math.Max(1,result);
         }
@@ -289,9 +289,13 @@ namespace Hastings
             if(dir==(defender.facing+3)%6 || dir==(defender.facing+4)%6)return fire?1:2;
             return 1;
         }
-        private int LeaderBonus(string hex,Side side)
+        private int LeaderBonus(UnitState unit)
         {
-            var leader=Living(side).FirstOrDefault(l=>l.hex==hex && UnitTypes.Get(l).leader && l.leaderCondition==0);
+            var unitType=UnitTypes.Get(unit);
+            var leader=Living(unit.side).FirstOrDefault(candidate=>candidate.hex==unit.hex &&
+                UnitTypes.Get(candidate).leader && candidate.leaderCondition==0 &&
+                (unit.side==Side.Saxon || candidate.type=="William" ||
+                    UnitTypes.Get(candidate).nation==unitType.nation));
             return leader==null?0:(leader.type=="William"||leader.type=="Harold"?2:1);
         }
         private void ApplyResult(UnitState unit,string result,bool melee)

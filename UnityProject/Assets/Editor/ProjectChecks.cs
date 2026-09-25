@@ -450,6 +450,36 @@ public static class ProjectChecks
                 new List<UnitState>{chargedDownhillDefender}) &&
               chargedDownhillEngine.lastMeleeResult.attack==ordinaryDownhillAttack+1,
             "A downhill charge received both the ordinary downhill and charge bonuses");
+        var leaderBonusState=Setup.New(board,383);leaderBonusState.phase=Phase.NormanMelee;
+        leaderBonusState.playerSide=Side.Norman;
+        foreach(var unit in leaderBonusState.units)unit.hex="";
+        var bretonFoot=leaderBonusState.units.First(unit=>unit.type=="BF");
+        var leaderBonusDefender=leaderBonusState.units.First(unit=>unit.type=="HC");
+        bretonFoot.hex="1112";
+        leaderBonusDefender.hex=board.Adjacent(bretonFoot.hex).First();
+        bretonFoot.facing=board.Direction(bretonFoot.hex,leaderBonusDefender.hex);
+        leaderBonusDefender.facing=board.Direction(leaderBonusDefender.hex,bretonFoot.hex);
+        leaderBonusState.groups.First(group=>group.id==bretonFoot.group).footOrder=Order.Advance;
+        var wrongLeaderState=JsonUtility.FromJson<GameState>(JsonUtility.ToJson(leaderBonusState));
+        wrongLeaderState.units.First(unit=>unit.type=="Odo").hex=bretonFoot.hex;
+        var rightLeaderState=JsonUtility.FromJson<GameState>(JsonUtility.ToJson(leaderBonusState));
+        rightLeaderState.units.First(unit=>unit.type=="Alan").hex=bretonFoot.hex;
+        var noLeaderEngine=new GameEngine(board,leaderBonusState);
+        Check(noLeaderEngine.Melee(new List<UnitState>{bretonFoot},
+                new List<UnitState>{leaderBonusDefender}),"Leader bonus baseline melee was rejected");
+        int noLeaderAttack=noLeaderEngine.lastMeleeResult.attack;
+        var wrongLeaderEngine=new GameEngine(board,wrongLeaderState);
+        Check(wrongLeaderEngine.Melee(
+                new List<UnitState>{wrongLeaderState.units.First(unit=>unit.id==bretonFoot.id)},
+                new List<UnitState>{wrongLeaderState.units.First(unit=>unit.id==leaderBonusDefender.id)}) &&
+              wrongLeaderEngine.lastMeleeResult.attack==noLeaderAttack,
+            "A Norman subordinate aided a unit of another nationality");
+        var rightLeaderEngine=new GameEngine(board,rightLeaderState);
+        Check(rightLeaderEngine.Melee(
+                new List<UnitState>{rightLeaderState.units.First(unit=>unit.id==bretonFoot.id)},
+                new List<UnitState>{rightLeaderState.units.First(unit=>unit.id==leaderBonusDefender.id)}) &&
+              rightLeaderEngine.lastMeleeResult.attack==noLeaderAttack+1,
+            "A Norman subordinate did not aid a unit of his own nationality");
         CheckRetreatAndDisplacement();
         var obligationState=Setup.New(board,381);obligationState.phase=Phase.NormanMelee;
         obligationState.playerSide=Side.Norman;
