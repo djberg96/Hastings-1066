@@ -144,6 +144,7 @@ namespace Hastings
         }
         public bool Melee(List<UnitState> attackers,List<UnitState> defenders)
         {
+            automaticMovements.Clear();
             Side active=state.phase==Phase.NormanMelee?Side.Norman:
                 state.phase==Phase.SaxonMelee?Side.Saxon:(Side)(-1);
             var required=RequiredMeleeTargets(attackers);
@@ -239,6 +240,7 @@ namespace Hastings
         }
         private void Pursue(UnitState pursuer,UnitState routed)
         {
+            var movement=BeginAutomaticMovement(pursuer,"pursuit");
             for(int step=0;step<board.Distance(pursuer.hex,routed.hex)+2;step++)
             {
                 if(board.Distance(pursuer.hex,routed.hex)<=1 || InEnemyZoc(pursuer.side,pursuer.hex))break;
@@ -246,8 +248,9 @@ namespace Hastings
                     .Where(h=>UnitAt(h,pursuer.side)==null && UnitAt(h,Opposite(pursuer.side))==null)
                     .OrderBy(h=>board.Distance(h,routed.hex)).ThenBy(h=>h).FirstOrDefault();
                 if(next==null || board.Distance(next,routed.hex)>=board.Distance(pursuer.hex,routed.hex))break;
-                pursuer.hex=next;TouchRoad(pursuer);
+                pursuer.hex=next;movement.path.Add(next);TouchRoad(pursuer);
             }
+            FinishAutomaticMovement(pursuer,movement);
             Log(pursuer.id+" pursues "+routed.id+" to "+pursuer.hex);
         }
         private int Attack(UnitState attacker,UnitState defender)
@@ -335,11 +338,13 @@ namespace Hastings
         private void Rout(UnitState unit)
         {
             string origin=unit.hex;
-            unit.status=Status.Routed;Log(unit.id+" routed");Retreat(unit,3);
+            var movement=BeginAutomaticMovement(unit,"rout");
+            unit.status=Status.Routed;Log(unit.id+" routed");Retreat(unit,3,movement);
+            FinishAutomaticMovement(unit,movement);
             if(unit.status==Status.Routed)
                 Log(unit.id+" retreats "+origin+" → "+unit.hex+" and faces its rear line");
         }
-        public void Retreat(UnitState unit,int steps)
+        public void Retreat(UnitState unit,int steps,AutomaticMovementResult movement=null)
         {
             string lastOpenHex=unit.hex;
             for(int i=0;i<steps && unit.status!=Status.Eliminated;i++)
@@ -366,12 +371,17 @@ namespace Hastings
                     {BlockedRetreat(unit,lastOpenHex);break;}
                     foreach(var move in displacement)
                     {
+                        var displaced=BeginAutomaticMovement(move.Key,"displacement");
                         move.Key.hex=move.Value;
                         if(move.Key.status!=Status.Eliminated)move.Key.status=Status.Disrupted;
+                        displaced.path.Add(move.Value);
+                        FinishAutomaticMovement(move.Key,displaced);
                         TouchRoad(move.Key);Log(move.Key.id+" displaced to "+move.Value+" and disrupted");
                     }
                 }
-                unit.hex=next;TouchRoad(unit);
+                unit.hex=next;
+                if(movement!=null)movement.path.Add(next);
+                TouchRoad(unit);
                 FaceRear(unit);
                 if(occupied!=null && i<steps-1)
                 {
@@ -415,6 +425,24 @@ namespace Hastings
                 .ThenBy(hex=>hex).FirstOrDefault();
             if(rear!=null)unit.facing=board.Direction(unit.hex,rear);
         }
+        private AutomaticMovementResult BeginAutomaticMovement(UnitState unit,string kind)
+        {
+            var movement=new AutomaticMovementResult {
+                unitId=unit.id,kind=kind,statusBefore=unit.status,facingBefore=unit.facing
+            };
+            movement.path.Add(unit.hex);
+            return movement;
+        }
+        private void FinishAutomaticMovement(UnitState unit,AutomaticMovementResult movement)
+        {
+            if(movement.path.Count==0 || movement.path[movement.path.Count-1]!=unit.hex)
+                movement.path.Add(unit.hex);
+            movement.statusAfter=unit.status;
+            movement.facingAfter=unit.facing;
+            if(movement.path.Count>1 || movement.statusBefore!=movement.statusAfter ||
+               movement.facingBefore!=movement.facingAfter)
+                automaticMovements.Add(movement);
+        }
         private void CheckMorale(UnitState unit,bool routIsDisrupt)
         {
             if(unit.status==Status.Eliminated)return;
@@ -441,7 +469,9 @@ namespace Hastings
                     else
                     {
                         string origin=unit.hex;
-                        Retreat(unit,2);
+                        var movement=BeginAutomaticMovement(unit,"failed rally");
+                        Retreat(unit,2,movement);
+                        FinishAutomaticMovement(unit,movement);
                         if(unit.status==Status.Routed)
                             Log(unit.id+" fails to rally; retreats "+origin+" → "+unit.hex+
                                 " and faces its rear line");

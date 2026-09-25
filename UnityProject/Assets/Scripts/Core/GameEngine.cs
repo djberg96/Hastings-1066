@@ -12,6 +12,14 @@ namespace Hastings
         public bool charge;
     }
 
+    public sealed class AutomaticMovementResult
+    {
+        public string unitId,kind;
+        public List<string> path=new List<string>();
+        public Status statusBefore,statusAfter;
+        public int facingBefore,facingAfter;
+    }
+
     public sealed partial class GameEngine
     {
         public readonly Board board;
@@ -19,6 +27,8 @@ namespace Hastings
         public MissileFireResult lastFireResult;
         public MeleeCombatResult lastMeleeResult;
         public MovementResult lastMovementResult;
+        public readonly List<AutomaticMovementResult> automaticMovements=
+            new List<AutomaticMovementResult>();
         public GameEngine(Board board, GameState state) { this.board=board; this.state=state; }
         public IEnumerable<UnitState> Living(Side side) { return state.units.Where(u=>u.side==side && u.status!=Status.Eliminated && board.Has(u.hex)); }
         public UnitState UnitAt(string hex, Side? side=null, bool leader=false)
@@ -71,6 +81,7 @@ namespace Hastings
         public void ResolveOrders()
         {
             if(state.phase!=Phase.Orders)return;
+            automaticMovements.Clear();
             if(state.playerSide==Side.Saxon)
             {
                 if(AvailableSaxonWings().Count==0)

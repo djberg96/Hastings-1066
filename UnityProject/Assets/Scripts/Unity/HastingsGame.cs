@@ -22,6 +22,7 @@ public sealed class HastingsGame : MonoBehaviour
     private sealed class UnitTransitionNotice
     {
         public string unitId,originHex,finalHex,heading,explanation;
+        public string[] path;
         public Status statusBefore,statusAfter;
         public int facingBefore,facingAfter;
     }
@@ -44,7 +45,7 @@ public sealed class HastingsGame : MonoBehaviour
     private float panelScale=1f, chartScale=1f, orderScale=1f;
     private float missileEffectStarted, missileEffectUntil,meleeEffectStarted,meleeEffectUntil,
         movementEffectStarted,movementTravelUntil,movementEffectUntil,
-        unitTransitionEffectUntil;
+        unitTransitionEffectStarted,unitTransitionTravelUntil,unitTransitionEffectUntil;
     private MissileFireResult missileResult;
     private MeleeCombatResult meleeResult;
     private MovementResult movementResult;
@@ -77,6 +78,7 @@ public sealed class HastingsGame : MonoBehaviour
     private string hoveredHex="";
     private const float StackSpreadSeconds=.22f;
     private const float MovementStepSeconds=.18f;
+    private const float AutomaticMovementStepSeconds=.24f;
     private const string DisplayPrefsVersion="display-prefs-version";
 
     private void Awake()
@@ -907,6 +909,8 @@ public sealed class HastingsGame : MonoBehaviour
                 {
                     if(MovementAnimationActive() && movementResult!=null &&
                        u.id==movementResult.unitId)continue;
+                    if(UnitTransitionAnimationActive() &&
+                       unitTransitionNotices.Any(transition=>transition.unitId==u.id))continue;
                     var type=UnitTypes.Get(u);
                     var rect=CounterRect(u,SpreadFor(u.hex));
                     var texture=CounterTexture(u);
@@ -921,6 +925,7 @@ public sealed class HastingsGame : MonoBehaviour
                     if(PlayerMovePhase() && u.side==PlayerSide() && u.moved)
                         DrawUnitMovedMarker(rect);
                 }
+                DrawUnitTransitionCounters();
                 DrawRequiredMovementHighlights();
                 DrawFireDesignationHighlights();
                 DrawMeleeDesignationHighlights();
@@ -1175,7 +1180,7 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void DrawUnitTransitionPaths()
     {
-        if(unitTransitionNotices.Count==0 || Time.unscaledTime>unitTransitionEffectUntil)return;
+        if(!UnitTransitionAnimationActive())return;
         float remaining=unitTransitionEffectUntil-Time.unscaledTime;
         float fade=Mathf.Clamp01(remaining);
         foreach(var transition in unitTransitionNotices.Where(transition=>
@@ -1189,7 +1194,8 @@ public sealed class HastingsGame : MonoBehaviour
             var destination=MapPoint(finalHex.x,finalHex.y);
             Color color=transition.heading=="PURSUIT"?
                 new Color(.96f,.66f,.17f,.82f*fade):new Color(.72f,.10f,.08f,.88f*fade);
-            DrawLine(origin,destination,Mathf.Clamp(7f*scale,4f,11f),color);
+            DrawMovementRoute((transition.path??new[]{transition.originHex,transition.finalHex})
+                .Where(board.Has).ToArray(),color);
             float dot=Mathf.Clamp(18f*scale,11f,25f);
             Fill(new Rect(origin.x-dot/2,origin.y-dot/2,dot,dot),color);
             Fill(new Rect(destination.x-dot/2,destination.y-dot/2,dot,dot),color);
@@ -1207,6 +1213,50 @@ public sealed class HastingsGame : MonoBehaviour
             var finalRect=CounterLayout.RectFor(destination,scale,UnitTypes.Get(unit).leader,0f);
             DrawRectOutline(new Rect(finalRect.x-5,finalRect.y-5,
                 finalRect.width+10,finalRect.height+10),4f,color);
+        }
+    }
+    private bool UnitTransitionAnimationActive()
+    {
+        return unitTransitionNotices.Count>0 && Time.unscaledTime<=unitTransitionEffectUntil;
+    }
+    private void DrawUnitTransitionCounters()
+    {
+        if(!UnitTransitionAnimationActive())return;
+        float elapsed=Mathf.Max(0,Time.unscaledTime-unitTransitionEffectStarted);
+        foreach(var transition in unitTransitionNotices)
+        {
+            var unit=game.state.units.FirstOrDefault(candidate=>candidate.id==transition.unitId);
+            var path=(transition.path??new string[0]).Where(board.Has).ToArray();
+            if(unit==null || path.Length==0)continue;
+            int segments=Math.Max(0,path.Length-1);
+            Vector2 position;
+            bool arrived=segments==0 || elapsed>=segments*AutomaticMovementStepSeconds;
+            if(segments==0)
+            {
+                var hex=board.Hex(path[0]);
+                position=MapPoint(hex.x,hex.y);
+            }
+            else
+            {
+                float progress=Mathf.Clamp(elapsed/AutomaticMovementStepSeconds,0,segments);
+                int segment=Math.Min(segments-1,Mathf.FloorToInt(progress));
+                float amount=progress-segment;
+                var fromHex=board.Hex(path[segment]);
+                var toHex=board.Hex(path[segment+1]);
+                position=Vector2.Lerp(MapPoint(fromHex.x,fromHex.y),MapPoint(toHex.x,toHex.y),
+                    Mathf.SmoothStep(0,1,amount));
+            }
+            var rect=CounterLayout.RectFor(position,scale,UnitTypes.Get(unit).leader,0f);
+            int facing=arrived?transition.facingAfter:transition.facingBefore;
+            var oldMatrix=GUI.matrix;
+            if(!UnitTypes.Get(unit).leader)GUIUtility.RotateAroundPivot(
+                BoardViewMath.FacingRotationDegrees(facing,SaxonView()),rect.center);
+            var texture=CounterTexture(unit);
+            if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
+            GUI.matrix=oldMatrix;
+            if(arrived && (transition.statusAfter==Status.Routed ||
+               transition.statusAfter==Status.Disrupted))
+                DrawUnitStatusMarker(transition.statusAfter,rect);
         }
     }
     private void DrawMeleeImpact(Rect region)
@@ -1284,7 +1334,7 @@ public sealed class HastingsGame : MonoBehaviour
         movementEffectStarted=Time.unscaledTime;
         movementTravelUntil=movementEffectStarted+
             Mathf.Max(MovementStepSeconds,segments*MovementStepSeconds);
-        movementEffectUntil=movementTravelUntil+(result.interrupted?1.65f:.12f);
+        movementEffectUntil=movementTravelUntil+(result.interrupted?2.8f:.12f);
     }
     private void DrawMovementRoute(IList<string> path,Color color)
     {
@@ -1341,7 +1391,7 @@ public sealed class HastingsGame : MonoBehaviour
             incident=Vector2.Lerp(MapPoint(fromHex.x,fromHex.y),MapPoint(toHex.x,toHex.y),.5f);
         }
         float outcomeElapsed=Time.unscaledTime-movementTravelUntil;
-        float fade=1f-Mathf.Clamp01((outcomeElapsed-1.25f)/.4f);
+        float fade=1f-Mathf.Clamp01((outcomeElapsed-2.25f)/.5f);
         float pulse=.5f+.5f*Mathf.Sin(outcomeElapsed*12f);
         float markerSize=Mathf.Max(70f,(82+18*pulse)*scale);
         DrawRectOutline(new Rect(incident.x-markerSize/2,incident.y-markerSize/2,
@@ -1361,18 +1411,20 @@ public sealed class HastingsGame : MonoBehaviour
             new Color(.61f,.22f,.16f,.98f*fade));
         Fill(new Rect(callout.x,callout.y+headerHeight,callout.width,height-headerHeight),
             new Color(.96f,.91f,.81f,.98f*fade));
-        missileMapResult.fontSize=Mathf.RoundToInt(22*effectScale);
-        missileMapDetail.fontSize=Mathf.RoundToInt(14*effectScale);
         float inset=8f*effectScale;
         string terrain=movementResult.interruptionCause=="marsh"?"MARSH":"RIDGE";
+        string title=terrain+" MORALE CHECK";
+        string detail="DISRUPTED · movement stops "+
+            (movementResult.interruptionCause=="ridge"?"before crossing.":"in the marsh.");
+        float textWidth=callout.width-2*inset;
+        FitSingleLineFont(missileMapResult,title,22*effectScale,16*effectScale,textWidth);
+        FitSingleLineFont(missileMapDetail,detail,14*effectScale,10*effectScale,textWidth);
         GUI.Label(new Rect(callout.x+inset,callout.y+2*effectScale,
                 callout.width-2*inset,headerHeight-4*effectScale),
-            terrain+" MORALE CHECK",missileMapResult);
+            title,missileMapResult);
         GUI.Label(new Rect(callout.x+inset,callout.y+headerHeight,
                 callout.width-2*inset,height-headerHeight),
-            "DISRUPTED · movement stops "+
-            (movementResult.interruptionCause=="ridge"?"before crossing.":"in the marsh."),
-            missileMapDetail);
+            detail,missileMapDetail);
     }
     private void DrawMissilePaths()
     {
@@ -2389,16 +2441,21 @@ public sealed class HastingsGame : MonoBehaviour
         foreach(var unit in game.state.units.Where(unit=>before.ContainsKey(unit.id)))
         {
             var prior=before[unit.id];
+            var automatic=game.automaticMovements.Where(candidate=>candidate.unitId==unit.id)
+                .ToArray();
             bool moved=prior.hex!=unit.hex;
             bool turned=prior.facing!=unit.facing;
             bool newlyRouted=prior.status!=Status.Routed && unit.status==Status.Routed;
             bool routedAgain=prior.status==Status.Routed && unit.status==Status.Routed &&
                 recent.Any(line=>line.Contains(unit.id+" routed"));
-            bool pursuit=recent.Any(line=>line.Contains(unit.id+" pursues "));
-            bool displaced=recent.Any(line=>line.Contains(unit.id+" displaced to "));
+            bool pursuit=automatic.Any(movement=>movement.kind=="pursuit") ||
+                recent.Any(line=>line.Contains(unit.id+" pursues "));
+            bool displaced=automatic.Any(movement=>movement.kind=="displacement") ||
+                recent.Any(line=>line.Contains(unit.id+" displaced to "));
             bool blocked=recent.Any(line=>line.Contains(unit.id+" blocked in retreat"));
-            bool failedRally=prior.status==Status.Routed && moved &&
-                sourcePhase==Phase.Orders && !routedAgain;
+            bool failedRally=automatic.Any(movement=>movement.kind=="failed rally") ||
+                (prior.status==Status.Routed && moved &&
+                    sourcePhase==Phase.Orders && !routedAgain);
             if(!newlyRouted && !routedAgain && !pursuit && !displaced && !blocked &&
                !failedRally)continue;
             string heading,explanation;
@@ -2433,8 +2490,14 @@ public sealed class HastingsGame : MonoBehaviour
                 if(moved)explanation+=" Routed units immediately retreat toward their rear line.";
                 if(turned)explanation+=" They turn to face that rear line.";
             }
+            var path=new List<string>{prior.hex};
+            foreach(var movement in automatic)
+                foreach(var hex in movement.path)
+                    if(path.Count==0 || path[path.Count-1]!=hex)path.Add(hex);
+            if(path[path.Count-1]!=unit.hex)path.Add(unit.hex);
             captured.Add(new UnitTransitionNotice {
                 unitId=unit.id,originHex=prior.hex,finalHex=unit.hex,
+                path=path.ToArray(),
                 statusBefore=prior.status,statusAfter=unit.status,
                 facingBefore=prior.facing,facingAfter=unit.facing,
                 heading=heading,explanation=explanation
@@ -2443,7 +2506,11 @@ public sealed class HastingsGame : MonoBehaviour
         if(captured.Count==0)return;
         unitTransitionNotices.Clear();
         unitTransitionNotices.AddRange(captured);
-        unitTransitionEffectUntil=Time.unscaledTime+7f;
+        int longest=captured.Max(transition=>Math.Max(0,transition.path.Length-1));
+        unitTransitionEffectStarted=Time.unscaledTime;
+        unitTransitionTravelUntil=unitTransitionEffectStarted+
+            Mathf.Max(AutomaticMovementStepSeconds,longest*AutomaticMovementStepSeconds);
+        unitTransitionEffectUntil=unitTransitionTravelUntil+3f;
     }
     private void ShowMeleeResult()
     {

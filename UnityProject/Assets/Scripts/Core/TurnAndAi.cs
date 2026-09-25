@@ -8,6 +8,7 @@ namespace Hastings
     {
         public void Advance()
         {
+            automaticMovements.Clear();
             if(state.playerSide==Side.Saxon)
             {
                 AdvanceSaxonPlayer();
