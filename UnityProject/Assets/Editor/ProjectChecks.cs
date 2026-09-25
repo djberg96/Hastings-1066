@@ -329,11 +329,21 @@ public static class ProjectChecks
         var wingState=Setup.New(board,24681,Side.Saxon);wingState.phase=Phase.Orders;
         var wingEngine=new GameEngine(board,wingState);
         Check(wingEngine.SaxonWingProblem()=="","Initial Saxon wings violated minimum sizes");
-        var wingUnit=wingState.units.First(unit=>unit.side==Side.Saxon &&
-            !UnitTypes.Get(unit).leader);
-        string alternateWing=wingEngine.AvailableSaxonWings().First(wing=>wing!=wingUnit.group);
-        Check(wingEngine.SetSaxonWing(wingUnit,alternateWing) && wingUnit.group==alternateWing,
-            "A Saxon player could not reassign a unit's wing");
+        var wingLeaders=wingEngine.AvailableSaxonLeaders();
+        var legalAssignment=wingEngine.Living(Side.Saxon)
+            .Where(unit=>!UnitTypes.Get(unit).leader)
+            .SelectMany(unit=>wingLeaders.Where(leader=>leader.group!=unit.group)
+                .Select(leader=>new{unit,leader}))
+            .First(pair=>wingEngine.CanAssignSaxonLeader(pair.unit,pair.leader));
+        Check(wingEngine.SetSaxonLeader(legalAssignment.unit,legalAssignment.leader) &&
+              legalAssignment.unit.group==legalAssignment.leader.group,
+            "A Saxon player could not assign a unit to a leader");
+        var illegalAssignment=wingEngine.Living(Side.Saxon)
+            .Where(unit=>!UnitTypes.Get(unit).leader)
+            .SelectMany(unit=>wingLeaders.Select(leader=>new{unit,leader}))
+            .First(pair=>!wingEngine.CanAssignSaxonLeader(pair.unit,pair.leader));
+        Check(!wingEngine.SetSaxonLeader(illegalAssignment.unit,illegalAssignment.leader),
+            "A Saxon unit was assigned beyond a leader's command radius");
         foreach(var unit in wingEngine.Living(Side.Saxon).Where(unit=>!UnitTypes.Get(unit).leader))
             unit.group="Left";
         Check(wingEngine.SaxonWingProblem()!="",
@@ -769,12 +779,23 @@ public static class ProjectChecks
             {
                 if(s.playerSide==Side.Saxon && engine.SaxonWingProblem()!="")
                 {
-                    var wings=engine.AvailableSaxonWings();
+                    var leaders=engine.AvailableSaxonLeaders();
                     var units=engine.Living(Side.Saxon).Where(unit=>!UnitTypes.Get(unit).leader)
-                        .OrderBy(unit=>unit.id).ToList();
-                    for(int i=0;i<units.Count && wings.Count>0;i++)
-                        Check(engine.SetSaxonWing(units[i],wings[i%wings.Count]),
-                            "Could not rebalance Saxon wings in simulation");
+                        .OrderBy(unit=>leaders.Count(leader=>
+                            engine.CanAssignSaxonLeader(unit,leader)))
+                        .ThenBy(unit=>unit.id).ToList();
+                    var assigned=leaders.ToDictionary(leader=>leader.id,leader=>0);
+                    foreach(var unit in units)
+                    {
+                        var leader=leaders.Where(candidate=>
+                                engine.CanAssignSaxonLeader(unit,candidate))
+                            .OrderBy(candidate=>assigned[candidate.id])
+                            .ThenBy(candidate=>board.Distance(unit.hex,candidate.hex))
+                            .FirstOrDefault();
+                        Check(leader!=null && engine.SetSaxonLeader(unit,leader),
+                            "Could not assign "+unit.id+" to a Saxon leader in simulation");
+                        assigned[leader.id]++;
+                    }
                 }
                 engine.ResolveOrders();
             }

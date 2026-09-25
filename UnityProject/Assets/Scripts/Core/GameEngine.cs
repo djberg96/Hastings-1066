@@ -305,17 +305,43 @@ namespace Hastings
                 {donor.group=leader.group;count++;if(count>=minimum)break;}
             }
         }
-        public List<string> AvailableSaxonWings()
+        public List<UnitState> AvailableSaxonLeaders()
         {
             return Living(Side.Saxon).Where(unit=>UnitTypes.Get(unit).leader)
-                .Select(unit=>unit.group).Distinct().OrderBy(group=>group).ToList();
+                .OrderBy(unit=>unit.group=="Left"?0:unit.group=="Center"?1:2).ToList();
+        }
+        public List<string> AvailableSaxonWings()
+        {
+            return AvailableSaxonLeaders().Select(unit=>unit.group).Distinct().ToList();
+        }
+        public UnitState SaxonLeaderForWing(string wing)
+        {
+            return AvailableSaxonLeaders().FirstOrDefault(unit=>unit.group==wing);
+        }
+        public int SaxonCommandRange(UnitState leader)
+        {
+            if(leader==null || leader.side!=Side.Saxon || !UnitTypes.Get(leader).leader)
+                return 0;
+            return Math.Max(0,UnitTypes.Get(leader).command-leader.leaderPenalty);
+        }
+        public bool CanAssignSaxonLeader(UnitState unit,UnitState leader)
+        {
+            return state.phase==Phase.Orders && state.playerSide==Side.Saxon && unit!=null &&
+                unit.side==Side.Saxon && !UnitTypes.Get(unit).leader && leader!=null &&
+                AvailableSaxonLeaders().Any(candidate=>candidate.id==leader.id) &&
+                board.Distance(unit.hex,leader.hex)<=SaxonCommandRange(leader);
+        }
+        public bool SetSaxonLeader(UnitState unit,UnitState leader)
+        {
+            if(!CanAssignSaxonLeader(unit,leader))return false;
+            unit.group=leader.group;
+            Log(unit.id+" assigned to "+leader.type+" ("+leader.group+" wing)");
+            return true;
         }
         public bool SetSaxonWing(UnitState unit,string wing)
         {
-            if(state.phase!=Phase.Orders || state.playerSide!=Side.Saxon || unit==null ||
-               unit.side!=Side.Saxon || UnitTypes.Get(unit).leader ||
-               !AvailableSaxonWings().Contains(wing))return false;
-            unit.group=wing;Log(unit.id+" assigned to the "+wing+" wing");return true;
+            var leader=SaxonLeaderForWing(wing);
+            return SetSaxonLeader(unit,leader);
         }
         public string SaxonWingProblem()
         {
@@ -326,7 +352,9 @@ namespace Hastings
                 return "Assign every Saxon unit to a surviving leader's wing.";
             int minimum=(int)Math.Ceiling(units.Count*(wings.Count<3?1.0/3:1.0/5));
             var undersized=wings.Where(wing=>units.Count(unit=>unit.group==wing)<minimum).ToList();
-            return undersized.Count==0?"":string.Join(", ",undersized.ToArray())+
+            var leaders=undersized.Select(wing=>SaxonLeaderForWing(wing))
+                .Select(leader=>leader==null?"that wing":leader.type).ToArray();
+            return undersized.Count==0?"":string.Join(", ",leaders)+
                 " must command at least "+minimum+" units.";
         }
         public bool CanFace(UnitState unit)

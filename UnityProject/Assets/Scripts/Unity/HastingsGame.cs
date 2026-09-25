@@ -52,11 +52,11 @@ public sealed class HastingsGame : MonoBehaviour
     private MeleeCombatResult meleeResult;
     private MovementResult movementResult;
     private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
-        orderReviewMode, showStrategyTrack, fullMapMode;
+        showQuitPrompt, quitApproved, orderReviewMode, showStrategyTrack, fullMapMode;
     private int orderReviewTab, orderResolutionTab;
     private int requiredMovementHighlightSignature=int.MinValue;
     private string saveSlot="Game 1", notice="", chart="", menuPage="main",
-        highTrajectoryTargetId="";
+        highTrajectoryTargetId="", quitPromptError="";
     private InterfaceTheme interfaceTheme;
     private InterfaceThemeSkin themeSkin;
     private Font periodFont,defaultFont;
@@ -86,6 +86,7 @@ public sealed class HastingsGame : MonoBehaviour
 
     private void Awake()
     {
+        Application.wantsToQuit+=WantsToQuit;
         RestoreWindowedDisplay();
         interfaceTheme=InterfaceThemeCatalog.Load();
         themeSkin=InterfaceThemeCatalog.Get(interfaceTheme);
@@ -102,10 +103,28 @@ public sealed class HastingsGame : MonoBehaviour
         foreach(var terrain in new[]{"clear","ridge","marsh","stream","woods","road"})
             terrainSwatches[terrain]=Resources.Load<Texture2D>("Art/Terrain/"+terrain);
     }
+    private void OnDestroy()
+    {
+        Application.wantsToQuit-=WantsToQuit;
+    }
+    private bool WantsToQuit()
+    {
+        if(quitApproved || game==null || game.state==null || game.state.phase==Phase.GameOver)
+            return true;
+        showQuitPrompt=true;
+        quitPromptError="";
+        return false;
+    }
     private void Update()
     {
         if(Input.GetKeyDown(KeyCode.Escape))
         {
+            if(showQuitPrompt)
+            {
+                showQuitPrompt=false;
+                quitPromptError="";
+                return;
+            }
             if(showOrderResults)
             {
                 if(game==null || !game.OptionsPending())showOrderResults=false;
@@ -118,7 +137,8 @@ public sealed class HastingsGame : MonoBehaviour
             else showMenu=false;
         }
         UpdateStackSpread();
-        if(game==null||showMenu||chart!=""||showOrderResults||!Application.isFocused)return;
+        if(game==null||showMenu||showQuitPrompt||chart!=""||showOrderResults||
+            !Application.isFocused)return;
         var viewDirection=new Vector2(
             (Input.GetKey(KeyCode.D)?1:0)-(Input.GetKey(KeyCode.A)?1:0),
             (Input.GetKey(KeyCode.S)?1:0)-(Input.GetKey(KeyCode.W)?1:0));
@@ -385,13 +405,17 @@ public sealed class HastingsGame : MonoBehaviour
             board.data.width,board.data.height);
         DrawMap(mapRect);
         DrawStrategyEffectsTrack(strategyTrackRect);
-        if(showOrderResults || MovementAnimationActive() || UnitTransitionAnimationActive())
+        if(showOrderResults || MovementAnimationActive() || UnitTransitionAnimationActive() ||
+            showQuitPrompt)
             GUI.enabled=false;
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
         GUI.enabled=true;
+        if(showQuitPrompt)GUI.enabled=false;
         if(showMenu)DrawMenu();
         if(chart!="")DrawChart();
         if(showOrderResults && !showMenu && chart=="")DrawOrderResults();
+        GUI.enabled=true;
+        if(showQuitPrompt)DrawQuitPrompt();
     }
     private void ResizeMapView(Rect region)
     {
@@ -688,7 +712,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void HandleInput(Rect region)
     {
         Event e=Event.current;
-        if(MovementAnimationActive() || UnitTransitionAnimationActive())return;
+        if(showQuitPrompt || MovementAnimationActive() || UnitTransitionAnimationActive())return;
         if(e.type==EventType.KeyDown)
         {
             if(showUnits && !showMenu && chart=="" && !showOrderResults &&
@@ -1748,19 +1772,22 @@ public sealed class HastingsGame : MonoBehaviour
             foreach(var id in strategyGroups)
             {
                 var group=s.groups.First(g=>g.id==id);
-                var content=new GUIContent(id+"  ·  "+group.strategy,StrategyOverview(group.strategy));
+                string groupLabel=PlayerSide()==Side.Saxon?SaxonWingLabel(id):id;
+                var content=new GUIContent(groupLabel+"  ·  "+group.strategy,
+                    StrategyOverview(group.strategy));
                 if(GUILayout.Button(content,FactionButton(id),GUILayout.Height(40*p)))
                     game.SetStrategy(id,(Strategy)(((int)group.strategy+1)%4));
             }
             GUILayout.Space(4*p);
             GUILayout.Label(string.IsNullOrEmpty(GUI.tooltip)?
-                "Click a contingent to cycle its strategy. Hover for a short overview.":GUI.tooltip,
+                "Click a "+(PlayerSide()==Side.Saxon?"wing":"contingent")+
+                " to cycle its strategy. Hover for a short overview.":GUI.tooltip,
                 panelMuted,GUILayout.MinHeight(40*p));
             if(PlayerSide()==Side.Saxon)
             {
                 string wingProblem=game.SaxonWingProblem();
                 GUILayout.Label(wingProblem==""?
-                    "Select a unit on the map to review or change its wing.":wingProblem,
+                    "Select a unit on the map to review or change its leader.":wingProblem,
                     wingProblem==""?panelMuted:panelSection);
             }
         }
@@ -1869,6 +1896,8 @@ public sealed class HastingsGame : MonoBehaviour
                 GUILayout.Label(unitLabels[unit.id],panelBody);
                 GUILayout.Label($"Hex {unit.hex} · {unit.status}",panelMuted);
                 GUILayout.Label(unit.reduced?"Reduced strength":"Full strength",panelMuted);
+                if(unit.side==Side.Saxon && !UnitTypes.Get(unit).leader)
+                    GUILayout.Label("Commander: "+SaxonWingLabel(unit.group),panelMuted);
                 var statusCause=UnitStatusCause(unit,unitLabels);
                 if(statusCause!="")GUILayout.Label(statusCause,panelMuted);
                 GUILayout.EndVertical();
@@ -1884,16 +1913,22 @@ public sealed class HastingsGame : MonoBehaviour
                    unit.side==Side.Saxon && !UnitTypes.Get(unit).leader)
                 {
                     GUILayout.Space(5*p);
-                    GUILayout.Label("ASSIGN TO WING",panelSection);
+                    GUILayout.Label("ASSIGN TO LEADER",panelSection);
                     GUILayout.BeginHorizontal();
-                    foreach(var wing in game.AvailableSaxonWings())
+                    foreach(var leader in game.AvailableSaxonLeaders())
                     {
-                        GUI.enabled=unit.group!=wing;
-                        if(GUILayout.Button(wing,panelButton,GUILayout.Height(34*p)))
-                            game.SetSaxonWing(unit,wing);
+                        int distance=game.board.Distance(unit.hex,leader.hex);
+                        int command=game.SaxonCommandRange(leader);
+                        GUI.enabled=unit.group!=leader.group &&
+                            game.CanAssignSaxonLeader(unit,leader);
+                        if(GUILayout.Button(leader.type+" · "+distance+"/"+command,panelButton,
+                            GUILayout.Height(36*p)))
+                            game.SetSaxonLeader(unit,leader);
                     }
                     GUI.enabled=true;
                     GUILayout.EndHorizontal();
+                    GUILayout.Label("Distance / command radius. The current commander and leaders " +
+                        "out of range are dimmed.",panelMuted);
                 }
             }
             else if(units.Count>1)
@@ -2379,6 +2414,11 @@ public sealed class HastingsGame : MonoBehaviour
         if(group=="Franco-Flemish")return panelFlemishButton;
         return panelNormanButton;
     }
+    private string SaxonWingLabel(string wing)
+    {
+        var leader=game==null?null:game.SaxonLeaderForWing(wing);
+        return leader==null?wing:leader.type+" · "+wing;
+    }
     private static string StrategyOverview(Strategy strategy)
     {
         switch(strategy)
@@ -2703,7 +2743,7 @@ public sealed class HastingsGame : MonoBehaviour
             if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
             {menuPage="theme";menuScroll=Vector2.zero;}
             GUILayout.FlexibleSpace();
-            if(GUILayout.Button("Quit",menuButton,GUILayout.Height(buttonHeight)))Application.Quit();
+            if(GUILayout.Button("Quit",menuButton,GUILayout.Height(buttonHeight)))RequestQuit();
         }
         else if(menuPage=="load")
         {
@@ -2807,6 +2847,70 @@ public sealed class HastingsGame : MonoBehaviour
             if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
         if(notice!="")GUILayout.Label(notice,small);
+        GUILayout.EndArea();
+    }
+    private void RequestQuit()
+    {
+        if(game!=null && game.state!=null && game.state.phase!=Phase.GameOver)
+        {
+            showQuitPrompt=true;
+            quitPromptError="";
+            return;
+        }
+        quitApproved=true;
+        Application.Quit();
+    }
+    private void DrawQuitPrompt()
+    {
+        GUI.color=new Color(.04f,.03f,.02f,.76f);
+        GUI.DrawTexture(new Rect(0,0,Screen.width,Screen.height),Texture2D.whiteTexture);
+        GUI.color=Color.white;
+
+        float width=Mathf.Min(Screen.width-30f,Mathf.Clamp(Screen.width*.46f,560f,760f));
+        float height=Mathf.Min(Screen.height-30f,410f);
+        var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
+        DrawSurface(rect,themeSkin.panelTexture,themeSkin.panel);
+        DrawSurface(new Rect(rect.x+9,rect.y+9,rect.width-18,rect.height-18),
+            themeSkin.cardTexture,themeSkin.card);
+        DrawThemeFrame(rect);
+
+        float inset=Mathf.Clamp(width*.075f,32f,54f);
+        GUILayout.BeginArea(new Rect(rect.x+inset,rect.y+28f,rect.width-2f*inset,rect.height-56f));
+        GUILayout.Label("SAVE BEFORE QUITTING?",panelSection,GUILayout.Height(34f));
+        GUILayout.Label("A battle is in progress. Save it before leaving?",panelTitle,
+            GUILayout.Height(52f));
+        GUILayout.Space(8f);
+        GUILayout.Label("Save name",panelMuted,GUILayout.Height(27f));
+        saveSlot=GUILayout.TextField(saveSlot,menuTextField,GUILayout.Height(52f));
+        if(quitPromptError!="")
+            GUILayout.Label(quitPromptError,orderEffectWarning,GUILayout.Height(34f));
+        else GUILayout.Space(34f);
+        if(GUILayout.Button("Save & Quit",panelPrimary,GUILayout.Height(58f)))
+        {
+            try
+            {
+                GameStorage.Save(saveSlot,game.state);
+                quitApproved=true;
+                showQuitPrompt=false;
+                Application.Quit();
+            }
+            catch(Exception ex){quitPromptError="Save failed: "+ex.Message;}
+        }
+        GUILayout.Space(10f);
+        GUILayout.BeginHorizontal();
+        if(GUILayout.Button("Quit Without Saving",panelButton,GUILayout.Height(48f)))
+        {
+            quitApproved=true;
+            showQuitPrompt=false;
+            Application.Quit();
+        }
+        GUILayout.Space(10f);
+        if(GUILayout.Button("Cancel",panelButton,GUILayout.Height(48f)))
+        {
+            showQuitPrompt=false;
+            quitPromptError="";
+        }
+        GUILayout.EndHorizontal();
         GUILayout.EndArea();
     }
     private void SetInterfaceTheme(InterfaceTheme theme)
