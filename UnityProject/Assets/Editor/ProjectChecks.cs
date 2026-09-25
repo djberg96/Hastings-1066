@@ -348,6 +348,16 @@ public static class ProjectChecks
             unit.group="Left";
         Check(wingEngine.SaxonWingProblem()!="",
             "Undersized Saxon wings were accepted during the order phase");
+        var aiMovementState=Setup.New(board,24683,Side.Norman);
+        aiMovementState.phase=Phase.NormanMelee;
+        foreach(var group in aiMovementState.groups.Where(group=>
+            group.id=="Left" || group.id=="Center" || group.id=="Right"))
+            group.footOrder=Order.AttackPursue;
+        var aiMovementEngine=new GameEngine(board,aiMovementState);
+        aiMovementEngine.Advance();
+        Check(aiMovementEngine.automaticMovements.Any(movement=>
+                movement.kind=="Saxon movement" && movement.path.Count>1),
+            "Saxon AI movement did not retain paths for animation");
         var saxonReformState=Setup.New(board,24682,Side.Saxon);saxonReformState.phase=Phase.Reform;
         var saxonReformEngine=new GameEngine(board,saxonReformState);
         var saxonReformUnit=saxonReformState.units.First(unit=>unit.side==Side.Saxon &&

@@ -76,7 +76,8 @@ namespace Hastings
                 if(options.Count==0)continue;
                 var best=options.OrderBy(o=>NearestEnemyDistance(unit.side,o.destination))
                     .ThenByDescending(o=>o.charge).ThenBy(o=>o.destination).First();
-                MoveCore(unit,best,false);
+                if(side==state.playerSide)MoveCore(unit,best,false);
+                else RecordAiMove(unit,best,false,side+" movement");
             }
         }
         public List<UnitState> RequiredChargeMoves(Side side)
@@ -231,7 +232,7 @@ namespace Hastings
                 // Preserve the shield wall if retreat would surrender a valuable position.
                 if(board.Hex(best.destination).level<board.Hex(unit.hex).level &&
                    board.Hex(unit.hex).road)continue;
-                MoveCore(unit,best,true);
+                RecordAiMove(unit,best,true,side+" reaction");
             }
         }
         private void AiFire(Side side)
@@ -273,7 +274,7 @@ namespace Hastings
                 double score=AiPositionScore(unit,best.destination);
                 if(score>current+.25 || (OrderFor(unit)==Order.AttackPursue &&
                     NearestEnemyDistance(unit.side,best.destination)<NearestEnemyDistance(unit.side,unit.hex)))
-                    MoveCore(unit,best,false);
+                    RecordAiMove(unit,best,false,side+" movement");
             }
             // Commanders remain near their wing and off exposed road approaches.
             foreach(var leader in Living(side).Where(u=>UnitTypes.Get(u).leader && u.status==Status.Ready))
@@ -285,7 +286,27 @@ namespace Hastings
                 var best=options.OrderByDescending(o=>friendly.Count(u=>board.Distance(o.destination,u.hex)<=3))
                     .ThenBy(o=>NearestEnemyDistance(side,o.destination)).First();
                 if(friendly.Count(u=>board.Distance(best.destination,u.hex)<=3)>
-                   friendly.Count(u=>board.Distance(leader.hex,u.hex)<=3))MoveCore(leader,best,false);
+                   friendly.Count(u=>board.Distance(leader.hex,u.hex)<=3))
+                    RecordAiMove(leader,best,false,side+" movement");
+            }
+        }
+        private void RecordAiMove(UnitState unit,MoveOption option,bool reaction,string kind)
+        {
+            var movement=BeginAutomaticMovement(unit,kind);
+            int insertion=automaticMovements.Count;
+            MoveCore(unit,option,reaction);
+            if(lastMovementResult!=null && lastMovementResult.unitId==unit.id &&
+               lastMovementResult.path!=null)
+            {
+                movement.path.Clear();
+                movement.path.AddRange(lastMovementResult.path);
+            }
+            FinishAutomaticMovement(unit,movement);
+            int recorded=automaticMovements.IndexOf(movement);
+            if(recorded>insertion)
+            {
+                automaticMovements.RemoveAt(recorded);
+                automaticMovements.Insert(insertion,movement);
             }
         }
         private double AiPositionScore(UnitState unit,string hex)
