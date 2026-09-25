@@ -480,6 +480,43 @@ public static class ProjectChecks
                 new List<UnitState>{rightLeaderState.units.First(unit=>unit.id==leaderBonusDefender.id)}) &&
               rightLeaderEngine.lastMeleeResult.attack==noLeaderAttack+1,
             "A Norman subordinate did not aid a unit of his own nationality");
+        var woundState=Setup.New(board,384);
+        var woundEngine=new GameEngine(board,woundState);
+        var woundedLeader=woundState.units.First(unit=>unit.type=="Alan");
+        woundedLeader.leaderCondition=2;
+        woundEngine.ApplyLeaderCasualtyRoll(woundedLeader,false,3);
+        Check(woundedLeader.status==Status.Eliminated,
+            "A leader wounded from both casualty rows survived a second wound");
+        var crossWoundState=Setup.New(board,385);
+        var crossWoundEngine=new GameEngine(board,crossWoundState);
+        var crossWoundedLeader=crossWoundState.units.First(unit=>unit.type=="Alan");
+        crossWoundedLeader.leaderPenalty=1;
+        crossWoundEngine.ApplyLeaderCasualtyRoll(crossWoundedLeader,true,4);
+        Check(crossWoundedLeader.status==Status.Eliminated,
+            "A permanently wounded leader survived an assault-long wound");
+        var shakenWoundState=Setup.New(board,386);
+        var shakenWoundEngine=new GameEngine(board,shakenWoundState);
+        var shakenWoundedLeader=shakenWoundState.units.First(unit=>unit.type=="Alan");
+        shakenWoundedLeader.leaderCondition=1;shakenWoundedLeader.shakenUntil=2;
+        shakenWoundEngine.ApplyLeaderCasualtyRoll(shakenWoundedLeader,false,3);
+        Check(shakenWoundedLeader.status!=Status.Eliminated &&
+              shakenWoundedLeader.leaderPenalty==1 && shakenWoundedLeader.leaderCondition==1,
+            "A shaken leader did not become wounded but remain alive");
+        var repeatedShakeState=Setup.New(board,387);
+        var repeatedShakeEngine=new GameEngine(board,repeatedShakeState);
+        var repeatedShakeLeader=repeatedShakeState.units.First(unit=>unit.type=="Alan");
+        repeatedShakeLeader.leaderCondition=1;repeatedShakeLeader.shakenUntil=2;
+        repeatedShakeEngine.ApplyLeaderCasualtyRoll(repeatedShakeLeader,true,5,3);
+        Check(repeatedShakeLeader.status==Status.Eliminated,
+            "A repeated shaken result did not apply its 1d6 kill check");
+        var survivingShakeState=Setup.New(board,388);
+        var survivingShakeEngine=new GameEngine(board,survivingShakeState);
+        var survivingShakeLeader=survivingShakeState.units.First(unit=>unit.type=="Alan");
+        survivingShakeLeader.leaderCondition=1;survivingShakeLeader.shakenUntil=2;
+        survivingShakeEngine.ApplyLeaderCasualtyRoll(survivingShakeLeader,true,9,4);
+        Check(survivingShakeLeader.status!=Status.Eliminated &&
+              survivingShakeLeader.leaderCondition==1 && survivingShakeLeader.shakenUntil==2,
+            "A leader that survived a repeated shaken result had its duration changed");
         CheckRetreatAndDisplacement();
         var obligationState=Setup.New(board,381);obligationState.phase=Phase.NormanMelee;
         obligationState.playerSide=Side.Norman;

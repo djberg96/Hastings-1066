@@ -304,7 +304,7 @@ namespace Hastings
             if(UnitTypes.Get(unit).leader)
             {
                 if(result.Contains('1'))LeaderCasualty(unit,melee);
-                else if(result.Contains('D')){unit.leaderCondition=1;unit.shakenUntil=state.turn+1;}
+                else if(result.Contains('D'))ShakeLeader(unit);
                 return;
             }
             if(result.Contains('1'))StepLoss(unit,melee);
@@ -449,25 +449,55 @@ namespace Hastings
         }
         private void LeaderCasualty(UnitState leader,bool melee)
         {
-            int roll=Die()+Die();bool injured=false;
+            ApplyLeaderCasualtyRoll(leader,melee,Die()+Die());
+        }
+        public void ApplyLeaderCasualtyRoll(UnitState leader,bool melee,int roll,
+            int repeatedShakenRoll=0)
+        {
+            if(leader==null || leader.status==Status.Eliminated ||
+               !UnitTypes.Get(leader).leader)return;
+            bool injured=false;
             if(roll==2 || roll==12){Eliminate(leader);injured=true;}
             else if(roll==3 || (!melee && roll==11))
             {
-                if(leader.leaderPenalty>0)Eliminate(leader);
+                if(LeaderWounded(leader))Eliminate(leader);
                 else{leader.leaderPenalty++;Log(leader.id+" wounded: command and rally reduced");}
                 injured=true;
             }
             else if(melee && (roll==4||roll==10||roll==11))
             {
-                if(leader.leaderCondition==2)Eliminate(leader);
+                if(LeaderWounded(leader))Eliminate(leader);
                 else{leader.leaderCondition=2;Log(leader.id+" ineffective through this assault");}
                 injured=true;
             }
             else if(melee && (roll==5||roll==9))
-            {leader.leaderCondition=1;leader.shakenUntil=state.turn+1;Log(leader.id+" shaken");}
+            {
+                if(leader.leaderCondition==1)
+                {
+                    int shakeRoll=repeatedShakenRoll>0?repeatedShakenRoll:Die();
+                    if(shakeRoll<=3){Eliminate(leader);injured=true;}
+                    else Log(leader.id+" survives a second shaken result");
+                }
+                else if(leader.leaderCondition!=2)ShakeLeader(leader);
+            }
             if((leader.type=="William"||leader.type=="Harold") && injured)
                 foreach(var unit in Living(leader.side).Where(u=>!UnitTypes.Get(u).leader &&
                     board.Distance(u.hex,leader.hex)<=UnitTypes.Get(leader).command).ToList())CheckMorale(unit,false);
+        }
+        private static bool LeaderWounded(UnitState leader)
+        {
+            return leader.leaderPenalty>0 || leader.leaderCondition==2;
+        }
+        private void ShakeLeader(UnitState leader)
+        {
+            if(leader.leaderCondition==2)return;
+            if(leader.leaderCondition==1)
+            {
+                if(Die()<=3)Eliminate(leader);
+                return;
+            }
+            leader.leaderCondition=1;leader.shakenUntil=state.turn+1;
+            Log(leader.id+" shaken");
         }
         public void CheckVictory()
         {
