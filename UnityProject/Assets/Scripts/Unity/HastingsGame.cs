@@ -26,9 +26,11 @@ public sealed class HastingsGame : MonoBehaviour
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
     private float panelScale=1f, chartScale=1f, orderScale=1f;
-    private float missileEffectStarted, missileEffectUntil,meleeEffectStarted,meleeEffectUntil;
+    private float missileEffectStarted, missileEffectUntil,meleeEffectStarted,meleeEffectUntil,
+        movementEffectStarted,movementTravelUntil,movementEffectUntil;
     private MissileFireResult missileResult;
     private MeleeCombatResult meleeResult;
+    private MovementResult movementResult;
     private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
         orderReviewMode, showStrategyTrack, fullMapMode;
     private int orderReviewTab;
@@ -57,6 +59,7 @@ public sealed class HastingsGame : MonoBehaviour
         chartTab, chartTabSelected, chartClose, trackMarkerText, trackMarkerTextShadow;
     private string hoveredHex="";
     private const float StackSpreadSeconds=.22f;
+    private const float MovementStepSeconds=.18f;
     private const string DisplayPrefsVersion="display-prefs-version";
 
     private void Awake()
@@ -360,7 +363,7 @@ public sealed class HastingsGame : MonoBehaviour
             board.data.width,board.data.height);
         DrawMap(mapRect);
         DrawStrategyEffectsTrack(strategyTrackRect);
-        if(showOrderResults)GUI.enabled=false;
+        if(showOrderResults || MovementAnimationActive())GUI.enabled=false;
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
         GUI.enabled=true;
         if(showMenu)DrawMenu();
@@ -662,6 +665,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void HandleInput(Rect region)
     {
         Event e=Event.current;
+        if(MovementAnimationActive())return;
         if(e.type==EventType.KeyDown)
         {
             if(showUnits && !showMenu && chart=="" && !showOrderResults &&
@@ -804,6 +808,9 @@ public sealed class HastingsGame : MonoBehaviour
         string snapshot=JsonUtility.ToJson(game.state);
         if(!game.Move(unit,destination))return false;
         movementUndo.Push(new MovementUndoEntry{stateJson=snapshot,unitId=unit.id,action="move"});
+        var resolved=game.lastMovementResult;
+        if(resolved!=null && resolved.chargeOrder)BeginMovementAnimation(resolved);
+        else movementResult=null;
         notice="";
         return true;
     }
@@ -821,6 +828,7 @@ public sealed class HastingsGame : MonoBehaviour
         var entry=movementUndo.Pop();
         var restored=JsonUtility.FromJson<GameState>(entry.stateJson);
         game=new GameEngine(board,restored);
+        movementResult=null;
         selected.Clear();selectedTargets.Clear();highTrajectoryTargetId="";
         if(game.state.units.Any(unit=>unit.id==entry.unitId && unit.status!=Status.Eliminated))
             selected.Add(entry.unitId);
@@ -849,7 +857,13 @@ public sealed class HastingsGame : MonoBehaviour
             if(showUnits && unit!=null && (PlayerMovePhase() || PlayerReactionPhase()))
             {
                 bool reaction=PlayerReactionPhase();
-                foreach(var move in game.LegalMoves(unit,reaction).Values)
+                var legalMoves=game.LegalMoves(unit,reaction);
+                MoveOption hoveredMove;
+                if(!reaction && UnitTypes.Get(unit).knight &&
+                   game.OrderFor(unit)==Order.Charge &&
+                   legalMoves.TryGetValue(hoveredHex,out hoveredMove))
+                    DrawMovementRoute(hoveredMove.path,new Color(.96f,.68f,.22f,.82f));
+                foreach(var move in legalMoves.Values)
                 {
                     var h=board.Hex(move.destination);
                     var center=MapPoint(h.x,h.y);
@@ -872,6 +886,8 @@ public sealed class HastingsGame : MonoBehaviour
                     .OrderBy(u=>UnitTypes.Get(u).leader?1:0)
                     .ThenBy(u=>u.hex==hoveredHex?1:0))
                 {
+                    if(MovementAnimationActive() && movementResult!=null &&
+                       u.id==movementResult.unitId)continue;
                     var type=UnitTypes.Get(u);
                     var rect=CounterRect(u,SpreadFor(u.hex));
                     var texture=CounterTexture(u);
@@ -889,6 +905,7 @@ public sealed class HastingsGame : MonoBehaviour
                 DrawRequiredMovementHighlights();
                 DrawFireDesignationHighlights();
                 DrawMeleeDesignationHighlights();
+                DrawMovementAnimation(region);
             }
             DrawMissileImpact(region);
             DrawMeleeImpact(region);
@@ -1187,6 +1204,107 @@ public sealed class HastingsGame : MonoBehaviour
             meleeResult.attack+" attack · "+meleeResult.defense+" defense · Roll "+meleeResult.roll,
             missileMapDetail);
         GUI.color=oldColor;
+    }
+    private bool MovementAnimationActive()
+    {
+        return movementResult!=null && Time.unscaledTime<=movementEffectUntil;
+    }
+    private void BeginMovementAnimation(MovementResult result)
+    {
+        movementResult=result;
+        int segments=Math.Max(0,(result.path??new string[0]).Length-1);
+        movementEffectStarted=Time.unscaledTime;
+        movementTravelUntil=movementEffectStarted+
+            Mathf.Max(MovementStepSeconds,segments*MovementStepSeconds);
+        movementEffectUntil=movementTravelUntil+(result.interrupted?1.65f:.12f);
+    }
+    private void DrawMovementRoute(IList<string> path,Color color)
+    {
+        if(path==null || path.Count<2)return;
+        float lineWidth=Mathf.Clamp(5f*scale,3f,9f);
+        for(int index=1;index<path.Count;index++)
+        {
+            if(!board.Has(path[index-1]) || !board.Has(path[index]))continue;
+            var fromHex=board.Hex(path[index-1]);var toHex=board.Hex(path[index]);
+            var from=MapPoint(fromHex.x,fromHex.y);var to=MapPoint(toHex.x,toHex.y);
+            DrawLine(from,to,lineWidth,color);
+            float dot=Mathf.Clamp(13f*scale,8f,19f);
+            Fill(new Rect(to.x-dot/2,to.y-dot/2,dot,dot),color);
+        }
+    }
+    private void DrawMovementAnimation(Rect region)
+    {
+        if(!MovementAnimationActive() || movementResult==null)return;
+        var unit=game.state.units.FirstOrDefault(candidate=>candidate.id==movementResult.unitId);
+        var path=(movementResult.path??new string[0]).Where(board.Has).ToArray();
+        if(unit==null || path.Length==0)return;
+        DrawMovementRoute(path,new Color(.96f,.68f,.22f,.52f));
+        float elapsed=Mathf.Max(0,Time.unscaledTime-movementEffectStarted);
+        int segments=Math.Max(0,path.Length-1);
+        Vector2 position;
+        if(segments==0)
+        {
+            var hex=board.Hex(path[0]);position=MapPoint(hex.x,hex.y);
+        }
+        else
+        {
+            float progress=Mathf.Clamp(elapsed/MovementStepSeconds,0,segments);
+            int segment=Math.Min(segments-1,Mathf.FloorToInt(progress));
+            float amount=progress-segment;
+            var fromHex=board.Hex(path[segment]);var toHex=board.Hex(path[segment+1]);
+            position=Vector2.Lerp(MapPoint(fromHex.x,fromHex.y),MapPoint(toHex.x,toHex.y),
+                Mathf.SmoothStep(0,1,amount));
+        }
+        var rect=CounterLayout.RectFor(position,scale,false,0f);
+        var oldMatrix=GUI.matrix;
+        GUIUtility.RotateAroundPivot(
+            BoardViewMath.FacingRotationDegrees(unit.facing,SaxonView()),rect.center);
+        var texture=CounterTexture(unit);
+        if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
+        if(selected.Contains(unit.id))DrawSelectionOutline(rect);
+        GUI.matrix=oldMatrix;
+        if(Time.unscaledTime<movementTravelUntil || !movementResult.interrupted)return;
+        DrawUnitStatusMarker(movementResult.statusAfter,rect);
+        Vector2 incident=position;
+        if(board.Has(movementResult.interruptionFrom) && board.Has(movementResult.interruptionTo))
+        {
+            var fromHex=board.Hex(movementResult.interruptionFrom);
+            var toHex=board.Hex(movementResult.interruptionTo);
+            incident=Vector2.Lerp(MapPoint(fromHex.x,fromHex.y),MapPoint(toHex.x,toHex.y),.5f);
+        }
+        float outcomeElapsed=Time.unscaledTime-movementTravelUntil;
+        float fade=1f-Mathf.Clamp01((outcomeElapsed-1.25f)/.4f);
+        float pulse=.5f+.5f*Mathf.Sin(outcomeElapsed*12f);
+        float markerSize=Mathf.Max(70f,(82+18*pulse)*scale);
+        DrawRectOutline(new Rect(incident.x-markerSize/2,incident.y-markerSize/2,
+                markerSize,markerSize),Mathf.Clamp(5*scale,4f,9f),
+            new Color(.82f,.20f,.14f,.90f*fade));
+        float effectScale=Mathf.Clamp(Screen.height/900f,1f,1.35f);
+        float width=Mathf.Min(330f*effectScale,Mathf.Max(180f,region.width-16f));
+        float headerHeight=50f*effectScale,height=101f*effectScale;
+        float x=Mathf.Clamp(incident.x-width/2f,8f,region.width-width-8f);
+        float y=Mathf.Clamp(incident.y-markerSize/2f-height-12f,8f,region.height-height-8f);
+        var callout=new Rect(x,y,width,height);
+        float border=4f*effectScale;
+        Fill(new Rect(callout.x-border,callout.y-border,
+                callout.width+2*border,callout.height+2*border),
+            new Color(.24f,.13f,.09f,.92f*fade));
+        Fill(new Rect(callout.x,callout.y,callout.width,headerHeight),
+            new Color(.61f,.22f,.16f,.98f*fade));
+        Fill(new Rect(callout.x,callout.y+headerHeight,callout.width,height-headerHeight),
+            new Color(.96f,.91f,.81f,.98f*fade));
+        missileMapResult.fontSize=Mathf.RoundToInt(22*effectScale);
+        missileMapDetail.fontSize=Mathf.RoundToInt(14*effectScale);
+        float inset=8f*effectScale;
+        string terrain=movementResult.interruptionCause=="marsh"?"MARSH":"RIDGE";
+        GUI.Label(new Rect(callout.x+inset,callout.y+2*effectScale,
+                callout.width-2*inset,headerHeight-4*effectScale),
+            terrain+" MORALE CHECK",missileMapResult);
+        GUI.Label(new Rect(callout.x+inset,callout.y+headerHeight,
+                callout.width-2*inset,height-headerHeight),
+            "DISRUPTED · movement stops "+
+            (movementResult.interruptionCause=="ridge"?"before crossing.":"in the marsh."),
+            missileMapDetail);
     }
     private void DrawMissilePaths()
     {
@@ -2055,6 +2173,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void Advance()
     {
         if(game==null)return;
+        if(MovementAnimationActive())return;
         if(PlayerMovePhase())
         {
             int required=game.RequiredMovementUnits(PlayerSide()).Count;
@@ -2227,6 +2346,7 @@ public sealed class HastingsGame : MonoBehaviour
                         showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
                         highTrajectoryTargetId="";
                         movementUndo.Clear();
+                        movementResult=null;
                         stackSpread.Clear();hoveredHex="";
                         missileResult=null;meleeResult=null;
                         lastMapWidth=0;scale=0;fullMapMode=false;
@@ -2343,6 +2463,7 @@ public sealed class HastingsGame : MonoBehaviour
         showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
         highTrajectoryTargetId="";
         movementUndo.Clear();
+        movementResult=null;
         stackSpread.Clear();hoveredHex="";
         missileResult=null;meleeResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;

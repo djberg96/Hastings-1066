@@ -394,9 +394,40 @@ public static class ProjectChecks
             "Charge-order movement did not require the closest reachable destinations");
         Check(chargeEngine.RequiredChargeMoves(Side.Norman).Any(unit=>unit.id==chargeUnit.id),
             "Unmoved Charge-order knight was not reported as required movement");
-        chargeUnit.moved=true;
+        var recordedChargeMove=chargeMoves.OrderBy(move=>move.destination).First();
+        string recordedChargeOrigin=chargeUnit.hex;
+        Check(chargeEngine.Move(chargeUnit,recordedChargeMove.destination) &&
+              chargeEngine.lastMovementResult!=null &&
+              chargeEngine.lastMovementResult.chargeOrder &&
+              chargeEngine.lastMovementResult.originHex==recordedChargeOrigin &&
+              chargeEngine.lastMovementResult.finalHex==chargeUnit.hex &&
+              chargeEngine.lastMovementResult.path.First()==recordedChargeOrigin &&
+              chargeEngine.lastMovementResult.path.Last()==chargeUnit.hex,
+            "Charge-order movement did not record its traversed path");
         Check(!chargeEngine.RequiredChargeMoves(Side.Norman).Any(unit=>unit.id==chargeUnit.id),
             "Moved Charge-order knight remained in the required movement list");
+        var ridgeState=Setup.New(board,1);ridgeState.phase=Phase.NormanMove;
+        foreach(var unit in ridgeState.units)unit.status=Status.Eliminated;
+        var ridgeKnight=ridgeState.units.First(unit=>unit.type=="BK");
+        var ridgeEnemy=ridgeState.units.First(unit=>unit.type=="HC");
+        var ridgeEdge=board.data.edges.First(edge=>edge.ridge &&
+            board.Adjacent(edge.b).Any(hex=>hex!=edge.a && board.Distance(edge.a,hex)==2));
+        string ridgeTarget=board.Adjacent(ridgeEdge.b)
+            .First(hex=>hex!=ridgeEdge.a && board.Distance(ridgeEdge.a,hex)==2);
+        ridgeKnight.status=Status.Ready;ridgeKnight.hex=ridgeEdge.a;
+        ridgeEnemy.status=Status.Ready;ridgeEnemy.hex=ridgeTarget;
+        ridgeEnemy.facing=board.Direction(ridgeTarget,ridgeEdge.b);
+        ridgeState.groups.First(group=>group.id==ridgeKnight.group).knightOrder=Order.Charge;
+        ridgeState.randomState=1;
+        var ridgeEngine=new GameEngine(board,ridgeState);
+        Check(ridgeEngine.LegalMoves(ridgeKnight).ContainsKey(ridgeEdge.b) &&
+              ridgeEngine.Move(ridgeKnight,ridgeEdge.b) &&
+              ridgeKnight.status==Status.Disrupted && ridgeKnight.hex==ridgeEdge.a &&
+              ridgeEngine.lastMovementResult.interrupted &&
+              ridgeEngine.lastMovementResult.interruptionCause=="ridge" &&
+              ridgeEngine.lastMovementResult.interruptionFrom==ridgeEdge.a &&
+              ridgeEngine.lastMovementResult.interruptionTo==ridgeEdge.b,
+            "Failed ridge morale did not stop and record Charge-order movement before crossing");
         var guardState=Setup.New(board,86421);guardState.phase=Phase.NormanMove;
         var guardEngine=new GameEngine(board,guardState);
         var guard=guardState.units.First(unit=>unit.type=="WG");

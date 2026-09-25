@@ -18,6 +18,7 @@ namespace Hastings
         public GameState state;
         public MissileFireResult lastFireResult;
         public MeleeCombatResult lastMeleeResult;
+        public MovementResult lastMovementResult;
         public GameEngine(Board board, GameState state) { this.board=board; this.state=state; }
         public IEnumerable<UnitState> Living(Side side) { return state.units.Where(u=>u.side==side && u.status!=Status.Eliminated && board.Has(u.hex)); }
         public UnitState UnitAt(string hex, Side? side=null, bool leader=false)
@@ -503,23 +504,46 @@ namespace Hastings
         {
             string origin=unit.hex;
             string lastOpenHex=origin;
+            var traveled=new List<string>{origin};
+            var movementResult=new MovementResult {
+                unitId=unit.id,originHex=origin,requestedDestination=option.destination,
+                statusBefore=unit.status,reaction=reaction,
+                chargeOrder=!reaction && UnitTypes.Get(unit).knight && OrderFor(unit)==Order.Charge
+            };
             foreach(var step in option.path.Skip(1))
             {
                 var e=board.Edge(unit.hex,step);
                 if(UnitTypes.Get(unit).knight && e!=null && e.ridge)
                 {
-                    CheckMorale(unit,true);
-                    if(unit.status!=Status.Ready){unit.hex=lastOpenHex;break;}
-                }
-                unit.hex=step;
-                UpdateReserveOrder(unit);
-                if(UnitTypes.Get(unit).knight && board.Hex(step).marsh)
-                {
+                    string crossingFrom=unit.hex;
                     CheckMorale(unit,true);
                     if(unit.status!=Status.Ready)
                     {
+                        movementResult.interrupted=true;
+                        movementResult.interruptionCause="ridge";
+                        movementResult.interruptionFrom=crossingFrom;
+                        movementResult.interruptionTo=step;
+                        unit.hex=lastOpenHex;
+                        if(traveled[traveled.Count-1]!=unit.hex)traveled.Add(unit.hex);
+                        break;
+                    }
+                }
+                unit.hex=step;
+                traveled.Add(step);
+                UpdateReserveOrder(unit);
+                if(UnitTypes.Get(unit).knight && board.Hex(step).marsh)
+                {
+                    string crossingFrom=traveled.Count>1?traveled[traveled.Count-2]:origin;
+                    CheckMorale(unit,true);
+                    if(unit.status!=Status.Ready)
+                    {
+                        movementResult.interrupted=true;
+                        movementResult.interruptionCause="marsh";
+                        movementResult.interruptionFrom=crossingFrom;
+                        movementResult.interruptionTo=step;
                         if(Living(unit.side).Any(other=>other!=unit &&
                             !UnitTypes.Get(other).leader && other.hex==step))unit.hex=lastOpenHex;
+                        if(traveled[traveled.Count-1]!=unit.hex)traveled.Add(unit.hex);
                         TouchRoad(unit);break;
                     }
                 }
@@ -531,6 +555,11 @@ namespace Hastings
             unit.charged=!reaction && unit.status==Status.Ready && option.charge && unit.hex==option.destination;
             if(reaction){unit.reacted=true;CheckMorale(unit,false);}
             else unit.moved=true;
+            movementResult.finalHex=unit.hex;
+            movementResult.path=traveled.ToArray();
+            movementResult.statusAfter=unit.status;
+            movementResult.charged=unit.charged;
+            lastMovementResult=movementResult;
             Log(unit.id+" moves "+origin+" → "+unit.hex+(unit.charged?" (charge)":""));
             CheckExposedLeaders();
             CheckVictory();

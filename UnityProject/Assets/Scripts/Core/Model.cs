@@ -89,6 +89,14 @@ namespace Hastings
         public Status[] attackerStatusBefore, attackerStatusAfter;
         public Status[] defenderStatusBefore, defenderStatusAfter;
     }
+    public sealed class MovementResult
+    {
+        public string unitId, originHex, requestedDestination, finalHex;
+        public string[] path;
+        public Status statusBefore, statusAfter;
+        public bool reaction, chargeOrder, charged, interrupted;
+        public string interruptionCause, interruptionFrom, interruptionTo;
+    }
     [Serializable] public class GameState
     {
         public int saveVersion = 1;
