@@ -1941,7 +1941,7 @@ public sealed class HastingsGame : MonoBehaviour
                     game.RequiredMovementUnits(Side.Norman).Count:0;
                 return required>0?
                     required+" unit"+(required==1?" must":"s must")+
-                    " move toward the enemy under its battle order. Red outlines mark the required units.":
+                    " move before the segment ends. Red outlines mark the required units.":
                     "Select a Norman unit and click a highlighted destination.";
             }
             case Phase.NormanFire:return PlayerSide()==Side.Saxon?
@@ -1966,7 +1966,7 @@ public sealed class HastingsGame : MonoBehaviour
                     game.RequiredMovementUnits(Side.Saxon).Count:0;
                 return required>0?
                     required+" unit"+(required==1?" must":"s must")+
-                    " move toward the enemy under its battle order. Red outlines mark the required units.":
+                    " move before the segment ends. Red outlines mark the required units.":
                     "Select a Saxon unit and click a highlighted destination.";
             }
             case Phase.SaxonMelee:
@@ -2016,7 +2016,7 @@ public sealed class HastingsGame : MonoBehaviour
             if(required>0)
             {
                 notice=required+" unit"+(required==1?" must":"s must")+
-                    " still move toward the enemy under its battle order before this segment can end.";
+                    " still move before this segment can end.";
                 return;
             }
         }

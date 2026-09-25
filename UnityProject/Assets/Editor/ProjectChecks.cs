@@ -367,6 +367,27 @@ public static class ProjectChecks
               !pursueEngine.RequiredAttackPursueMoves(Side.Saxon)
                 .Any(unit=>unit.id==pursueUnit.id),
             "Attack & Pursue did not permit optional movement between adjacent enemy hexes");
+        var bowExitState=Setup.New(board,97532);bowExitState.phase=Phase.NormanMove;
+        foreach(var unit in bowExitState.units)unit.status=Status.Eliminated;
+        var trappedBow=bowExitState.units.First(unit=>unit.type=="NB");
+        var bowEnemy=bowExitState.units.First(unit=>unit.type=="HC");
+        trappedBow.status=Status.Ready;trappedBow.hex="1112";
+        bowEnemy.status=Status.Ready;bowEnemy.hex=board.Adjacent(trappedBow.hex).First();
+        bowEnemy.facing=board.Direction(bowEnemy.hex,trappedBow.hex);
+        bowExitState.groups.First(group=>group.id==trappedBow.group).footOrder=Order.Advance;
+        var bowExitEngine=new GameEngine(board,bowExitState);
+        var bowExitMoves=bowExitEngine.LegalMoves(trappedBow);
+        Check(bowExitEngine.InEnemyZoc(Side.Norman,trappedBow.hex) && bowExitMoves.Count>0 &&
+              bowExitMoves.Keys.All(hex=>!bowExitEngine.InEnemyZoc(Side.Norman,hex)) &&
+              bowExitEngine.RequiredBowmenZocMoves(Side.Norman)
+                .Any(unit=>unit.id==trappedBow.id) &&
+              bowExitEngine.RequiredMovementUnits(Side.Norman)
+                .Count(unit=>unit.id==trappedBow.id)==1,
+            "A bowman with a legal enemy-ZOC exit was not required to leave");
+        trappedBow.moved=true;
+        Check(!bowExitEngine.RequiredBowmenZocMoves(Side.Norman)
+                .Any(unit=>unit.id==trappedBow.id),
+            "A bowman that left an enemy ZOC remained in the required movement list");
         var fireState=Setup.New(board,37);fireState.phase=Phase.NormanFire;
         var fireEngine=new GameEngine(board,fireState);
         var bowman=fireState.units.First(u=>u.type=="NB");

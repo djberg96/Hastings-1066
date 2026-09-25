@@ -67,7 +67,7 @@ namespace Hastings
         }
         private void ResolveUnmovedRequiredMoves(Side side)
         {
-            foreach(var unit in RequiredChargeMoves(side).Concat(RequiredAttackPursueMoves(side)))
+            foreach(var unit in RequiredMovementUnits(side))
             {
                 var options=LegalMoves(unit).Values.ToList();
                 if(options.Count==0)continue;
@@ -91,7 +91,15 @@ namespace Hastings
         }
         public List<UnitState> RequiredMovementUnits(Side side)
         {
-            return RequiredChargeMoves(side).Concat(RequiredAttackPursueMoves(side)).ToList();
+            return RequiredChargeMoves(side).Concat(RequiredAttackPursueMoves(side))
+                .Concat(RequiredBowmenZocMoves(side)).GroupBy(unit=>unit.id)
+                .Select(group=>group.First()).ToList();
+        }
+        public List<UnitState> RequiredBowmenZocMoves(Side side)
+        {
+            return Living(side).Where(unit=>UnitTypes.Get(unit).missile=="B" &&
+                unit.status==Status.Ready && !unit.moved && InEnemyZoc(side,unit.hex) &&
+                LegalMoves(unit).Count>0).ToList();
         }
         private void ResetFire()
         {
