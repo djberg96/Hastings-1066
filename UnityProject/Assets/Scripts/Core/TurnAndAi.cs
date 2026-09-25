@@ -94,14 +94,13 @@ namespace Hastings
         }
         private void ResolveRemainingMandatory(Side side)
         {
-            foreach(var attacker in Living(side).Where(u=>!UnitTypes.Get(u).leader && !u.engaged && u.status==Status.Ready).ToList())
+            while(state.phase!=Phase.GameOver)
             {
-                var targets=Living(Opposite(side)).Where(d=>!UnitTypes.Get(d).leader && !d.engaged &&
-                    CanMelee(attacker,d) && Controls(d,attacker.hex)).ToList();
-                if(OrderFor(attacker)==Order.ShieldWall)continue;
-                if(targets.Count==0)continue;
-                ResolveMelee(new List<UnitState>{attacker},new List<UnitState>{targets[0]});
-                if(state.phase==Phase.GameOver)return;
+                var attacker=RequiredMeleeAttackers(side).FirstOrDefault();
+                if(attacker==null)return;
+                var targets=RequiredMeleeTargets(new[]{attacker});
+                if(targets.Count==0)return;
+                ResolveMelee(new List<UnitState>{attacker},targets);
             }
         }
         private void EndTurn()
@@ -287,14 +286,15 @@ namespace Hastings
             {
                 if(state.phase==Phase.GameOver)return;
                 if(attacker.engaged)continue;
-                var targets=Living(Opposite(side)).Where(d=>!UnitTypes.Get(d).leader && !d.engaged &&
-                    CanMelee(attacker,d)).OrderBy(d=>Defense(d,true)).ToList();
+                var targets=RequiredMeleeTargets(new[]{attacker});
                 if(targets.Count==0)continue;
-                var target=targets[0];
-                var partners=attackers.Where(a=>a!=attacker && !a.engaged && CanMelee(a,target))
+                var targetIds=new HashSet<string>(targets.Select(target=>target.id));
+                var partners=attackers.Where(a=>a!=attacker && !a.engaged &&
+                    targets.Any(target=>CanMeleeUnderObligation(a,target)) &&
+                    RequiredMeleeTargets(new[]{a}).All(target=>targetIds.Contains(target.id)))
                     .OrderByDescending(a=>UnitTypes.Get(a).attack).Take(2).ToList();
                 var group=new List<UnitState>{attacker};group.AddRange(partners);
-                ResolveMelee(group,new List<UnitState>{target});
+                ResolveMelee(group,targets);
             }
             ResolveRemainingMandatory(side);
         }

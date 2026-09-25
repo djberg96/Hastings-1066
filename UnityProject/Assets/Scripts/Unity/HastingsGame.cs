@@ -772,15 +772,18 @@ public sealed class HastingsGame : MonoBehaviour
             }
             if(PlayerMeleePhase() && enemy!=null)
             {
+                var requiredTargets=game.RequiredMeleeTargets(selection);
+                if(!requiredTargets.Any(target=>target.id==enemy.id))
+                {notice=MeleeFailure(selection,enemy);return;}
                 if(add)
                 {
-                    if(selection.Any(attacker=>!attacker.engaged && !enemy.engaged &&
-                        game.CanMelee(attacker,enemy)))
-                    {if(!selectedTargets.Contains(enemy.id))selectedTargets.Add(enemy.id);notice="";}
-                    else notice=MeleeFailure(selection,enemy);
+                    selectedTargets.Clear();
+                    selectedTargets.AddRange(requiredTargets.Select(target=>target.id));
+                    notice=requiredTargets.Count>1?
+                        "All defenders required by the selected attackers are selected.":"";
                     return;
                 }
-                if(!game.Melee(selection,new List<UnitState>{enemy}))notice=MeleeFailure(selection,enemy);
+                if(!game.Melee(selection,requiredTargets))notice=MeleeFailure(selection,enemy);
                 else ShowMeleeResult();
                 return;
             }
@@ -1070,20 +1073,27 @@ public sealed class HastingsGame : MonoBehaviour
         var attackers=SelectedUnits();
         if(attackers.Count==0)
         {
-            foreach(var unit in game.Living(PlayerSide()).Where(unit=>
-                !UnitTypes.Get(unit).leader && unit.status==Status.Ready && !unit.engaged &&
-                game.Living(GameEngine.Opposite(PlayerSide())).Any(enemy=>
-                    !enemy.engaged && game.CanMelee(unit,enemy))))
+            var mandatoryIds=new HashSet<string>(game.RequiredMeleeAttackers(PlayerSide())
+                .Select(unit=>unit.id));
+            foreach(var unit in game.Living(PlayerSide()).Where(unit=>!unit.engaged &&
+                game.RequiredMeleeTargets(new[]{unit}).Count>0))
             {
                 var rect=CounterRect(unit,SpreadFor(unit.hex));
+                bool mandatory=mandatoryIds.Contains(unit.id);
                 DrawRectOutline(new Rect(rect.x-4,rect.y-4,rect.width+8,rect.height+8),
-                    3f,new Color(.91f,.62f,.14f,.82f));
+                    mandatory?4f:3f,mandatory?new Color(.76f,.16f,.10f,.94f):
+                    new Color(.91f,.62f,.14f,.82f));
+                if(mandatory)
+                {
+                    var badge=new Rect(rect.center.x-28f,rect.y-25f,56f,20f);
+                    Fill(badge,new Color(.48f,.10f,.07f,.96f));
+                    missileMapResult.fontSize=10;
+                    GUI.Label(badge,"MUST",missileMapResult);
+                }
             }
             return;
         }
-        foreach(var target in game.Living(GameEngine.Opposite(PlayerSide())).Where(target=>
-            !target.engaged && attackers.All(attacker=>!attacker.engaged &&
-                game.CanMelee(attacker,target))))
+        foreach(var target in game.RequiredMeleeTargets(attackers))
         {
             var rect=CounterRect(target,SpreadFor(target.hex));
             const float inset=6f;
@@ -1938,13 +1948,27 @@ public sealed class HastingsGame : MonoBehaviour
                 "Continue to resolve Norman missile fire and movement.":
                 "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Saxon target.";
             case Phase.NormanDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Saxon target.";
-            case Phase.NormanMelee:return "Select attackers, then click a Saxon defender.";
+            case Phase.NormanMelee:
+            {
+                int required=PlayerSide()==Side.Norman?
+                    game.RequiredMeleeAttackers(Side.Norman).Count:0;
+                return required>0?required+" Norman unit"+(required==1?" must":"s must")+
+                    " melee an enemy exerting a ZOC on it. Red MUST markers show them.":
+                    "Select attackers, then click a Saxon defender.";
+            }
             case Phase.NormanReaction:return "Select a Norman unit and click a highlighted reaction destination.";
             case Phase.SaxonReaction:return "Select a Saxon unit and click a highlighted reaction destination.";
             case Phase.SaxonDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
             case Phase.SaxonFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
             case Phase.SaxonMove:return "Select a Saxon unit and click a highlighted destination.";
-            case Phase.SaxonMelee:return "Select Saxon attackers, then click a Norman defender.";
+            case Phase.SaxonMelee:
+            {
+                int required=PlayerSide()==Side.Saxon?
+                    game.RequiredMeleeAttackers(Side.Saxon).Count:0;
+                return required>0?required+" Saxon unit"+(required==1?" must":"s must")+
+                    " melee an enemy exerting a ZOC on it. Red MUST markers show them.":
+                    "Select Saxon attackers, then click a Norman defender.";
+            }
             case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
             case Phase.GameOver:return "The battle is over.";
             default:return "Resolve any available actions, then finish this segment.";
@@ -1988,6 +2012,16 @@ public sealed class HastingsGame : MonoBehaviour
                 return;
             }
         }
+        if(PlayerMeleePhase())
+        {
+            int required=game.RequiredMeleeAttackers(PlayerSide()).Count;
+            if(required>0)
+            {
+                notice=required+" unit"+(required==1?" must":"s must")+
+                    " resolve mandatory melee before this segment can end.";
+                return;
+            }
+        }
         var priorPhase=game.state.phase;
         notice="";
         switch(game.state.phase)
@@ -2019,6 +2053,14 @@ public sealed class HastingsGame : MonoBehaviour
             return "R marks a routed unit. It cannot attack until it rallies.";
         if(attackers.Any(unit=>unit.engaged))return "A selected unit has already fought this segment.";
         if(defender!=null && defender.engaged)return "That defender has already fought this segment.";
+        var mandatory=attackers.SelectMany(attacker=>game.MandatoryMeleeTargets(attacker))
+            .GroupBy(target=>target.id).Select(group=>group.First()).ToList();
+        if(mandatory.Count>0 && (defender==null || mandatory.All(target=>target.id!=defender.id)))
+            return "Mutual enemy zones of control require the selected units to melee the red-marked defender"+
+                (mandatory.Count==1?".":"s.");
+        int requiredTargets=game.RequiredMeleeTargets(attackers).Count;
+        if(requiredTargets>1)
+            return "This combat must include all "+requiredTargets+" defenders in the selected units' zones of control.";
         return "That defender is outside one or more attackers' two frontal hexes.";
     }
     private string UnitStatusCause(UnitState unit,Dictionary<string,string> unitLabels)

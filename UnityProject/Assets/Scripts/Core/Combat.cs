@@ -107,14 +107,56 @@ namespace Hastings
                 defender.status!=Status.Eliminated && !UnitTypes.Get(attacker).leader &&
                 !UnitTypes.Get(defender).leader && Controls(attacker,defender.hex);
         }
+        private List<UnitState> OpenMeleeTargets(UnitState attacker)
+        {
+            if(attacker==null || attacker.engaged || attacker.status!=Status.Ready ||
+               UnitTypes.Get(attacker).leader)return new List<UnitState>();
+            return Living(Opposite(attacker.side)).Where(defender=>!defender.engaged &&
+                CanMelee(attacker,defender)).OrderBy(defender=>defender.hex).ToList();
+        }
+        public List<UnitState> MandatoryMeleeTargets(UnitState attacker)
+        {
+            if(attacker==null || OrderFor(attacker)==Order.ShieldWall)
+                return new List<UnitState>();
+            return OpenMeleeTargets(attacker).Where(defender=>Controls(defender,attacker.hex)).ToList();
+        }
+        public List<UnitState> RequiredMeleeAttackers(Side side)
+        {
+            return Living(side).Where(attacker=>MandatoryMeleeTargets(attacker).Count>0).ToList();
+        }
+        public List<UnitState> RequiredMeleeTargets(IEnumerable<UnitState> attackers)
+        {
+            var result=new Dictionary<string,UnitState>();
+            foreach(var attacker in attackers)
+            {
+                var open=OpenMeleeTargets(attacker);
+                var mandatory=MandatoryMeleeTargets(attacker);
+                foreach(var defender in mandatory.Count>0?mandatory:open)
+                    result[defender.id]=defender;
+            }
+            return result.Values.OrderBy(defender=>defender.hex).ToList();
+        }
+        private bool CanMeleeUnderObligation(UnitState attacker,UnitState defender)
+        {
+            if(!CanMelee(attacker,defender) || defender.engaged)return false;
+            var mandatory=MandatoryMeleeTargets(attacker);
+            return mandatory.Count==0 || mandatory.Any(target=>target.id==defender.id);
+        }
         public bool Melee(List<UnitState> attackers,List<UnitState> defenders)
         {
             Side active=state.phase==Phase.NormanMelee?Side.Norman:
                 state.phase==Phase.SaxonMelee?Side.Saxon:(Side)(-1);
+            var required=RequiredMeleeTargets(attackers);
+            var requiredIds=new HashSet<string>(required.Select(defender=>defender.id));
+            var defenderIds=new HashSet<string>(defenders.Select(defender=>defender.id));
             if(active!=state.playerSide || attackers.Count==0 || defenders.Count==0 ||
+               attackers.Select(a=>a.id).Distinct().Count()!=attackers.Count ||
+                defenders.Select(d=>d.id).Distinct().Count()!=defenders.Count ||
                attackers.Any(a=>a.side!=active) ||
-               attackers.Any(a=>!defenders.Any(d=>CanMelee(a,d))) ||
-                defenders.Any(d=>d.side!=Opposite(active) || !attackers.Any(a=>CanMelee(a,d))) ||
+               attackers.Any(a=>!defenders.Any(d=>CanMeleeUnderObligation(a,d))) ||
+                defenders.Any(d=>d.side!=Opposite(active) ||
+                    !attackers.Any(a=>CanMeleeUnderObligation(a,d))) ||
+                !requiredIds.SetEquals(defenderIds) ||
                 attackers.Any(a=>a.engaged) || defenders.Any(d=>d.engaged))return false;
             ResolveMelee(attackers,defenders);return true;
         }
@@ -122,7 +164,8 @@ namespace Hastings
         {
             var attackerOrigins=attackers.ToDictionary(u=>u.id,u=>u.hex);
             var defenderOrigins=defenders.ToDictionary(u=>u.id,u=>u.hex);
-            int attack=attackers.Sum(a=>defenders.Where(d=>CanMelee(a,d)).Select(d=>Attack(a,d)).DefaultIfEmpty(0).Max());
+            int attack=attackers.Sum(a=>defenders.Where(d=>CanMeleeUnderObligation(a,d))
+                .Select(d=>Attack(a,d)).DefaultIfEmpty(0).Max());
             int defense=defenders.Sum(d=>Defense(d,true));
             int difference=attack-defense;
             var meleeResult=new MeleeCombatResult {

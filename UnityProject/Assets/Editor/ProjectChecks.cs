@@ -304,6 +304,67 @@ public static class ProjectChecks
             meleeEngine.lastMeleeResult.attack>0 && meleeEngine.lastMeleeResult.defense>0 &&
             !string.IsNullOrEmpty(meleeEngine.lastMeleeResult.tableResult),
             "Melee did not expose a visual result");
+        var obligationState=Setup.New(board,381);obligationState.phase=Phase.NormanMelee;
+        obligationState.playerSide=Side.Norman;
+        foreach(var unit in obligationState.units)unit.hex="";
+        var obligationAttacker=obligationState.units.First(u=>u.type=="NF");
+        var mutualDefender=obligationState.units.First(u=>u.type=="HC");
+        var oneWayDefender=obligationState.units.Where(u=>u.type=="HC").Skip(1).First();
+        obligationAttacker.hex="1112";obligationAttacker.facing=0;
+        var frontalHexes=board.Adjacent(obligationAttacker.hex).Where(hex=>
+            board.Direction(obligationAttacker.hex,hex)==obligationAttacker.facing ||
+            board.Direction(obligationAttacker.hex,hex)==(obligationAttacker.facing+1)%6).ToList();
+        Check(frontalHexes.Count==2,"Could not create two-target melee check");
+        mutualDefender.hex=frontalHexes[0];oneWayDefender.hex=frontalHexes[1];
+        mutualDefender.facing=board.Direction(mutualDefender.hex,obligationAttacker.hex);
+        int towardAttacker=board.Direction(oneWayDefender.hex,obligationAttacker.hex);
+        oneWayDefender.facing=(towardAttacker+2)%6;
+        obligationState.groups.First(group=>group.id==obligationAttacker.group).footOrder=Order.Advance;
+        var obligationEngine=new GameEngine(board,obligationState);
+        Check(obligationEngine.MandatoryMeleeTargets(obligationAttacker)
+                .Select(unit=>unit.id).SequenceEqual(new[]{mutualDefender.id}),
+            "Mutual-ZOC defender was not the sole mandatory target");
+        Check(obligationEngine.RequiredMeleeAttackers(Side.Norman)
+                .Any(unit=>unit.id==obligationAttacker.id),
+            "Mutual-ZOC attacker was not marked for mandatory melee");
+        Check(!obligationEngine.Melee(new List<UnitState>{obligationAttacker},
+                new List<UnitState>{oneWayDefender}),
+            "Attacker was allowed to evade mandatory melee by attacking a one-way target");
+        Check(!obligationEngine.Melee(new List<UnitState>{obligationAttacker},
+                new List<UnitState>{mutualDefender,oneWayDefender}),
+            "Attacker with one mutual ZOC was allowed to add a non-mutual target");
+        Check(obligationEngine.Melee(new List<UnitState>{obligationAttacker},
+                new List<UnitState>{mutualDefender}),
+            "Required mutual-ZOC melee was rejected");
+        var twoTargetState=Setup.New(board,382);twoTargetState.phase=Phase.NormanMelee;
+        twoTargetState.playerSide=Side.Norman;
+        foreach(var unit in twoTargetState.units)unit.hex="";
+        var twoTargetAttacker=twoTargetState.units.First(u=>u.type=="NF");
+        var twoTargetDefenders=twoTargetState.units.Where(u=>u.type=="HC").Take(2).ToList();
+        twoTargetAttacker.hex="1112";twoTargetAttacker.facing=0;
+        for(int i=0;i<twoTargetDefenders.Count;i++)
+        {
+            twoTargetDefenders[i].hex=frontalHexes[i];
+            twoTargetDefenders[i].facing=board.Direction(twoTargetDefenders[i].hex,twoTargetAttacker.hex);
+        }
+        var twoTargetGroup=twoTargetState.groups.First(group=>group.id==twoTargetAttacker.group);
+        twoTargetGroup.footOrder=Order.Advance;
+        var twoTargetEngine=new GameEngine(board,twoTargetState);
+        Check(twoTargetEngine.MandatoryMeleeTargets(twoTargetAttacker).Count==2,
+            "Both mutual-ZOC defenders were not mandatory");
+        twoTargetGroup.footOrder=Order.ShieldWall;
+        Check(twoTargetEngine.MandatoryMeleeTargets(twoTargetAttacker).Count==0 &&
+              !twoTargetEngine.RequiredMeleeAttackers(Side.Norman)
+                .Any(unit=>unit.id==twoTargetAttacker.id),
+            "Shield Wall unit was incorrectly required to melee");
+        Check(twoTargetEngine.RequiredMeleeTargets(new[]{twoTargetAttacker}).Count==2,
+            "Voluntary Shield Wall melee did not include every frontal target");
+        twoTargetGroup.footOrder=Order.Advance;
+        Check(!twoTargetEngine.Melee(new List<UnitState>{twoTargetAttacker},
+                new List<UnitState>{twoTargetDefenders[0]}),
+            "Two-target mandatory melee allowed one defender to be omitted");
+        Check(twoTargetEngine.Melee(new List<UnitState>{twoTargetAttacker},twoTargetDefenders),
+            "Two-target mandatory melee was rejected");
         var roadState=Setup.New(board,33);
         foreach(var road in roadState.road)road.owner=Side.Norman;
         new GameEngine(board,roadState).CheckVictory();
