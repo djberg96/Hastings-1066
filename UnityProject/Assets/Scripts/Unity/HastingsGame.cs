@@ -42,6 +42,7 @@ public sealed class HastingsGame : MonoBehaviour
     private GUIStyle small, hexNumber, hexNumberShadow,
         menuTitle, menuSubtitle, menuDescription, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
+        casualtyHeading, casualtyValue,
         panelCard, panelButton, panelNavButton, panelPrimary, panelLink,
         fireModeButton, fireModeSelected,
         panelBretonButton, panelNormanButton, panelFlemishButton,
@@ -207,6 +208,10 @@ public sealed class HastingsGame : MonoBehaviour
             panelBody=LabelStyle(16,false,new Color(.20f,.16f,.12f));
             panelMuted=LabelStyle(14,false,new Color(.36f,.30f,.24f));
             panelValue=LabelStyle(22,true,new Color(.29f,.18f,.13f));
+            casualtyHeading=new GUIStyle(panelSection){alignment=TextAnchor.MiddleLeft,
+                wordWrap=false};
+            casualtyValue=new GUIStyle(panelBody){alignment=TextAnchor.MiddleLeft,
+                fontStyle=FontStyle.Bold,wordWrap=false};
             panelCard=new GUIStyle(GUI.skin.box){padding=new RectOffset(15,15,13,15),
                 margin=new RectOffset(0,0,0,12)};
             panelCard.normal.background=SolidTexture(new Color(.98f,.965f,.91f));
@@ -435,7 +440,8 @@ public sealed class HastingsGame : MonoBehaviour
 
         SetText(panelTitle,t.panelInk);SetText(panelStatus,t.panelInk);
         SetText(panelSection,t.accent);SetText(panelBody,t.ink);SetText(panelMuted,t.mutedInk);
-        SetText(panelValue,t.ink);SetBoxTheme(panelCard,t.cardTexture);
+        SetText(panelValue,t.ink);SetText(casualtyHeading,t.accent);SetText(casualtyValue,t.ink);
+        SetBoxTheme(panelCard,t.cardTexture);
         SetButtonTheme(panelButton,false);SetButtonTheme(panelNavButton,false);
         SetButtonTheme(panelPrimary,true);SetButtonTheme(panelLink,false);
         SetButtonTheme(fireModeButton,false);SetButtonTheme(fireModeSelected,true);
@@ -498,6 +504,8 @@ public sealed class HastingsGame : MonoBehaviour
         panelBody.fontSize=Mathf.RoundToInt(16*p);
         panelMuted.fontSize=Mathf.RoundToInt(14*p);
         panelValue.fontSize=Mathf.RoundToInt(22*p);
+        casualtyHeading.fontSize=Mathf.RoundToInt(13*p);
+        casualtyValue.fontSize=Mathf.RoundToInt(17*p);
         panelButton.fontSize=Mathf.RoundToInt(15*p);
         panelNavButton.fontSize=panelButton.fontSize;
         panelPrimary.fontSize=Mathf.RoundToInt(18*p);
@@ -1189,25 +1197,35 @@ public sealed class HastingsGame : MonoBehaviour
         var hex=board.Hex(missileResult.targetHex);
         var target=MapPoint(hex.x,hex.y);
         float pulse=.5f+.5f*Mathf.Sin(elapsed*10f);
-        float targetSize=Mathf.Max(58f,(76+12*pulse)*scale);
+        float targetSize=Mathf.Max(72f,(88+16*pulse)*scale);
         DrawRectOutline(new Rect(target.x-targetSize/2,target.y-targetSize/2,targetSize,targetSize),
-            Mathf.Clamp(4*scale,3f,7f),new Color(1f,.77f,.18f,.88f*fade));
+            Mathf.Clamp(5*scale,4f,9f),new Color(1f,.77f,.18f,.88f*fade));
 
-        float width=220f,height=70f;
+        float effectScale=Mathf.Clamp(Screen.height/900f,1f,1.35f);
+        float width=Mathf.Min(310f*effectScale,Mathf.Max(160f,region.width-16f));
+        float headerHeight=54f*effectScale;
+        float height=96f*effectScale;
         float x=Mathf.Clamp(target.x-width/2f,8f,region.width-width-8f);
         float y=Mathf.Clamp(target.y-targetSize/2f-height-12f,8f,region.height-height-8f);
         var callout=new Rect(x,y,width,height);
-        Fill(new Rect(callout.x-3,callout.y-3,callout.width+6,callout.height+6),
+        float border=4f*effectScale;
+        Fill(new Rect(callout.x-border,callout.y-border,
+                callout.width+2*border,callout.height+2*border),
             new Color(.24f,.13f,.09f,.92f*fade));
-        Fill(new Rect(callout.x,callout.y,callout.width,40),new Color(.61f,.22f,.16f,.98f*fade));
-        Fill(new Rect(callout.x,callout.y+40,callout.width,30),new Color(.96f,.91f,.81f,.98f*fade));
-        missileMapResult.fontSize=18;
-        missileMapDetail.fontSize=12;
-        GUI.Label(new Rect(callout.x+5,callout.y+2,callout.width-10,36),
+        Fill(new Rect(callout.x,callout.y,callout.width,headerHeight),
+            new Color(.61f,.22f,.16f,.98f*fade));
+        Fill(new Rect(callout.x,callout.y+headerHeight,callout.width,height-headerHeight),
+            new Color(.96f,.91f,.81f,.98f*fade));
+        missileMapResult.fontSize=Mathf.RoundToInt(25*effectScale);
+        missileMapDetail.fontSize=Mathf.RoundToInt(15*effectScale);
+        float inset=8f*effectScale;
+        GUI.Label(new Rect(callout.x+inset,callout.y+2*effectScale,
+                callout.width-2*inset,headerHeight-4*effectScale),
             MissileOutcome(missileResult),missileMapResult);
         string detail=missileResult.roll==0?"Odds below 1:4":
             missileResult.strength+" attack · "+missileResult.defense+" defense · Roll "+missileResult.roll;
-        GUI.Label(new Rect(callout.x+5,callout.y+41,callout.width-10,27),detail,missileMapDetail);
+        GUI.Label(new Rect(callout.x+inset,callout.y+headerHeight,
+            callout.width-2*inset,height-headerHeight),detail,missileMapDetail);
     }
     private static void DrawLine(Vector2 from,Vector2 to,float width,Color color)
     {
@@ -1560,16 +1578,18 @@ public sealed class HastingsGame : MonoBehaviour
         if(showHelp)DrawControlsGuide();
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
-        GUILayout.BeginHorizontal(GUILayout.Height(32*p));
-        GUILayout.Label("CASUALTIES",panelSection,GUILayout.Width(88*p),GUILayout.Height(32*p));
-        GUILayout.Label("NORMAN  "+s.normanCasualties,panelValue,
-            GUILayout.Width(105*p),GUILayout.Height(32*p));
-        GUILayout.Label("SAXON  "+s.saxonCasualties,panelValue,
-            GUILayout.Width(96*p),GUILayout.Height(32*p));
+        GUILayout.BeginHorizontal(GUILayout.Height(34*p));
+        GUILayout.Label("CASUALTIES",casualtyHeading,
+            GUILayout.Width(108*p),GUILayout.Height(34*p));
+        GUILayout.Label("NORMAN  "+s.normanCasualties,casualtyValue,
+            GUILayout.Width(110*p),GUILayout.Height(34*p));
+        GUILayout.Space(12*p);
+        GUILayout.Label("SAXON  "+s.saxonCasualties,casualtyValue,
+            GUILayout.Width(92*p),GUILayout.Height(34*p));
         GUILayout.FlexibleSpace();
         var casualtyIcon=themeSkin.Icon("melee");
         if(casualtyIcon!=null)
-            GUILayout.Label(casualtyIcon,GUILayout.Width(30*p),GUILayout.Height(30*p));
+            GUILayout.Label(casualtyIcon,GUILayout.Width(28*p),GUILayout.Height(28*p));
         GUILayout.EndHorizontal();
         GUILayout.EndVertical();
         GUILayout.BeginVertical(panelCard);
