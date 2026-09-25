@@ -12,6 +12,20 @@ public sealed class HastingsGame : MonoBehaviour
         public string stateJson,unitId,action;
     }
 
+    private sealed class UnitTransitionSnapshot
+    {
+        public string hex;
+        public Status status;
+        public int facing;
+    }
+
+    private sealed class UnitTransitionNotice
+    {
+        public string unitId,originHex,finalHex,heading,explanation;
+        public Status statusBefore,statusAfter;
+        public int facingBefore,facingAfter;
+    }
+
     private Board board;
     private GameEngine game;
     private Texture2D map, titleBackground, assaultPeriodMarker, battleTurnMarker,
@@ -23,11 +37,14 @@ public sealed class HastingsGame : MonoBehaviour
     private readonly List<string> selectedTargets=new List<string>();
     private readonly HashSet<string> requiredMovementHighlightIds=new HashSet<string>();
     private readonly Stack<MovementUndoEntry> movementUndo=new Stack<MovementUndoEntry>();
+    private readonly List<UnitTransitionNotice> unitTransitionNotices=
+        new List<UnitTransitionNotice>();
     private Vector2 pan;
     private float scale, lastMapWidth, lastMapHeight;
     private float panelScale=1f, chartScale=1f, orderScale=1f;
     private float missileEffectStarted, missileEffectUntil,meleeEffectStarted,meleeEffectUntil,
-        movementEffectStarted,movementTravelUntil,movementEffectUntil;
+        movementEffectStarted,movementTravelUntil,movementEffectUntil,
+        unitTransitionEffectUntil;
     private MissileFireResult missileResult;
     private MeleeCombatResult meleeResult;
     private MovementResult movementResult;
@@ -787,8 +804,8 @@ public sealed class HastingsGame : MonoBehaviour
                         "All defenders required by the selected attackers are selected.":"";
                     return;
                 }
-                if(!game.Melee(selection,requiredTargets))notice=MeleeFailure(selection,enemy);
-                else ShowMeleeResult();
+                if(!ResolvePlayerMelee(selection,requiredTargets))
+                    notice=MeleeFailure(selection,enemy);
                 return;
             }
         }
@@ -829,6 +846,7 @@ public sealed class HastingsGame : MonoBehaviour
         var restored=JsonUtility.FromJson<GameState>(entry.stateJson);
         game=new GameEngine(board,restored);
         movementResult=null;
+        unitTransitionNotices.Clear();
         selected.Clear();selectedTargets.Clear();highTrajectoryTargetId="";
         if(game.state.units.Any(unit=>unit.id==entry.unitId && unit.status!=Status.Eliminated))
             selected.Add(entry.unitId);
@@ -877,6 +895,7 @@ public sealed class HastingsGame : MonoBehaviour
             }
             DrawMissilePaths();
             DrawMeleePaths();
+            DrawUnitTransitionPaths();
             DrawHexNumbers(region);
             DrawTrackMarkers();
             if(showUnits)
@@ -1152,6 +1171,42 @@ public sealed class HastingsGame : MonoBehaviour
             float size=Mathf.Clamp(15f*scale,10f,22f);
             Fill(new Rect(marker.x-size/2,marker.y-size/2,size,size),
                 new Color(.92f,.22f,.11f,fade));
+        }
+    }
+    private void DrawUnitTransitionPaths()
+    {
+        if(unitTransitionNotices.Count==0 || Time.unscaledTime>unitTransitionEffectUntil)return;
+        float remaining=unitTransitionEffectUntil-Time.unscaledTime;
+        float fade=Mathf.Clamp01(remaining);
+        foreach(var transition in unitTransitionNotices.Where(transition=>
+            board.Has(transition.originHex) && board.Has(transition.finalHex)))
+        {
+            var unit=game.state.units.FirstOrDefault(candidate=>candidate.id==transition.unitId);
+            if(unit==null)continue;
+            var originHex=board.Hex(transition.originHex);
+            var finalHex=board.Hex(transition.finalHex);
+            var origin=MapPoint(originHex.x,originHex.y);
+            var destination=MapPoint(finalHex.x,finalHex.y);
+            Color color=transition.heading=="PURSUIT"?
+                new Color(.96f,.66f,.17f,.82f*fade):new Color(.72f,.10f,.08f,.88f*fade);
+            DrawLine(origin,destination,Mathf.Clamp(7f*scale,4f,11f),color);
+            float dot=Mathf.Clamp(18f*scale,11f,25f);
+            Fill(new Rect(origin.x-dot/2,origin.y-dot/2,dot,dot),color);
+            Fill(new Rect(destination.x-dot/2,destination.y-dot/2,dot,dot),color);
+            var originRect=CounterLayout.RectFor(origin,scale,UnitTypes.Get(unit).leader,0f);
+            var oldMatrix=GUI.matrix;
+            GUIUtility.RotateAroundPivot(
+                BoardViewMath.FacingRotationDegrees(transition.facingBefore,SaxonView()),
+                originRect.center);
+            var texture=CounterTexture(unit);
+            var oldColor=GUI.color;
+            GUI.color=new Color(1f,1f,1f,.30f*fade);
+            if(texture!=null)GUI.DrawTexture(originRect,texture,ScaleMode.StretchToFill);
+            GUI.color=oldColor;
+            GUI.matrix=oldMatrix;
+            var finalRect=CounterLayout.RectFor(destination,scale,UnitTypes.Get(unit).leader,0f);
+            DrawRectOutline(new Rect(finalRect.x-5,finalRect.y-5,
+                finalRect.width+10,finalRect.height+10),4f,color);
         }
     }
     private void DrawMeleeImpact(Rect region)
@@ -1666,6 +1721,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         if(missileResult!=null)DrawMissileResultCard(unitLabels);
         if(meleeResult!=null)DrawMeleeResultCard(unitLabels);
+        if(unitTransitionNotices.Count>0)DrawUnitTransitionCard(unitLabels);
         var units=SelectedUnits();
         if(units.Count>0 || selectedTargets.Count>0)
         {
@@ -1736,8 +1792,8 @@ public sealed class HastingsGame : MonoBehaviour
                 if(GUILayout.Button("Resolve selected melee",panelPrimary,GUILayout.Height(45*p)))
                 {
                     var targets=s.units.Where(u=>selectedTargets.Contains(u.id)).ToList();
-                    if(!game.Melee(units,targets))notice="Illegal melee group or targets.";
-                    else ShowMeleeResult();
+                    if(!ResolvePlayerMelee(units,targets))
+                        notice="Illegal melee group or targets.";
                 }
                 if(GUILayout.Button("Clear targets",panelLink))selectedTargets.Clear();
             }
@@ -1903,6 +1959,37 @@ public sealed class HastingsGame : MonoBehaviour
             (meleeResult.difference>0?"+":"")+meleeResult.difference+" · roll "+meleeResult.roll,
             panelMuted);
         GUILayout.Label(MeleeOutcomeDetail(meleeResult),panelMuted);
+        GUILayout.EndVertical();
+    }
+    private void DrawUnitTransitionCard(Dictionary<string,string> unitLabels)
+    {
+        float p=panelScale;
+        GUILayout.BeginVertical(panelCard);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("BATTLEFIELD AFTERMATH",panelSection);
+        GUILayout.FlexibleSpace();
+        if(GUILayout.Button("Dismiss",panelLink,GUILayout.Width(78*p),GUILayout.Height(28*p)))
+        {
+            unitTransitionNotices.Clear();
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+            return;
+        }
+        GUILayout.EndHorizontal();
+        foreach(var transition in unitTransitionNotices)
+        {
+            string name;
+            if(!unitLabels.TryGetValue(transition.unitId,out name))name=transition.unitId;
+            GUILayout.Label(name+" · "+transition.heading,panelBody);
+            if(transition.originHex!=transition.finalHex)
+                GUILayout.Label("Hex "+transition.originHex+" → "+transition.finalHex,panelMuted);
+            GUILayout.Label(transition.explanation,panelMuted);
+            GUILayout.Space(5*p);
+        }
+        if(unitTransitionNotices.Any(transition=>transition.heading.Contains("ROUT") ||
+            transition.heading=="FAILED TO RALLY"))
+            GUILayout.Label("Rule 9.2.3: routed units retreat toward their rear line and face it.",
+                panelMuted);
         GUILayout.EndVertical();
     }
     private void DrawStrategyEffectsTrack(Rect region)
@@ -2207,6 +2294,8 @@ public sealed class HastingsGame : MonoBehaviour
                 return;
             }
         }
+        var transitionBefore=SnapshotUnitTransitions();
+        string transitionLogMarker=game.state.log.LastOrDefault();
         var priorPhase=game.state.phase;
         notice="";
         switch(game.state.phase)
@@ -2225,6 +2314,7 @@ public sealed class HastingsGame : MonoBehaviour
                 " unit to a legal reform hex first.";break;
             default:game.Advance();break;
         }
+        CaptureUnitTransitions(transitionBefore,transitionLogMarker,priorPhase);
         selected.Clear();
         selectedTargets.Clear();
         highTrajectoryTargetId="";
@@ -2271,6 +2361,89 @@ public sealed class HastingsGame : MonoBehaviour
         return unit.status==Status.Routed?
             "Cause · combat result or rout shock; see Recent Events.":
             "Cause · combat result or failed morale check; see Recent Events.";
+    }
+    private Dictionary<string,UnitTransitionSnapshot> SnapshotUnitTransitions()
+    {
+        return game.state.units.Where(unit=>board.Has(unit.hex)).ToDictionary(unit=>unit.id,
+            unit=>new UnitTransitionSnapshot {
+                hex=unit.hex,status=unit.status,facing=unit.facing
+            });
+    }
+    private bool ResolvePlayerMelee(List<UnitState> attackers,List<UnitState> defenders)
+    {
+        var before=SnapshotUnitTransitions();
+        string logMarker=game.state.log.LastOrDefault();
+        if(!game.Melee(attackers,defenders))return false;
+        CaptureUnitTransitions(before,logMarker,game.state.phase);
+        ShowMeleeResult();
+        return true;
+    }
+    private void CaptureUnitTransitions(Dictionary<string,UnitTransitionSnapshot> before,
+        string logMarker,Phase sourcePhase)
+    {
+        if(before==null)return;
+        int markerIndex=string.IsNullOrEmpty(logMarker)?-1:
+            game.state.log.FindLastIndex(line=>line==logMarker);
+        var recent=game.state.log.Skip(markerIndex+1).ToArray();
+        var captured=new List<UnitTransitionNotice>();
+        foreach(var unit in game.state.units.Where(unit=>before.ContainsKey(unit.id)))
+        {
+            var prior=before[unit.id];
+            bool moved=prior.hex!=unit.hex;
+            bool turned=prior.facing!=unit.facing;
+            bool newlyRouted=prior.status!=Status.Routed && unit.status==Status.Routed;
+            bool routedAgain=prior.status==Status.Routed && unit.status==Status.Routed &&
+                recent.Any(line=>line.Contains(unit.id+" routed"));
+            bool pursuit=recent.Any(line=>line.Contains(unit.id+" pursues "));
+            bool displaced=recent.Any(line=>line.Contains(unit.id+" displaced to "));
+            bool blocked=recent.Any(line=>line.Contains(unit.id+" blocked in retreat"));
+            bool failedRally=prior.status==Status.Routed && moved &&
+                sourcePhase==Phase.Orders && !routedAgain;
+            if(!newlyRouted && !routedAgain && !pursuit && !displaced && !blocked &&
+               !failedRally)continue;
+            string heading,explanation;
+            if(pursuit)
+            {
+                heading="PURSUIT";
+                explanation="Advanced after a routed enemy under Charge or Attack & Pursue orders.";
+            }
+            else if(displaced)
+            {
+                heading="DISPLACED";
+                explanation="Moved aside for a friendly rout retreat and became disrupted.";
+            }
+            else if(blocked)
+            {
+                heading="RETREAT BLOCKED";
+                explanation="Could not complete its rout retreat; it took a step loss and became disrupted.";
+            }
+            else if(failedRally)
+            {
+                heading="FAILED TO RALLY";
+                explanation="Remained routed and retreated two hexes toward its rear line.";
+            }
+            else
+            {
+                bool shock=recent.Any(line=>line.Contains(unit.id+" rout shock morale "));
+                heading=routedAgain?"ROUT RETREAT":"ROUTED";
+                explanation=shock?
+                    "Failed a rout-shock morale check when a nearby friendly unit routed.":
+                    routedAgain?"Suffered another rout result and retreated again.":
+                    "Suffered a rout result in melee or failed a combat morale check.";
+                if(moved)explanation+=" Routed units immediately retreat toward their rear line.";
+                if(turned)explanation+=" They turn to face that rear line.";
+            }
+            captured.Add(new UnitTransitionNotice {
+                unitId=unit.id,originHex=prior.hex,finalHex=unit.hex,
+                statusBefore=prior.status,statusAfter=unit.status,
+                facingBefore=prior.facing,facingAfter=unit.facing,
+                heading=heading,explanation=explanation
+            });
+        }
+        if(captured.Count==0)return;
+        unitTransitionNotices.Clear();
+        unitTransitionNotices.AddRange(captured);
+        unitTransitionEffectUntil=Time.unscaledTime+7f;
     }
     private void ShowMeleeResult()
     {
@@ -2361,6 +2534,7 @@ public sealed class HastingsGame : MonoBehaviour
                         highTrajectoryTargetId="";
                         movementUndo.Clear();
                         movementResult=null;
+                        unitTransitionNotices.Clear();
                         stackSpread.Clear();hoveredHex="";
                         missileResult=null;meleeResult=null;
                         lastMapWidth=0;scale=0;fullMapMode=false;
@@ -2479,6 +2653,7 @@ public sealed class HastingsGame : MonoBehaviour
         highTrajectoryTargetId="";
         movementUndo.Clear();
         movementResult=null;
+        unitTransitionNotices.Clear();
         stackSpread.Clear();hoveredHex="";
         missileResult=null;meleeResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;

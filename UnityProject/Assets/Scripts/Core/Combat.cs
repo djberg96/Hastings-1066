@@ -334,7 +334,10 @@ namespace Hastings
         }
         private void Rout(UnitState unit)
         {
+            string origin=unit.hex;
             unit.status=Status.Routed;Log(unit.id+" routed");Retreat(unit,3);
+            if(unit.status==Status.Routed)
+                Log(unit.id+" retreats "+origin+" → "+unit.hex+" and faces its rear line");
         }
         public void Retreat(UnitState unit,int steps)
         {
@@ -435,7 +438,14 @@ namespace Hastings
                 if(unit.status==Status.Routed)
                 {
                     if(nearby){unit.status=Status.Ready;Log(unit.id+" rallies from rout");}
-                    else Retreat(unit,2);
+                    else
+                    {
+                        string origin=unit.hex;
+                        Retreat(unit,2);
+                        if(unit.status==Status.Routed)
+                            Log(unit.id+" fails to rally; retreats "+origin+" → "+unit.hex+
+                                " and faces its rear line");
+                    }
                 }
                 else
                 {
