@@ -27,6 +27,10 @@ namespace Hastings
         public MissileFireResult lastFireResult;
         public MeleeCombatResult lastMeleeResult;
         public MovementResult lastMovementResult;
+        public readonly List<MissileFireResult> recentFireResults=
+            new List<MissileFireResult>();
+        public readonly List<MeleeCombatResult> recentMeleeResults=
+            new List<MeleeCombatResult>();
         public readonly List<AutomaticMovementResult> automaticMovements=
             new List<AutomaticMovementResult>();
         public GameEngine(Board board, GameState state) { this.board=board; this.state=state; }
@@ -81,6 +85,8 @@ namespace Hastings
         public void ResolveOrders()
         {
             if(state.phase!=Phase.Orders)return;
+            recentFireResults.Clear();
+            recentMeleeResults.Clear();
             automaticMovements.Clear();
             if(state.playerSide==Side.Saxon)
             {

@@ -533,6 +533,8 @@ public static class ProjectChecks
         Check(fireEngine.Fire(new List<UnitState>{bowman},fireTarget),
             "Legal bow fire was rejected");
         Check(fireEngine.lastFireResult!=null &&
+            fireEngine.recentFireResults.Count==1 &&
+            fireEngine.recentFireResults[0]==fireEngine.lastFireResult &&
             fireEngine.lastFireResult.shooterIds.SequenceEqual(new[]{bowman.id}) &&
             fireEngine.lastFireResult.targetId==fireTarget.id &&
             fireEngine.lastFireResult.targetHex==firedAtHex &&
@@ -549,6 +551,8 @@ public static class ProjectChecks
         Check(meleeEngine.Melee(new List<UnitState>{meleeAttacker},
             new List<UnitState>{meleeDefender}),"Legal melee was rejected");
         Check(meleeEngine.lastMeleeResult!=null &&
+            meleeEngine.recentMeleeResults.Count==1 &&
+            meleeEngine.recentMeleeResults[0]==meleeEngine.lastMeleeResult &&
             meleeEngine.lastMeleeResult.attackerIds.SequenceEqual(new[]{meleeAttacker.id}) &&
             meleeEngine.lastMeleeResult.defenderIds.SequenceEqual(new[]{meleeDefender.id}) &&
             meleeEngine.lastMeleeResult.attackerHexes[0]=="1112" &&

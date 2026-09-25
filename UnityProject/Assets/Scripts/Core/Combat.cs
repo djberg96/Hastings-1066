@@ -90,6 +90,7 @@ namespace Hastings
                 fireResult.targetStatusAfter=target.status;
                 fireResult.targetReducedAfter=target.reduced;
                 lastFireResult=fireResult;
+                recentFireResults.Add(fireResult);
                 Log("Fire on "+target.id+" at odds below 1:4: no effect");return true;
             }
             int die=Die();string result=RuleTables.Missile[die-1,column];
@@ -99,6 +100,7 @@ namespace Hastings
             fireResult.targetStatusAfter=target.status;
             fireResult.targetReducedAfter=target.reduced;
             lastFireResult=fireResult;
+            recentFireResults.Add(fireResult);
             CheckVictory();return true;
         }
         public bool CanMelee(UnitState attacker,UnitState defender)
@@ -144,6 +146,8 @@ namespace Hastings
         }
         public bool Melee(List<UnitState> attackers,List<UnitState> defenders)
         {
+            recentFireResults.Clear();
+            recentMeleeResults.Clear();
             automaticMovements.Clear();
             Side active=state.phase==Phase.NormanMelee?Side.Norman:
                 state.phase==Phase.SaxonMelee?Side.Saxon:(Side)(-1);
@@ -222,6 +226,7 @@ namespace Hastings
             meleeResult.attackerStatusAfter=attackers.Select(u=>u.status).ToArray();
             meleeResult.defenderStatusAfter=defenders.Select(u=>u.status).ToArray();
             lastMeleeResult=meleeResult;
+            recentMeleeResults.Add(meleeResult);
             CheckVictory();
         }
         private void RoutShock(UnitState routed,string origin)

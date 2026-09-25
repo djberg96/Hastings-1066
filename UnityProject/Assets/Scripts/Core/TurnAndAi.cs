@@ -8,6 +8,8 @@ namespace Hastings
     {
         public void Advance()
         {
+            recentFireResults.Clear();
+            recentMeleeResults.Clear();
             automaticMovements.Clear();
             if(state.playerSide==Side.Saxon)
             {
