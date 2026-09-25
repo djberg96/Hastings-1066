@@ -395,6 +395,7 @@ public static class ProjectChecks
                 new List<UnitState>{chargedDownhillDefender}) &&
               chargedDownhillEngine.lastMeleeResult.attack==ordinaryDownhillAttack+1,
             "A downhill charge received both the ordinary downhill and charge bonuses");
+        CheckRetreatAndDisplacement();
         var obligationState=Setup.New(board,381);obligationState.phase=Phase.NormanMelee;
         obligationState.playerSide=Side.Norman;
         foreach(var unit in obligationState.units)unit.hex="";
@@ -539,6 +540,72 @@ public static class ProjectChecks
         Check(engine.state.phase==Phase.GameOver,"Game did not finish in 300 segments");
         Debug.Log("HASTINGS SIMULATION PASSED "+playerSide+" seed "+seed+": "+engine.state.result+
                   ", "+engine.state.log.Count+" events");
+    }
+    private static void CheckRetreatAndDisplacement()
+    {
+        var map=new MapData {
+            width=300,height=350,
+            hexes=new[]{
+                new HexData{id="0101",x=100,y=0},
+                new HexData{id="0102",x=200,y=0},
+                new HexData{id="0201",x=100,y=86},
+                new HexData{id="0301",x=100,y=172},
+                new HexData{id="0401",x=100,y=258}
+            },
+            edges=new[]{
+                new EdgeData{a="0401",b="0301"},new EdgeData{a="0301",b="0201"},
+                new EdgeData{a="0201",b="0101"},new EdgeData{a="0101",b="0102"}
+            }
+        };
+        var board=new Board(map);
+        Func<GameState> newState=()=>new GameState {
+            randomState=1,
+            groups=new List<GroupState>{new GroupState{id="Center",footOrder=Order.Advance}},
+            units=new List<UnitState>()
+        };
+        var passState=newState();
+        var passing=new UnitState{id="routing",type="F1",hex="0401",group="Center",
+            side=Side.Saxon,status=Status.Routed};
+        var passed=new UnitState{id="passed",type="HC",hex="0301",group="Center",
+            side=Side.Saxon,status=Status.Ready};
+        passState.units.Add(passing);passState.units.Add(passed);
+        new GameEngine(board,passState).Retreat(passing,2);
+        Check(passing.hex=="0201" && passed.hex=="0301" && passed.status==Status.Ready,
+            "A routed unit displaced a friendly unit that it merely passed through");
+        Check(passing.facing==board.Direction("0201","0101"),
+            "A routed unit did not face its rear line");
+
+        var chainState=newState();
+        var chainRout=new UnitState{id="chain-rout",type="F1",hex="0301",group="Center",
+            side=Side.Saxon,status=Status.Routed};
+        var firstBlocker=new UnitState{id="block-1",type="HC",hex="0201",group="Center",
+            side=Side.Saxon,status=Status.Ready};
+        var secondBlocker=new UnitState{id="block-2",type="HC",hex="0101",group="Center",
+            side=Side.Saxon,status=Status.Ready};
+        chainState.units.AddRange(new[]{chainRout,firstBlocker,secondBlocker});
+        new GameEngine(board,chainState).Retreat(chainRout,1);
+        Check(chainRout.hex=="0201" && chainRout.status==Status.Routed &&
+              firstBlocker.hex=="0101" && firstBlocker.status==Status.Disrupted &&
+              secondBlocker.hex=="0102" && secondBlocker.status==Status.Disrupted,
+            "A legal chain displacement was not completed atomically");
+
+        var blockedState=newState();
+        var blockedRout=new UnitState{id="blocked-rout",type="F1",hex="0301",group="Center",
+            side=Side.Saxon,status=Status.Routed};
+        var blockedFirst=new UnitState{id="blocked-1",type="HC",hex="0201",group="Center",
+            side=Side.Saxon,status=Status.Ready};
+        var blockedSecond=new UnitState{id="blocked-2",type="HC",hex="0101",group="Center",
+            side=Side.Saxon,status=Status.Ready};
+        var enemy=new UnitState{id="enemy",type="NF",hex="0102",group="Norman",
+            side=Side.Norman,status=Status.Ready,facing=0};
+        blockedState.groups.Add(new GroupState{id="Norman",footOrder=Order.Advance});
+        blockedState.units.AddRange(new[]{blockedRout,blockedFirst,blockedSecond,enemy});
+        new GameEngine(board,blockedState).Retreat(blockedRout,1);
+        Check(blockedRout.hex=="0301" && blockedRout.reduced &&
+              blockedRout.status==Status.Disrupted &&
+              blockedFirst.hex=="0201" && blockedFirst.status==Status.Ready &&
+              blockedSecond.hex=="0101" && blockedSecond.status==Status.Ready,
+            "A failed displacement was not atomic or did not reduce and disrupt the routed unit");
     }
     private static void Check(bool condition,string message)
     { if(!condition)throw new Exception("HASTINGS CHECK FAILED: "+message); }

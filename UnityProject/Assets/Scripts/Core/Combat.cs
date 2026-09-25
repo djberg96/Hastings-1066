@@ -332,8 +332,9 @@ namespace Hastings
         {
             unit.status=Status.Routed;Log(unit.id+" routed");Retreat(unit,3);
         }
-        private void Retreat(UnitState unit,int steps)
+        public void Retreat(UnitState unit,int steps)
         {
+            string lastOpenHex=unit.hex;
             for(int i=0;i<steps && unit.status!=Status.Eliminated;i++)
             {
                 string prior=unit.hex;
@@ -342,28 +343,70 @@ namespace Hastings
                 {Eliminate(unit);break;}
                 string next=board.Adjacent(unit.hex)
                     .Where(h=>UnitAt(h,Opposite(unit.side))==null && !InEnemyZoc(unit.side,h))
-                    .OrderBy(h=>UnitAt(h,unit.side)==null?0:1)
-                    .ThenBy(h=>unit.side==Side.Saxon?int.Parse(h.Substring(0,2)):-int.Parse(h.Substring(0,2)))
+                    .OrderBy(h=>unit.side==Side.Saxon?
+                        (board.Hex(h).y<board.Hex(prior).y?0:1):
+                        (board.Hex(h).y>board.Hex(prior).y?0:1))
+                    .ThenBy(h=>UnitAt(h,unit.side)==null?0:1)
+                    .ThenBy(h=>unit.side==Side.Saxon?board.Hex(h).y:-board.Hex(h).y)
                     .ThenBy(h=>MoveCost(unit,unit.hex,h)).FirstOrDefault();
-                if(next==null){StepLoss(unit,true);if(unit.status!=Status.Eliminated)Disrupt(unit);break;}
+                if(next==null){BlockedRetreat(unit,lastOpenHex);break;}
                 var occupied=UnitAt(next,unit.side);
-                if(occupied!=null)
+                if(occupied!=null && i==steps-1)
                 {
-                    string displaced=board.Adjacent(next).FirstOrDefault(h=>UnitAt(h,unit.side)==null &&
-                        UnitAt(h,Opposite(unit.side))==null && !InEnemyZoc(unit.side,h));
-                    if(displaced==null){StepLoss(unit,true);if(unit.status!=Status.Eliminated)Disrupt(unit);break;}
-                    occupied.hex=displaced;Disrupt(occupied);CheckMorale(occupied,false);
+                    var displacement=new List<KeyValuePair<UnitState,string>>();
+                    if(!BuildDisplacement(occupied,new HashSet<string>{prior},
+                            new HashSet<string>(),displacement))
+                    {BlockedRetreat(unit,lastOpenHex);break;}
+                    foreach(var move in displacement)
+                    {
+                        move.Key.hex=move.Value;
+                        if(move.Key.status!=Status.Eliminated)move.Key.status=Status.Disrupted;
+                        TouchRoad(move.Key);Log(move.Key.id+" displaced to "+move.Value+" and disrupted");
+                    }
                 }
                 unit.hex=next;TouchRoad(unit);
-                var collision=Living(unit.side).FirstOrDefault(u=>u!=unit && !UnitTypes.Get(u).leader && u.hex==unit.hex);
-                if(collision!=null)
+                FaceRear(unit);
+                if(occupied!=null && i<steps-1)
                 {
-                    var empty=board.Adjacent(next).FirstOrDefault(h=>UnitAt(h,unit.side)==null &&
-                        UnitAt(h,Opposite(unit.side))==null && !InEnemyZoc(unit.side,h));
-                    if(empty!=null){collision.hex=empty;Disrupt(collision);}
-                    else{unit.hex=prior;StepLoss(unit,true);if(unit.status!=Status.Eliminated)Disrupt(unit);}
+                    CheckMorale(occupied,false);
+                    if(occupied.hex!=unit.hex || occupied.status==Status.Eliminated)
+                        lastOpenHex=unit.hex;
+                }
+                else lastOpenHex=unit.hex;
+            }
+        }
+        private bool BuildDisplacement(UnitState unit,HashSet<string> forbiddenHexes,
+            HashSet<string> chain,List<KeyValuePair<UnitState,string>> moves)
+        {
+            if(!chain.Add(unit.id))return false;
+            foreach(var destination in board.Adjacent(unit.hex)
+                .Where(hex=>!forbiddenHexes.Contains(hex) &&
+                    UnitAt(hex,Opposite(unit.side))==null && !InEnemyZoc(unit.side,hex))
+                .OrderBy(hex=>UnitAt(hex,unit.side)==null?0:1)
+                .ThenBy(hex=>MoveCost(unit,unit.hex,hex)).ThenBy(hex=>hex))
+            {
+                var blocker=UnitAt(destination,unit.side);
+                if(blocker==null || BuildDisplacement(blocker,forbiddenHexes,chain,moves))
+                {
+                    moves.Add(new KeyValuePair<UnitState,string>(unit,destination));
+                    return true;
                 }
             }
+            chain.Remove(unit.id);return false;
+        }
+        private void BlockedRetreat(UnitState unit,string lastOpenHex)
+        {
+            unit.hex=lastOpenHex;StepLoss(unit,true);
+            if(unit.status==Status.Eliminated)return;
+            unit.status=Status.Disrupted;
+            Log(unit.id+" blocked in retreat and disrupted");
+        }
+        private void FaceRear(UnitState unit)
+        {
+            string rear=board.Adjacent(unit.hex)
+                .OrderBy(hex=>unit.side==Side.Saxon?board.Hex(hex).y:-board.Hex(hex).y)
+                .ThenBy(hex=>hex).FirstOrDefault();
+            if(rear!=null)unit.facing=board.Direction(unit.hex,rear);
         }
         private void CheckMorale(UnitState unit,bool routIsDisrupt)
         {
