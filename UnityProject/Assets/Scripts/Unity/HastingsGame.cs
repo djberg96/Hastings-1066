@@ -754,7 +754,7 @@ public sealed class HastingsGame : MonoBehaviour
            MoveWithUndo(selection[0],hex))return;
         if(!preferLeader && PlayerReactionPhase() && selection.Count==1 && selection[0].hex!=hex &&
            game.Move(selection[0],hex,true))return;
-        if(!preferLeader && game.state.phase==Phase.Reform && player==Side.Norman &&
+        if(!preferLeader && game.state.phase==Phase.Reform &&
            selection.Count==1 && selection[0].hex!=hex && game.ReformMove(selection[0],hex))return;
         if((enemy!=null||enemyLeader!=null) && selection.Count>0)
         {
@@ -1428,7 +1428,9 @@ public sealed class HastingsGame : MonoBehaviour
         {
             GUILayout.Space(5*p);
             var strategyGroups=PlayerSide()==Side.Norman?
-                new[]{"Breton","Norman","Franco-Flemish"}:new[]{"Left","Center","Right"};
+                new[]{"Breton","Norman","Franco-Flemish"}:
+                (game.AvailableSaxonWings().Count==0?new[]{"Center"}:
+                    game.AvailableSaxonWings().ToArray());
             foreach(var id in strategyGroups)
             {
                 var group=s.groups.First(g=>g.id==id);
@@ -1440,6 +1442,13 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Label(string.IsNullOrEmpty(GUI.tooltip)?
                 "Click a contingent to cycle its strategy. Hover for a short overview.":GUI.tooltip,
                 panelMuted,GUILayout.MinHeight(40*p));
+            if(PlayerSide()==Side.Saxon)
+            {
+                string wingProblem=game.SaxonWingProblem();
+                GUILayout.Label(wingProblem==""?
+                    "Select a unit on the map to review or change its wing.":wingProblem,
+                    wingProblem==""?panelMuted:panelSection);
+            }
         }
         if(optionsPending)
         {
@@ -1537,6 +1546,21 @@ public sealed class HastingsGame : MonoBehaviour
                 GUILayout.Label(SelectedOrderSummary(order),panelMuted);
                 GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
+                if(s.phase==Phase.Orders && PlayerSide()==Side.Saxon &&
+                   unit.side==Side.Saxon && !UnitTypes.Get(unit).leader)
+                {
+                    GUILayout.Space(5*p);
+                    GUILayout.Label("ASSIGN TO WING",panelSection);
+                    GUILayout.BeginHorizontal();
+                    foreach(var wing in game.AvailableSaxonWings())
+                    {
+                        GUI.enabled=unit.group!=wing;
+                        if(GUILayout.Button(wing,panelButton,GUILayout.Height(34*p)))
+                            game.SetSaxonWing(unit,wing);
+                    }
+                    GUI.enabled=true;
+                    GUILayout.EndHorizontal();
+                }
             }
             else if(units.Count>1)
             {
@@ -1932,7 +1956,7 @@ public sealed class HastingsGame : MonoBehaviour
         {
             case Phase.Setup:return PlayerSide()==Side.Norman?
                 "Set Norman facings on the map, then begin the battle.":
-                "The Norman setup is ready. Begin when you are prepared to defend Senlac Hill.";
+                "Set Saxon facings on the map, then begin the battle.";
             case Phase.Orders:return "Choose a strategy for each "+
                 (PlayerSide()==Side.Norman?"Norman contingent.":"Saxon wing.");
             case Phase.NormanMove:
@@ -1977,7 +2001,9 @@ public sealed class HastingsGame : MonoBehaviour
                     " melee an enemy exerting a ZOC on it. Red MUST markers show them.":
                     "Select Saxon attackers, then click a Norman defender.";
             }
-            case Phase.Reform:return "Move each Norman unit to a legal reform hex.";
+            case Phase.Reform:return PlayerSide()==Side.Norman?
+                "Reform the Norman army at least four hexes south of Senlac Hill.":
+                "Reform the Saxon army anywhere on the highest two levels of Senlac Hill.";
             case Phase.GameOver:return "The battle is over.";
             default:return "Resolve any available actions, then finish this segment.";
         }
@@ -2036,12 +2062,15 @@ public sealed class HastingsGame : MonoBehaviour
         {
             case Phase.Setup:game.Begin();break;
             case Phase.Orders:
+                if(PlayerSide()==Side.Saxon && game.SaxonWingProblem()!="")
+                {notice=game.SaxonWingProblem();return;}
                 game.ResolveOrders();
                 orderReviewMode=false;
                 showOrderResults=game.state.orderResults!=null && game.state.orderResults.Count>0;
                 orderScroll=Vector2.zero;
                 break;
-            case Phase.Reform:if(!game.FinishReform())notice="Move every Norman unit to a legal reform hex first.";break;
+            case Phase.Reform:if(!game.FinishReform())notice="Move every "+PlayerSide()+
+                " unit to a legal reform hex first.";break;
             default:game.Advance();break;
         }
         selected.Clear();

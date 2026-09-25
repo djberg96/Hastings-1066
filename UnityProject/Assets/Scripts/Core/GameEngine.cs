@@ -69,9 +69,16 @@ namespace Hastings
         public void ResolveOrders()
         {
             if(state.phase!=Phase.Orders)return;
+            if(state.playerSide==Side.Saxon)
+            {
+                if(AvailableSaxonWings().Count==0)
+                    foreach(var unit in Living(Side.Saxon).Where(unit=>!UnitTypes.Get(unit).leader))
+                        unit.group="Center";
+                else if(SaxonWingProblem()!="")return;
+            }
             if(state.orderResults==null)state.orderResults=new List<OrderRollResult>();
             else state.orderResults.Clear();
-            ReassignSaxonWings();
+            if(state.playerSide!=Side.Saxon)ReassignSaxonWings();
             foreach(var group in state.groups)
             {
                 if((group.id=="Left"||group.id=="Center"||group.id=="Right") &&
@@ -215,10 +222,34 @@ namespace Hastings
                 {donor.group=leader.group;count++;if(count>=minimum)break;}
             }
         }
+        public List<string> AvailableSaxonWings()
+        {
+            return Living(Side.Saxon).Where(unit=>UnitTypes.Get(unit).leader)
+                .Select(unit=>unit.group).Distinct().OrderBy(group=>group).ToList();
+        }
+        public bool SetSaxonWing(UnitState unit,string wing)
+        {
+            if(state.phase!=Phase.Orders || state.playerSide!=Side.Saxon || unit==null ||
+               unit.side!=Side.Saxon || UnitTypes.Get(unit).leader ||
+               !AvailableSaxonWings().Contains(wing))return false;
+            unit.group=wing;Log(unit.id+" assigned to the "+wing+" wing");return true;
+        }
+        public string SaxonWingProblem()
+        {
+            var units=Living(Side.Saxon).Where(unit=>!UnitTypes.Get(unit).leader).ToList();
+            var wings=AvailableSaxonWings();
+            if(wings.Count==0)return "";
+            if(units.Any(unit=>!wings.Contains(unit.group)))
+                return "Assign every Saxon unit to a surviving leader's wing.";
+            int minimum=(int)Math.Ceiling(units.Count*(wings.Count<3?1.0/3:1.0/5));
+            var undersized=wings.Where(wing=>units.Count(unit=>unit.group==wing)<minimum).ToList();
+            return undersized.Count==0?"":string.Join(", ",undersized.ToArray())+
+                " must command at least "+minimum+" units.";
+        }
         public bool CanFace(UnitState unit)
         {
             if(unit.side!=state.playerSide)return false;
-            if(state.phase==Phase.Setup)return state.playerSide==Side.Norman;
+            if(state.phase==Phase.Setup)return unit.side==state.playerSide;
             return (unit.side==Side.Norman &&
                     (state.phase==Phase.NormanMove||state.phase==Phase.Reform)) ||
                    (unit.side==Side.Saxon && state.phase==Phase.SaxonMove);

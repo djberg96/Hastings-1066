@@ -146,12 +146,10 @@ namespace Hastings
                 (state.extendedTo==999 && !IsEncircled())))
             {
                 PrepareReform();
-                state.phase=Phase.Reform;Log("First assault ends. Reform Norman units south of Senlac Hill.");
-                if(state.playerSide==Side.Saxon)
-                {
-                    AutoReformNormans();
-                    FinishReform();
-                }
+                state.phase=Phase.Reform;
+                AutoReformSaxons();
+                if(state.playerSide==Side.Saxon)AutoReformNormans();
+                Log("First assault ends. Reform the "+state.playerSide+" army.");
                 return;
             }
             if(state.period==2 && state.turn>8)
@@ -349,51 +347,54 @@ namespace Hastings
             foreach(var unit in Living(Side.Norman).OrderBy(u=>UnitTypes.Get(u).leader?1:0).ToList())
             {
                 foreach(var site in sites)
-                    if(ReformMove(unit,site.id))break;
+                    if(ReformMoveCore(unit,site.id,false))break;
+            }
+        }
+        private void AutoReformSaxons()
+        {
+            var combat=state.units.Where(unit=>unit.side==Side.Saxon &&
+                unit.status!=Status.Eliminated && !UnitTypes.Get(unit).leader).ToList();
+            foreach(var unit in combat)unit.hex="";
+            var hillSlots=board.data.hexes.Where(hex=>ReformArea(Side.Saxon,hex.id))
+                .OrderBy(hex=>Math.Abs(int.Parse(hex.id.Substring(2,2))-16))
+                .ThenByDescending(hex=>hex.level).ThenBy(hex=>hex.id).ToList();
+            foreach(var unit in combat)
+            {
+                var slot=hillSlots.FirstOrDefault(hex=>UnitAt(hex.id,Side.Saxon)==null &&
+                    UnitAt(hex.id,Side.Norman)==null);
+                if(slot==null)break;
+                unit.hex=slot.id;unit.reservePeriod=0;unit.reserveTurn=0;
+                unit.reserveOrder=false;unit.entrySpent=0;
+            }
+            var placedCombat=combat.Where(unit=>board.Has(unit.hex)).ToList();
+            foreach(var leader in state.units.Where(unit=>unit.side==Side.Saxon &&
+                unit.status!=Status.Eliminated && UnitTypes.Get(unit).leader))
+            {
+                var companion=placedCombat.FirstOrDefault(unit=>unit.group==leader.group)??
+                    placedCombat.FirstOrDefault();
+                if(companion!=null)leader.hex=companion.hex;
             }
         }
         public bool ReformMove(UnitState unit,string hex)
         {
-            if(state.phase!=Phase.Reform || unit.side!=Side.Norman || !board.Has(hex))return false;
-            var h=board.Hex(hex);
-            if(int.Parse(hex.Substring(2,2))<6 || int.Parse(hex.Substring(2,2))>26)return false;
-            int hill=board.data.hexes.Where(x=>x.level>=4 && int.Parse(x.id.Substring(0,2))<=9)
-                .Min(x=>board.Distance(hex,x.id));
-            if(hill<4 || (UnitAt(hex,Side.Norman)!=null && !UnitTypes.Get(unit).leader))return false;
+            return ReformMoveCore(unit,hex,true);
+        }
+        private bool ReformMoveCore(UnitState unit,string hex,bool requirePlayer)
+        {
+            if(state.phase!=Phase.Reform || (requirePlayer && unit.side!=state.playerSide) || !board.Has(hex) ||
+               !ReformArea(unit.side,hex) || UnitAt(hex,Opposite(unit.side))!=null)return false;
+            var occupant=UnitAt(hex,unit.side);
+            if(!UnitTypes.Get(unit).leader && occupant!=null && occupant!=unit)return false;
             unit.hex=hex;Log(unit.id+" reforms at "+hex);return true;
         }
         public bool FinishReform()
         {
             if(state.phase!=Phase.Reform)return false;
-            foreach(var unit in Living(Side.Norman))
-            {
-                int hill=board.data.hexes.Where(x=>x.level>=4 && int.Parse(x.id.Substring(0,2))<=9)
-                    .Min(x=>board.Distance(unit.hex,x.id));
-                if(hill<4)return false;
-            }
-            foreach(var unit in Living(Side.Norman).ToList())
-                if(unit.status!=Status.Ready)
-                {
-                    if(Living(Side.Norman).Any(u=>UnitTypes.Get(u).leader))unit.status=Status.Ready;
-                    else Eliminate(unit);
-                }
-            var hillSlots=board.data.hexes.Where(h=>h.level>=4 && int.Parse(h.id.Substring(0,2))<=8)
-                .OrderBy(h=>Math.Abs(int.Parse(h.id.Substring(2,2))-16)).ToList();
-            foreach(var unit in Living(Side.Saxon).Where(u=>!UnitTypes.Get(u).leader).ToList())
-            {
-                var slot=hillSlots.FirstOrDefault(h=>UnitAt(h.id,Side.Saxon)==null && UnitAt(h.id,Side.Norman)==null);
-                if(slot!=null)unit.hex=slot.id;
-                if(unit.status!=Status.Ready)
-                {
-                    if(Living(Side.Saxon).Any(u=>UnitTypes.Get(u).leader))unit.status=Status.Ready;
-                    else Eliminate(unit);
-                }
-            }
-            foreach(var unit in state.units.Where(u=>u.hex=="" && u.reservePeriod==2))
-            {
-                var slot=hillSlots.FirstOrDefault(h=>UnitAt(h.id,Side.Saxon)==null && UnitAt(h.id,Side.Norman)==null);
-                if(slot==null)break;unit.hex=slot.id;unit.reservePeriod=0;
-            }
+            foreach(var unit in state.units.Where(unit=>unit.status!=Status.Eliminated))
+                if(!board.Has(unit.hex)||!ReformArea(unit.side,unit.hex))return false;
+            if(state.units.Where(unit=>unit.status!=Status.Eliminated &&
+                    !UnitTypes.Get(unit).leader).GroupBy(unit=>unit.hex).Any(group=>group.Count()>1))
+                return false;
             foreach(var group in state.groups)
             {
                 int baseSupply=group.id=="Left"||group.id=="Center"||group.id=="Right"?4:6;

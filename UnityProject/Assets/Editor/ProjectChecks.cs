@@ -240,6 +240,13 @@ public static class ProjectChecks
         var saxonState=Setup.New(board,24680,Side.Saxon);
         Check(saxonState.playerSide==Side.Saxon,"Saxon side selection was not stored");
         var saxonEngine=new GameEngine(board,saxonState);
+        var saxonFacingUnit=saxonState.units.First(unit=>unit.side==Side.Saxon &&
+            !UnitTypes.Get(unit).leader);
+        var normanFacingUnit=saxonState.units.First(unit=>unit.side==Side.Norman &&
+            !UnitTypes.Get(unit).leader);
+        Check(saxonEngine.CanFace(saxonFacingUnit) && !saxonEngine.CanFace(normanFacingUnit) &&
+              saxonEngine.Face(saxonFacingUnit,(saxonFacingUnit.facing+1)%6),
+            "A Saxon player could not set Saxon facings during setup");
         saxonEngine.Begin();
         saxonEngine.SetStrategy("Left",Strategy.Defensive);
         saxonEngine.ResolveOrders();
@@ -272,6 +279,30 @@ public static class ProjectChecks
         var saxonJson=JsonUtility.ToJson(saxonState);
         Check(JsonUtility.FromJson<GameState>(saxonJson).playerSide==Side.Saxon,
             "Saxon side selection did not survive a save round trip");
+        var wingState=Setup.New(board,24681,Side.Saxon);wingState.phase=Phase.Orders;
+        var wingEngine=new GameEngine(board,wingState);
+        Check(wingEngine.SaxonWingProblem()=="","Initial Saxon wings violated minimum sizes");
+        var wingUnit=wingState.units.First(unit=>unit.side==Side.Saxon &&
+            !UnitTypes.Get(unit).leader);
+        string alternateWing=wingEngine.AvailableSaxonWings().First(wing=>wing!=wingUnit.group);
+        Check(wingEngine.SetSaxonWing(wingUnit,alternateWing) && wingUnit.group==alternateWing,
+            "A Saxon player could not reassign a unit's wing");
+        foreach(var unit in wingEngine.Living(Side.Saxon).Where(unit=>!UnitTypes.Get(unit).leader))
+            unit.group="Left";
+        Check(wingEngine.SaxonWingProblem()!="",
+            "Undersized Saxon wings were accepted during the order phase");
+        var saxonReformState=Setup.New(board,24682,Side.Saxon);saxonReformState.phase=Phase.Reform;
+        var saxonReformEngine=new GameEngine(board,saxonReformState);
+        var saxonReformUnit=saxonReformState.units.First(unit=>unit.side==Side.Saxon &&
+            !UnitTypes.Get(unit).leader);
+        string saxonReformHex=board.data.hexes.Where(hex=>hex.level>=4 &&
+                int.Parse(hex.id.Substring(0,2))<=8 &&
+                saxonReformEngine.UnitAt(hex.id,Side.Saxon)==null &&
+                saxonReformEngine.UnitAt(hex.id,Side.Norman)==null)
+            .Select(hex=>hex.id).First();
+        Check(saxonReformEngine.ReformMove(saxonReformUnit,saxonReformHex) &&
+              !saxonReformEngine.ReformMove(normanFacingUnit,saxonReformHex),
+            "Saxon reform placement was not controlled by the Saxon player");
         var saxonOptionalState=Setup.New(board,97531,Side.Saxon);
         saxonOptionalState.phase=Phase.NormanFire;
         var saxonOptionalGroup=saxonOptionalState.groups.First(g=>g.id=="Left");
@@ -652,19 +683,34 @@ public static class ProjectChecks
         for(int step=0;step<300 && engine.state.phase!=Phase.GameOver;step++)
         {
             var s=engine.state;
-            if(s.phase==Phase.Orders)engine.ResolveOrders();
+            if(s.phase==Phase.Orders)
+            {
+                if(s.playerSide==Side.Saxon && engine.SaxonWingProblem()!="")
+                {
+                    var wings=engine.AvailableSaxonWings();
+                    var units=engine.Living(Side.Saxon).Where(unit=>!UnitTypes.Get(unit).leader)
+                        .OrderBy(unit=>unit.id).ToList();
+                    for(int i=0;i<units.Count && wings.Count>0;i++)
+                        Check(engine.SetSaxonWing(units[i],wings[i%wings.Count]),
+                            "Could not rebalance Saxon wings in simulation");
+                }
+                engine.ResolveOrders();
+            }
             else if(s.phase==Phase.Reform)
             {
-                var sites=board.data.hexes.Where(h=>int.Parse(h.id.Substring(2,2))>=6 &&
-                    int.Parse(h.id.Substring(2,2))<=26 &&
-                    board.data.hexes.Where(x=>x.level>=4 && int.Parse(x.id.Substring(0,2))<=9)
-                        .Min(x=>board.Distance(h.id,x.id))>=4).OrderByDescending(h=>h.y).ToList();
-                foreach(var unit in engine.Living(Side.Norman).ToList())
+                if(s.playerSide==Side.Norman)
                 {
-                    bool placed=false;
-                    foreach(var site in sites)
-                        if(engine.ReformMove(unit,site.id)){placed=true;break;}
-                    Check(placed,"Could not reform "+unit.id);
+                    var sites=board.data.hexes.Where(h=>int.Parse(h.id.Substring(2,2))>=6 &&
+                        int.Parse(h.id.Substring(2,2))<=26 &&
+                        board.data.hexes.Where(x=>x.level>=4 && int.Parse(x.id.Substring(0,2))<=9)
+                            .Min(x=>board.Distance(h.id,x.id))>=4).OrderByDescending(h=>h.y).ToList();
+                    foreach(var unit in engine.Living(Side.Norman).ToList())
+                    {
+                        bool placed=false;
+                        foreach(var site in sites)
+                            if(engine.ReformMove(unit,site.id)){placed=true;break;}
+                        Check(placed,"Could not reform "+unit.id);
+                    }
                 }
                 Check(engine.FinishReform(),"Reform phase could not complete");
             }
