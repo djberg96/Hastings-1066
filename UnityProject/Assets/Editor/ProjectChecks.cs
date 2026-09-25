@@ -130,6 +130,19 @@ public static class ProjectChecks
         Check(state.units.Count(u=>u.hex=="" && u.reservePeriod==1)==12,"First period reserve count");
         Check(state.units.Count(u=>u.hex=="" && u.reservePeriod==2)==12,"Second period reserve count");
         Check(!state.units.Any(u=>u.hex=="1307"),"Errata setup hex 1307 used");
+        var bowOrderState=Setup.New(board,12346);
+        var normanBow=bowOrderState.units.First(unit=>unit.type=="NB");
+        var normanFoot=bowOrderState.units.First(unit=>unit.type=="NF");
+        var saxonBow=bowOrderState.units.First(unit=>unit.type=="SB");
+        var saxonFoot=bowOrderState.units.First(unit=>unit.type=="HC");
+        bowOrderState.groups.First(group=>group.id==normanBow.group).footOrder=Order.ShieldWall;
+        bowOrderState.groups.First(group=>group.id==saxonBow.group).footOrder=Order.ShieldWall;
+        var bowOrderEngine=new GameEngine(board,bowOrderState);
+        Check(bowOrderEngine.OrderFor(normanBow)==Order.FireInPlace &&
+              bowOrderEngine.OrderFor(normanFoot)==Order.ShieldWall &&
+              bowOrderEngine.OrderFor(saxonBow)==Order.FireInPlace &&
+              bowOrderEngine.OrderFor(saxonFoot)==Order.ShieldWall,
+            "Bowmen adopted Shield Wall instead of Melee/Fire in Place");
         Check(state.units.Where(u=>!UnitTypes.Get(u).leader && u.hex!="")
             .GroupBy(u=>u.hex).All(g=>g.Count()==1),"Combat units stacked at setup");
         foreach(var leaderType in new[]{"Harold","Gyrth","Leofwine"})

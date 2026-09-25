@@ -32,7 +32,9 @@ namespace Hastings
             if(type.leader)return Order.Advance;
             if(unit.side==Side.Saxon && unit.reserveOrder)return Order.Advance;
             if(type.guard && Living(Side.Norman).Any(u=>u.type=="William")) return Order.Advance;
-            return type.knight?Group(unit).knightOrder:Group(unit).footOrder;
+            var order=type.knight?Group(unit).knightOrder:Group(unit).footOrder;
+            if(type.missile=="B" && order==Order.ShieldWall)return Order.FireInPlace;
+            return order;
         }
         public int Die()
         {
