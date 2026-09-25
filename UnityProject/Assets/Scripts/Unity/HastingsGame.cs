@@ -1137,9 +1137,10 @@ public sealed class HastingsGame : MonoBehaviour
         float fade=1f-Mathf.Clamp01((elapsed-3.2f)/1.1f);
         float impact=Mathf.SmoothStep(0,1,Mathf.Clamp01((elapsed-.45f)/.25f));
         float pulse=.5f+.5f*Mathf.Sin(elapsed*11f);
+        float largestRadius=Mathf.Max(32f,(42f+9f*pulse)*scale);
         foreach(var target in targets)
         {
-            float radius=Mathf.Max(32f,(42f+9f*pulse)*scale);
+            float radius=largestRadius;
             DrawRectOutline(new Rect(target.x-radius,target.y-radius,radius*2,radius*2),
                 Mathf.Clamp(4f*scale,3f,8f),new Color(.78f,.14f,.08f,.90f*fade));
             float blade=radius*.62f;
@@ -1149,19 +1150,30 @@ public sealed class HastingsGame : MonoBehaviour
                 Mathf.Clamp(4f*scale,3f,7f),new Color(1f,.78f,.24f,impact*fade));
         }
         var center=new Vector2(targets.Average(point=>point.x),targets.Average(point=>point.y));
-        const float width=260f,height=72f;
+        float effectScale=Mathf.Clamp(Screen.height/900f,1f,1.35f);
+        float width=Mathf.Min(310f*effectScale,Mathf.Max(160f,region.width-16f));
+        float headerHeight=54f*effectScale;
+        float height=96f*effectScale;
         float x=Mathf.Clamp(center.x-width/2f,8f,region.width-width-8f);
-        float y=Mathf.Clamp(center.y-120f,8f,region.height-height-8f);
+        float y=Mathf.Clamp(center.y-largestRadius-height-12f,8f,region.height-height-8f);
         var callout=new Rect(x,y,width,height);
-        Fill(new Rect(callout.x-3,callout.y-3,callout.width+6,callout.height+6),
+        float border=4f*effectScale;
+        Fill(new Rect(callout.x-border,callout.y-border,
+                callout.width+2*border,callout.height+2*border),
             new Color(.20f,.08f,.05f,.94f*impact*fade));
-        Fill(new Rect(callout.x,callout.y,callout.width,41),new Color(.58f,.16f,.11f,.98f*impact*fade));
-        Fill(new Rect(callout.x,callout.y+41,callout.width,31),new Color(.96f,.91f,.81f,.98f*impact*fade));
+        Fill(new Rect(callout.x,callout.y,callout.width,headerHeight),
+            new Color(.58f,.16f,.11f,.98f*impact*fade));
+        Fill(new Rect(callout.x,callout.y+headerHeight,callout.width,height-headerHeight),
+            new Color(.96f,.91f,.81f,.98f*impact*fade));
         var oldColor=GUI.color;GUI.color=new Color(1,1,1,impact*fade);
-        missileMapResult.fontSize=18;missileMapDetail.fontSize=12;
-        GUI.Label(new Rect(callout.x+6,callout.y+2,callout.width-12,37),
+        missileMapResult.fontSize=Mathf.RoundToInt(25*effectScale);
+        missileMapDetail.fontSize=Mathf.RoundToInt(15*effectScale);
+        float inset=8f*effectScale;
+        GUI.Label(new Rect(callout.x+inset,callout.y+2*effectScale,
+                callout.width-2*inset,headerHeight-4*effectScale),
             MeleeOutcome(meleeResult),missileMapResult);
-        GUI.Label(new Rect(callout.x+6,callout.y+43,callout.width-12,27),
+        GUI.Label(new Rect(callout.x+inset,callout.y+headerHeight,
+                callout.width-2*inset,height-headerHeight),
             meleeResult.attack+" attack · "+meleeResult.defense+" defense · Roll "+meleeResult.roll,
             missileMapDetail);
         GUI.color=oldColor;
