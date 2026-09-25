@@ -2651,21 +2651,25 @@ public sealed class HastingsGame : MonoBehaviour
     {return value>0?"+"+value:value.ToString();}
     private void DrawChart()
     {
-        chartScale=Mathf.Clamp(Screen.height/1080f,1f,1.8f);
-        chartTitle.fontSize=Mathf.RoundToInt(28*chartScale);
-        chartSection.fontSize=Mathf.RoundToInt(19*chartScale);
-        chartHeader.fontSize=Mathf.RoundToInt(15*chartScale);
+        chartScale=Mathf.Clamp(Screen.height/1080f,.9f,1.15f);
+        chartTitle.fontSize=Mathf.RoundToInt(25*chartScale);
+        chartSection.fontSize=Mathf.RoundToInt(17*chartScale);
+        chartHeader.fontSize=Mathf.RoundToInt(13*chartScale);
         chartRowHeader.fontSize=chartHeader.fontSize;
-        chartCell.fontSize=Mathf.RoundToInt(16*chartScale);
+        chartCell.fontSize=Mathf.RoundToInt(14*chartScale);
         chartMuted.fontSize=chartCell.fontSize;
-        chartNote.fontSize=chartCell.fontSize;
-        chartTab.fontSize=Mathf.RoundToInt(15*chartScale);
-        chartTabSelected.fontSize=Mathf.RoundToInt(18*chartScale);
-        chartClose.fontSize=Mathf.RoundToInt(14*chartScale);
+        chartNote.fontSize=Mathf.RoundToInt(13*chartScale);
+        chartTab.fontSize=Mathf.RoundToInt(13*chartScale);
+        chartTabSelected.fontSize=Mathf.RoundToInt(15*chartScale);
+        chartClose.fontSize=Mathf.RoundToInt(13*chartScale);
         float u=chartScale;
         Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
-        float width=Mathf.Min(Screen.width-40f,1180f*u);
-        float height=Mathf.Min(Screen.height-40f,720f*u);
+        float shellWidth=(chart=="morale"?820f:chart=="missile"?1040f:
+            chart=="terrain"?1120f:1080f)*u;
+        float shellHeight=(chart=="morale"?700f:chart=="missile"?760f:
+            chart=="terrain"?760f:680f)*u;
+        float width=Mathf.Min(Screen.width-32f,shellWidth);
+        float height=Mathf.Min(Screen.height-32f,shellHeight);
         var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
         DrawSurface(rect,themeSkin.cardTexture,themeSkin.card);
         Fill(new Rect(rect.x,rect.y,rect.width,56*u),themeSkin.accent);
@@ -2685,9 +2689,9 @@ public sealed class HastingsGame : MonoBehaviour
                 OpenChart(names[i]);
         }
         float contentWidth=Mathf.Max(width-70*u,
-            (chart=="melee"?900:chart=="missile"?830:chart=="terrain"?900:620)*u);
-        float contentHeight=(chart=="melee"?540:chart=="missile"?820:
-            chart=="terrain"?1120:720)*u;
+            (chart=="melee"?850:chart=="missile"?900:chart=="terrain"?900:680)*u);
+        float contentHeight=(chart=="melee"?500:chart=="missile"?670:
+            chart=="terrain"?980:590)*u;
         var viewport=new Rect(25*u,144*u,width-50*u,height-165*u);
         chartScroll=GUI.BeginScrollView(viewport,chartScroll,new Rect(0,0,contentWidth,contentHeight));
         switch(chart)
@@ -2706,39 +2710,59 @@ public sealed class HastingsGame : MonoBehaviour
         int rows,Func<int,string> rowName,Func<int,int,string> value)
     {
         float u=chartScale;
-        GUI.Label(new Rect(0,y,width,32*u),title,chartSection);
-        y+=38*u;
-        float firstWidth=92*u,rowHeight=39*u,cellWidth=(width-firstWidth)/columns.Length;
-        Fill(new Rect(0,y,width,rowHeight),themeSkin.accent);
-        GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowHeading,chartHeader);
+        GUI.Label(new Rect(0,y,width,28*u),title,chartSection);
+        y+=33*u;
+        float firstWidth=76*u,rowHeight=32*u,cellWidth=(width-firstWidth)/columns.Length;
+        float gridWidth=Mathf.Max(1f,.7f*u);
+        Color grid=Color.Lerp(themeSkin.frame,themeSkin.card,.58f);
+        var headingCell=new Rect(0,y,firstWidth,rowHeight);
+        Fill(headingCell,themeSkin.accent);
+        DrawBorder(headingCell,gridWidth,grid);
+        GUI.Label(headingCell,rowHeading,chartHeader);
         for(int col=0;col<columns.Length;col++)
-            GUI.Label(new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight),columns[col],chartHeader);
+        {
+            var cell=new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight);
+            Fill(cell,themeSkin.accent);
+            DrawBorder(cell,gridWidth,grid);
+            GUI.Label(cell,columns[col],chartHeader);
+        }
         y+=rowHeight;
         for(int row=0;row<rows;row++)
         {
-            Fill(new Rect(0,y,width,rowHeight),row%2==0?
-                themeSkin.card:themeSkin.subtle);
-            GUI.Label(new Rect(0,y,firstWidth,rowHeight),rowName(row),chartRowHeader);
+            Color rowColor=row%2==0?themeSkin.card:themeSkin.subtle;
+            var rowCell=new Rect(0,y,firstWidth,rowHeight);
+            Fill(rowCell,rowColor);
+            DrawBorder(rowCell,gridWidth,grid);
+            GUI.Label(rowCell,rowName(row),chartRowHeader);
             for(int col=0;col<columns.Length;col++)
             {
                 string result=value(row,col);
                 var cell=new Rect(firstWidth+col*cellWidth,y,cellWidth,rowHeight);
-                if(result=="R")Fill(cell,new Color(.91f,.69f,.65f));
-                else if(result=="D")Fill(cell,new Color(.94f,.82f,.57f));
-                else if(result=="M")Fill(cell,new Color(.72f,.85f,.82f));
+                Fill(cell,ChartResultColor(result,rowColor));
+                DrawBorder(cell,gridWidth,grid);
                 GUI.Label(cell,result,result=="-"||result=="—"?chartMuted:chartCell);
             }
             y+=rowHeight;
         }
-        return y+23*u;
+        return y+16*u;
+    }
+    private Color ChartResultColor(string result,Color rowColor)
+    {
+        if(result=="M")return Color.Lerp(rowColor,themeSkin.secondary,.11f);
+        if(result=="D")return Color.Lerp(rowColor,themeSkin.frameHighlight,.18f);
+        if(result=="R")return Color.Lerp(rowColor,themeSkin.accent,.16f);
+        if(result=="1")return Color.Lerp(rowColor,themeSkin.accent,.12f);
+        return rowColor;
     }
     private float ChartNote(float y,float width,string text)
     {
         float u=chartScale;
-        float noteHeight=chartNote.CalcHeight(new GUIContent(text),width-28*u)+20*u;
+        float noteHeight=chartNote.CalcHeight(new GUIContent(text),width-20*u)+14*u;
         Fill(new Rect(0,y,width,noteHeight),themeSkin.subtle);
-        GUI.Label(new Rect(14*u,y+10*u,width-28*u,noteHeight-20*u),text,chartNote);
-        return y+noteHeight+16*u;
+        DrawBorder(new Rect(0,y,width,noteHeight),Mathf.Max(1f,.7f*u),
+            Color.Lerp(themeSkin.frame,themeSkin.card,.58f));
+        GUI.Label(new Rect(10*u,y+7*u,width-20*u,noteHeight-14*u),text,chartNote);
+        return y+noteHeight+10*u;
     }
     private void DrawMeleeChart(float width)
     {
