@@ -416,6 +416,7 @@ namespace Hastings
                     if(unit.status!=Status.Ready){unit.hex=lastOpenHex;break;}
                 }
                 unit.hex=step;
+                UpdateReserveOrder(unit);
                 if(UnitTypes.Get(unit).knight && board.Hex(step).marsh)
                 {
                     CheckMorale(unit,true);
@@ -434,17 +435,25 @@ namespace Hastings
             unit.charged=!reaction && unit.status==Status.Ready && option.charge && unit.hex==option.destination;
             if(reaction){unit.reacted=true;CheckMorale(unit,false);}
             else unit.moved=true;
-            if(unit.side==Side.Saxon && unit.reserveOrder)
-            {
-                var commander=Living(Side.Saxon).Where(u=>UnitTypes.Get(u).leader &&
-                    u.leaderCondition==0 && board.Distance(u.hex,unit.hex)<=
-                    Math.Max(0,UnitTypes.Get(u).command-u.leaderPenalty))
-                    .OrderBy(u=>board.Distance(u.hex,unit.hex)).FirstOrDefault();
-                if(commander!=null){unit.reserveOrder=false;unit.group=commander.group;}
-            }
             Log(unit.id+" moves "+origin+" → "+unit.hex+(unit.charged?" (charge)":""));
             CheckExposedLeaders();
             CheckVictory();
+        }
+        public void UpdateReserveOrder(UnitState unit)
+        {
+            if(unit.side!=Side.Saxon || !unit.reserveOrder || !board.Has(unit.hex))return;
+            var leaders=Living(Side.Saxon).Where(candidate=>UnitTypes.Get(candidate).leader).ToList();
+            var commander=leaders.Where(candidate=>candidate.leaderCondition==0 &&
+                    board.Distance(candidate.hex,unit.hex)<=Math.Max(0,
+                        UnitTypes.Get(candidate).command-candidate.leaderPenalty))
+                .OrderBy(candidate=>board.Distance(candidate.hex,unit.hex)).FirstOrDefault();
+            bool enemyAdjacent=Living(Side.Norman).Any(enemy=>!UnitTypes.Get(enemy).leader &&
+                board.Distance(enemy.hex,unit.hex)==1);
+            if(commander==null && !enemyAdjacent)return;
+            var wing=commander??leaders.OrderBy(candidate=>board.Distance(candidate.hex,unit.hex))
+                .ThenBy(candidate=>candidate.id).FirstOrDefault();
+            unit.reserveOrder=false;unit.group=wing==null?"Center":wing.group;
+            Log(unit.id+" joins the "+unit.group+" wing");
         }
         private void TouchRoad(UnitState unit)
         {

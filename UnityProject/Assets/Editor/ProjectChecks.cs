@@ -262,8 +262,9 @@ public static class ProjectChecks
         Check(dueReinforcements.Count==2,"Opening Saxon reinforcements were not scheduled");
         saxonEngine.Advance();
         Check(saxonState.phase==Phase.SaxonMove &&
-              dueReinforcements.All(u=>board.Has(u.hex) && u.reservePeriod==0 && u.reserveOrder),
-            "Human Saxon reinforcements did not enter during their movement segment");
+              dueReinforcements.All(u=>board.Has(u.hex) && u.reservePeriod==0 &&
+                !u.reserveOrder && u.group=="Center"),
+            "Human Saxon reinforcements did not enter and join Harold's wing");
         Check(dueReinforcements.Select(u=>u.hex).Distinct().Count()==dueReinforcements.Count,
             "Human Saxon reinforcements entered in the same hex");
         saxonEngine.Advance();
@@ -388,6 +389,30 @@ public static class ProjectChecks
         Check(!bowExitEngine.RequiredBowmenZocMoves(Side.Norman)
                 .Any(unit=>unit.id==trappedBow.id),
             "A bowman that left an enemy ZOC remained in the required movement list");
+        var reserveContactState=Setup.New(board,97533,Side.Saxon);
+        reserveContactState.phase=Phase.SaxonMove;
+        foreach(var unit in reserveContactState.units)unit.status=Status.Eliminated;
+        var reserveUnit=reserveContactState.units.First(unit=>unit.type=="F1");
+        var reserveEnemy=reserveContactState.units.First(unit=>unit.type=="NF");
+        var reserveLeader=reserveContactState.units.First(unit=>unit.type=="Gyrth");
+        reserveUnit.status=Status.Ready;reserveUnit.hex="1112";reserveUnit.reserveOrder=true;
+        reserveUnit.group="Right";
+        reserveEnemy.status=Status.Ready;
+        reserveEnemy.hex=board.data.hexes.Select(hex=>hex.id)
+            .First(hex=>board.Distance(reserveUnit.hex,hex)==2);
+        int reserveEnemyTowardUnit=board.Direction(reserveEnemy.hex,reserveUnit.hex);
+        reserveEnemy.facing=(reserveEnemyTowardUnit+2)%6;
+        reserveLeader.status=Status.Ready;
+        reserveLeader.hex=board.data.hexes.Select(hex=>hex.id)
+            .OrderByDescending(hex=>board.Distance(hex,reserveUnit.hex)).First();
+        var reserveContactEngine=new GameEngine(board,reserveContactState);
+        var contactMove=reserveContactEngine.LegalMoves(reserveUnit).Values.First(move=>
+            board.Distance(move.destination,reserveEnemy.hex)==1);
+        Check(board.Distance(reserveLeader.hex,contactMove.destination)>
+                UnitTypes.Get(reserveLeader).command &&
+              reserveContactEngine.Move(reserveUnit,contactMove.destination) &&
+              !reserveUnit.reserveOrder && reserveUnit.group==reserveLeader.group,
+            "A reinforcement retained its temporary Advance order after enemy contact");
         var fireState=Setup.New(board,37);fireState.phase=Phase.NormanFire;
         var fireEngine=new GameEngine(board,fireState);
         var bowman=fireState.units.First(u=>u.type=="NB");

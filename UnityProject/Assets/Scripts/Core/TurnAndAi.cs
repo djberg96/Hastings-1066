@@ -334,6 +334,7 @@ namespace Hastings
                 unit.hex=destination;unit.group=board.Distance(destination,"0721")<board.Distance(destination,"0710")?
                     "Left":"Right";unit.reservePeriod=0;unit.moved=false;unit.reserveOrder=true;
                 unit.entrySpent=1+(board.Hex(destination).woods||board.Hex(destination).marsh?1:0)+arrived;
+                UpdateReserveOrder(unit);
                 arrived++;
                 Log(unit.id+" reinforces at "+destination);
             }
