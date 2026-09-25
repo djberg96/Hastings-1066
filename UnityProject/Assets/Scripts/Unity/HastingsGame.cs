@@ -1352,15 +1352,6 @@ public sealed class HastingsGame : MonoBehaviour
         if(actionIcon!=null)
             GUILayout.Label(actionIcon,GUILayout.Width(66*p),GUILayout.Height(66*p));
         GUILayout.EndHorizontal();
-        if(s.phase!=Phase.Orders && s.orderResults!=null && s.orderResults.Count>0)
-        {
-            GUILayout.Space(5*p);
-            if(GUILayout.Button("Review battle orders",panelLink,GUILayout.Height(38*p)))
-            {
-                orderReviewMode=!game.OptionsPending();orderReviewTab=0;
-                showOrderResults=true;orderScroll=Vector2.zero;
-            }
-        }
         if(s.phase==Phase.Orders)
         {
             GUILayout.Space(5*p);
@@ -1413,7 +1404,6 @@ public sealed class HastingsGame : MonoBehaviour
             DrawHighTrajectoryResponse(p);
             DrawBowFireProgress(p);
         }
-        if(PlayerMeleePhase())DrawMeleeGuide(p);
         if(movementUndo.Count>0 && (PlayerMovePhase() || s.phase==Phase.GameOver))
         {
             GUILayout.Space(6*p);
@@ -1432,6 +1422,15 @@ public sealed class HastingsGame : MonoBehaviour
             GUI.enabled=!optionsPending;
             if(GUILayout.Button(caption,panelPrimary,GUILayout.Height(54*p)))Advance();
             GUI.enabled=true;
+        }
+        if(s.phase!=Phase.Orders && s.orderResults!=null && s.orderResults.Count>0)
+        {
+            GUILayout.Space(6*p);
+            if(GUILayout.Button("Review battle orders",panelLink,GUILayout.Height(34*p)))
+            {
+                orderReviewMode=!game.OptionsPending();orderReviewTab=0;
+                showOrderResults=true;orderScroll=Vector2.zero;
+            }
         }
         GUILayout.EndVertical();
         if(missileResult!=null)DrawMissileResultCard(unitLabels);
@@ -1454,9 +1453,16 @@ public sealed class HastingsGame : MonoBehaviour
                 GUILayout.BeginVertical(GUILayout.MinHeight(78*p));
                 GUILayout.Label(unitLabels[unit.id],panelBody);
                 GUILayout.Label($"Hex {unit.hex} · {unit.status}",panelMuted);
-                GUILayout.Label($"{(unit.reduced?"Reduced":"Full")} · {game.OrderFor(unit)}",panelMuted);
+                GUILayout.Label(unit.reduced?"Reduced strength":"Full strength",panelMuted);
                 var statusCause=UnitStatusCause(unit,unitLabels);
                 if(statusCause!="")GUILayout.Label(statusCause,panelMuted);
+                GUILayout.EndVertical();
+                GUILayout.Space(10*p);
+                var order=game.OrderFor(unit);
+                GUILayout.BeginVertical(GUILayout.Width(164*p),GUILayout.MinHeight(78*p));
+                GUILayout.Label("CURRENT ORDER",panelSection);
+                GUILayout.Label(OrderDisplay(order),panelBody);
+                GUILayout.Label(SelectedOrderSummary(order),panelMuted);
                 GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
             }
@@ -1477,13 +1483,6 @@ public sealed class HastingsGame : MonoBehaviour
                 foreach(var unit in units.Take(3))
                     GUILayout.Label($"{unitLabels[unit.id]} · Hex {unit.hex} · {unit.status} · "+
                         $"{(unit.reduced?"Reduced":"Full")} · {game.OrderFor(unit)}",panelMuted);
-            }
-            if(units.Count==1 && game.CanFace(units[0]) && !UnitTypes.Get(units[0]).leader)
-            {
-                GUILayout.BeginHorizontal();
-                if(GUILayout.Button("Turn left  ·  Q",panelButton))game.Face(units[0],units[0].facing-1);
-                if(GUILayout.Button("Turn right  ·  E",panelButton))game.Face(units[0],units[0].facing+1);
-                GUILayout.EndHorizontal();
             }
             if(PlayerMeleePhase() && selectedTargets.Count>0)
             {
@@ -1599,41 +1598,6 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.EndVertical();
         GUILayout.FlexibleSpace();
         GUILayout.Label(badge,complete?fireCompleteBadge:controlBadge,
-            GUILayout.Width(104*p),GUILayout.Height(34*p));
-        GUILayout.EndHorizontal();
-    }
-    private void DrawMeleeGuide(float p)
-    {
-        var units=SelectedUnits();
-        int legalTargets=units.Count==0?0:game.Living(GameEngine.Opposite(PlayerSide())).Count(target=>
-            !target.engaged && units.All(attacker=>!attacker.engaged && game.CanMelee(attacker,target)));
-        bool leader=units.Any(unit=>UnitTypes.Get(unit).leader);
-        bool disrupted=units.Any(unit=>unit.status==Status.Disrupted);
-        bool routed=units.Any(unit=>unit.status==Status.Routed);
-        bool engaged=units.Any(unit=>unit.engaged);
-        bool ready=units.Count>0 && !leader && !disrupted && !routed && !engaged;
-        string detail;
-        if(units.Count==0)
-            detail="Gold outlines mark ready units with an enemy in their frontal hexes.";
-        else if(leader)detail="Leaders support a stacked combat unit but cannot attack by themselves.";
-        else if(disrupted)detail="A selected unit is disrupted and cannot attack until it rallies.";
-        else if(routed)detail="A selected unit is routed and cannot attack until it rallies.";
-        else if(engaged)detail="A selected unit has already fought during this melee segment.";
-        else if(legalTargets==0)detail=units.Count==1?
-            "No enemy is in this unit's two frontal hexes. Change its facing during movement.":
-            "No defender is in every selected unit's frontal hexes. Adjust the selection.";
-        else detail="Red outlines show legal defenders. Click one to resolve the attack.";
-        string badge=units.Count==0?"SELECT":!ready?"BLOCKED":legalTargets+" TARGET"+
-            (legalTargets==1?"":"S");
-        GUILayout.Space(5*p);
-        GUILayout.BeginHorizontal(controlRow);
-        GUILayout.BeginVertical();
-        GUILayout.Label("MELEE COMBAT",controlHeading);
-        GUILayout.Label(detail,controlAction);
-        GUILayout.Label("D = disrupted  ·  R = routed  ·  neither can attack until rallied.",controlAction);
-        GUILayout.EndVertical();
-        GUILayout.FlexibleSpace();
-        GUILayout.Label(badge,ready&&legalTargets>0?fireCompleteBadge:controlBadge,
             GUILayout.Width(104*p),GUILayout.Height(34*p));
         GUILayout.EndHorizontal();
     }
@@ -2625,6 +2589,19 @@ public sealed class HastingsGame : MonoBehaviour
             case Order.AttackPursue:return "Must close with the enemy; cannot react; disruptions inflicted become routs; must pursue.";
             case Order.Hold:return "Uses normal knight combat strength; may retreat one hex; reaction is allowed.";
             case Order.Charge:return "6 MP and must close with the enemy. A legal charge gains +1 attack (+2 downhill), turns disruption into rout, and requires pursuit and a morale check.";
+            default:return "";
+        }
+    }
+    private static string SelectedOrderSummary(Order order)
+    {
+        switch(order)
+        {
+            case Order.ShieldWall:return "Wall values · retreat 1 · no reaction";
+            case Order.FireInPlace:return "May fire · move 1 · may react";
+            case Order.Advance:return "Normal movement and combat";
+            case Order.AttackPursue:return "Must close · no reaction · pursue";
+            case Order.Hold:return "Normal combat · retreat 1 · may react";
+            case Order.Charge:return "6 MP · charge bonus · must close";
             default:return "";
         }
     }
