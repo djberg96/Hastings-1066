@@ -146,7 +146,8 @@ namespace Hastings
             else
             {
                 bool legal=side==Side.Saxon?
-                    order==Order.ShieldWall||order==Order.AttackPursue||order==Order.Advance:
+                    order==Order.ShieldWall||order==Order.FireInPlace||
+                        order==Order.AttackPursue||order==Order.Advance:
                     order==Order.ShieldWall||order==Order.FireInPlace||order==Order.Advance;
                 if(!group.footOptional || !legal)return false;
                 group.footOrder=order;group.footOptional=false;

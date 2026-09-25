@@ -278,9 +278,14 @@ public static class ProjectChecks
         saxonOptionalState.orderResults.Add(new OrderRollResult {group="Left",side=Side.Saxon,
             footOptional=true});
         var saxonOptionalEngine=new GameEngine(board,saxonOptionalState);
+        Check(saxonOptionalEngine.SetOptionalOrder("Left",false,Order.FireInPlace) &&
+            saxonOptionalGroup.footOrder==Order.FireInPlace && !saxonOptionalGroup.footOptional &&
+            saxonOptionalState.orderResults[0].footOrder==Order.FireInPlace,
+            "Saxon optional result did not allow Melee/Fire in Place");
+        saxonOptionalGroup.footOptional=true;
         Check(saxonOptionalEngine.SetOptionalOrder("Left",false,Order.AttackPursue) &&
-            saxonOptionalGroup.footOrder==Order.AttackPursue && !saxonOptionalGroup.footOptional,
-            "Saxon optional order choice was not applied");
+            saxonOptionalGroup.footOrder==Order.AttackPursue,
+            "Saxon optional result no longer allowed Attack & Pursue");
         string slot="HastingsVerification"+Guid.NewGuid().ToString("N");
         try
         {

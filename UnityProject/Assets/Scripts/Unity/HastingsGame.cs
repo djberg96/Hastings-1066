@@ -2658,6 +2658,8 @@ public sealed class HastingsGame : MonoBehaviour
                     ChooseOptionalOrder(result.group,false,Order.ShieldWall);
                 if(result.side==Side.Saxon)
                 {
+                    if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
+                        ChooseOptionalOrder(result.group,false,Order.FireInPlace);
                     if(GUILayout.Button("Attack & Pursue",orderChoice,GUILayout.Height(36*u)))
                         ChooseOptionalOrder(result.group,false,Order.AttackPursue);
                 }
