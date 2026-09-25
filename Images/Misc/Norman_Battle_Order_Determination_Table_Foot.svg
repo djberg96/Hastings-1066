@@ -18,70 +18,70 @@
   </g>
 
   <g id="headers">
-    <text id="header" font-size="14" font-weight="bold">
-      <tspan x="3%" y="31%">Battle Order</tspan>
-      <tspan x="28%" y="27%">Strategy</tspan>
-      <tspan x="29%" dy="8%">Effect</tspan>
-      <tspan x="39%" y="31%">AGGRESSIVE</tspan>
-      <tspan x="56%" y="31%">MODERATE</tspan>
-      <tspan x="71%" y="31%">CAUTIOUS</tspan>
-      <tspan x="86%" y="31%">DEFENSIVE</tspan>
+    <text id="header" font-size="14" font-weight="bold" text-anchor="middle">
+      <tspan x="14.5%" y="31%">Battle Order</tspan>
+      <tspan x="32%" y="27%">Strategy</tspan>
+      <tspan x="32%" dy="8%">Effect</tspan>
+      <tspan x="44.625%" y="31%">AGGRESSIVE</tspan>
+      <tspan x="59.875%" y="31%">MODERATE</tspan>
+      <tspan x="75.125%" y="31%">CAUTIOUS</tspan>
+      <tspan x="90.375%" y="31%">DEFENSIVE</tspan>
     </text>
   </g>
 
   <g id="orders">
     <g id="shield_wall">
-      <text id="order" font-size="13" font-weight="bold" y="50%">
-        <tspan x="3%">Shield Wall</tspan>
-        <tspan x="31%">-2</tspan>
-        <tspan x="42.5%">5</tspan>
-        <tspan x="58.5%">4,5</tspan>
-        <tspan x="74%">3,4,5</tspan>
-        <tspan x="88%">4,5,9</tspan>
+      <text id="order" font-size="13" font-weight="bold" y="50%" text-anchor="middle">
+        <tspan x="3%" text-anchor="start">Shield Wall</tspan>
+        <tspan x="32%">-2</tspan>
+        <tspan x="44.625%">5</tspan>
+        <tspan x="59.875%">4,5</tspan>
+        <tspan x="75.125%">3,4,5</tspan>
+        <tspan x="90.375%">4,5,9</tspan>
       </text>
     </g>
 
     <g id="melee_fire_in_place">
-      <text id="order" font-size="13" font-weight="bold" y="61%">
-        <tspan x="3%">Melee/Fire in Place</tspan>
-        <tspan x="31%">-1</tspan>
-        <tspan x="40.5%">10,11,12</tspan>
-        <tspan x="56%">9,10,12</tspan>
-        <tspan x="71%">8,10,11,12</tspan>
-        <tspan x="88%">3,8,11</tspan>
+      <text id="order" font-size="13" font-weight="bold" y="61%" text-anchor="middle">
+        <tspan x="3%" text-anchor="start">Melee/Fire in Place</tspan>
+        <tspan x="32%">-1</tspan>
+        <tspan x="44.625%">10,11,12</tspan>
+        <tspan x="59.875%">9,10,12</tspan>
+        <tspan x="75.125%">9,10,11</tspan>
+        <tspan x="90.375%">8,10,11,12</tspan>
       </text>
     </g>
 
     <g id="advance_to_combat_1">
-      <text id="order" font-size="13" font-weight="bold" y="72%">
-        <tspan x="3%">Adv to Combat, 1 turn</tspan>
-        <tspan x="30.5%">+1</tspan>
-        <tspan x="42.5%">5,6</tspan>
-        <tspan x="60%">5</tspan>
-        <tspan x="75%">5</tspan>
-        <tspan x="90%">5</tspan>
+      <text id="order" font-size="13" font-weight="bold" y="72%" text-anchor="middle">
+        <tspan x="3%" text-anchor="start">Adv to Combat, 1 turn</tspan>
+        <tspan x="32%">+1</tspan>
+        <tspan x="44.625%">6,7,8,9</tspan>
+        <tspan x="59.875%">6,7,8,11</tspan>
+        <tspan x="75.125%">6,7,8</tspan>
+        <tspan x="90.375%">3,6,7</tspan>
       </text>
     </g>
 
     <g id="advance_to_combat_2">
-      <text id="order" font-size="13" font-weight="bold" y="83%">
-        <tspan x="3%">Adv to Combat, 2 turns</tspan>
-        <tspan x="28.5%">+1/+1</tspan>
-        <tspan x="43.5%">7</tspan>
-        <tspan x="60%">6</tspan>
-        <tspan x="75%">4</tspan>
-        <tspan x="90%">-</tspan>
+      <text id="order" font-size="13" font-weight="bold" y="83%" text-anchor="middle">
+        <tspan x="3%" text-anchor="start">Adv to Combat, 2 turns</tspan>
+        <tspan x="32%">+1/+1</tspan>
+        <tspan x="44.625%">3,4</tspan>
+        <tspan x="59.875%">3</tspan>
+        <tspan x="75.125%">12</tspan>
+        <tspan x="90.375%">-</tspan>
       </text>
     </g>
 
     <g id="optional">
-      <text id="order" font-size="13" font-weight="bold" y="94%">
-        <tspan x="3%">Optional</tspan>
-        <tspan x="31.5%">?</tspan>
-        <tspan x="43.5%">2</tspan>
-        <tspan x="60%">2</tspan>
-        <tspan x="75%">2</tspan>
-        <tspan x="90%">2</tspan>
+      <text id="order" font-size="13" font-weight="bold" y="94%" text-anchor="middle">
+        <tspan x="3%" text-anchor="start">Optional</tspan>
+        <tspan x="32%">?</tspan>
+        <tspan x="44.625%">2</tspan>
+        <tspan x="59.875%">2</tspan>
+        <tspan x="75.125%">2</tspan>
+        <tspan x="90.375%">2</tspan>
       </text>
     </g>
   </g>
