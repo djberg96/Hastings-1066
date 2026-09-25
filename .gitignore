@@ -1,5 +1,6 @@
 *.aux
 *.log
+Hastings_1066.toc
 *.synctex.*
 *test*
 *.fls

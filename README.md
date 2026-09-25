@@ -7,7 +7,7 @@ Other than fixing one or two minor typos, consistent spelling of "Housecarl", an
 
 https://boardgamegeek.com/boardgame/6021/hastings-1066
 
-I've uploaded a PDF, but there's a chance it's out of date. To generate the rules PDF from source run the command `pdflatex --jobname=Hastings_1066 main.tex`, which will generate a "Hastings_1066.pdf" file. You can, of course, change the name to whatever you like.
+I've uploaded a PDF, but there's a chance it's out of date. To generate the rules PDF from source, run `cd Documents` and then run `pdflatex --jobname=Hastings_1066 main.tex` twice. This creates `Documents/Hastings_1066.pdf`; the second pass refreshes the table of contents.
 
 ## Computer game
 
