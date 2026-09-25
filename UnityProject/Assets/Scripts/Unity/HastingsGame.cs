@@ -1193,17 +1193,30 @@ public sealed class HastingsGame : MonoBehaviour
         Fill(new Rect(callout.x,callout.y+headerHeight,callout.width,height-headerHeight),
             new Color(.96f,.91f,.81f,.98f*impact*fade));
         var oldColor=GUI.color;GUI.color=new Color(1,1,1,impact*fade);
-        missileMapResult.fontSize=Mathf.RoundToInt(25*effectScale);
+        string outcome=MeleeOutcome(meleeResult);
+        FitSingleLineFont(missileMapResult,outcome,25*effectScale,18*effectScale,
+            callout.width-2*8f*effectScale);
         missileMapDetail.fontSize=Mathf.RoundToInt(15*effectScale);
         float inset=8f*effectScale;
         GUI.Label(new Rect(callout.x+inset,callout.y+2*effectScale,
                 callout.width-2*inset,headerHeight-4*effectScale),
-            MeleeOutcome(meleeResult),missileMapResult);
+            outcome,missileMapResult);
         GUI.Label(new Rect(callout.x+inset,callout.y+headerHeight,
                 callout.width-2*inset,height-headerHeight),
             meleeResult.attack+" attack · "+meleeResult.defense+" defense · Roll "+meleeResult.roll,
             missileMapDetail);
         GUI.color=oldColor;
+    }
+    private static void FitSingleLineFont(GUIStyle style,string text,float preferredSize,
+        float minimumSize,float availableWidth)
+    {
+        int preferred=Mathf.RoundToInt(preferredSize);
+        int minimum=Mathf.RoundToInt(minimumSize);
+        style.fontSize=preferred;
+        float measured=style.CalcSize(new GUIContent(text)).x;
+        if(measured>availableWidth)
+            style.fontSize=Mathf.Max(minimum,
+                Mathf.FloorToInt(preferred*availableWidth/measured));
     }
     private bool MovementAnimationActive()
     {
