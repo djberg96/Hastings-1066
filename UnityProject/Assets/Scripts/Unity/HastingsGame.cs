@@ -374,6 +374,9 @@ public sealed class HastingsGame : MonoBehaviour
             chartTab=new GUIStyle(panelButton);
             chartTabSelected=new GUIStyle(panelPrimary);
             chartClose=new GUIStyle(panelLink);
+            chartClose.alignment=TextAnchor.MiddleCenter;
+            chartClose.fontStyle=FontStyle.Bold;
+            chartClose.padding=new RectOffset(0,0,0,0);
             trackMarkerText=LabelStyle(24,true,new Color(.99f,.96f,.88f));
             trackMarkerText.alignment=TextAnchor.MiddleCenter;
             trackMarkerText.padding=new RectOffset(0,0,0,0);
@@ -3040,30 +3043,31 @@ public sealed class HastingsGame : MonoBehaviour
     {
         orderScale=Mathf.Clamp(Screen.height/1100f,.88f,1.15f);
         float u=orderScale;
-        orderTitle.fontSize=Mathf.RoundToInt(25*u);
-        orderSubtitle.fontSize=Mathf.RoundToInt(13*u);
-        orderSection.fontSize=Mathf.RoundToInt(15*u);
-        orderCardTitle.fontSize=Mathf.RoundToInt(18*u);
-        orderRoll.fontSize=Mathf.RoundToInt(11*u);
-        orderType.fontSize=Mathf.RoundToInt(10*u);
-        orderName.fontSize=Mathf.RoundToInt(15*u);
-        orderText.fontSize=Mathf.RoundToInt(11*u);
-        orderChoice.fontSize=Mathf.RoundToInt(11*u);
-        orderEffectHeading.fontSize=Mathf.RoundToInt(10*u);
-        orderEffectValue.fontSize=Mathf.RoundToInt(10*u);
-        orderEffectDetail.fontSize=Mathf.RoundToInt(10*u);
+        orderTitle.fontSize=Mathf.RoundToInt(30*u);
+        orderSubtitle.fontSize=Mathf.RoundToInt(15*u);
+        orderSection.fontSize=Mathf.RoundToInt(18*u);
+        orderCardTitle.fontSize=Mathf.RoundToInt(23*u);
+        orderRoll.fontSize=Mathf.RoundToInt(14*u);
+        orderType.fontSize=Mathf.RoundToInt(13*u);
+        orderName.fontSize=Mathf.RoundToInt(20*u);
+        orderText.fontSize=Mathf.RoundToInt(14*u);
+        orderChoice.fontSize=Mathf.RoundToInt(14*u);
+        orderEffectHeading.fontSize=Mathf.RoundToInt(13*u);
+        orderEffectValue.fontSize=Mathf.RoundToInt(13*u);
+        orderEffectDetail.fontSize=Mathf.RoundToInt(13*u);
         orderEffectWarning.fontSize=orderEffectDetail.fontSize;
-        orderCard.padding=new RectOffset(Mathf.RoundToInt(14*u),Mathf.RoundToInt(14*u),
-            Mathf.RoundToInt(9*u),Mathf.RoundToInt(11*u));
-        orderCard.margin=new RectOffset(0,0,0,Mathf.RoundToInt(7*u));
-        orderRoll.padding=new RectOffset(Mathf.RoundToInt(8*u),Mathf.RoundToInt(8*u),
-            Mathf.RoundToInt(3*u),Mathf.RoundToInt(3*u));
-        orderEffect.padding=new RectOffset(Mathf.RoundToInt(9*u),Mathf.RoundToInt(9*u),
-            Mathf.RoundToInt(6*u),Mathf.RoundToInt(6*u));
-        orderEffectValue.padding=new RectOffset(Mathf.RoundToInt(6*u),Mathf.RoundToInt(6*u),
-            Mathf.RoundToInt(3*u),Mathf.RoundToInt(3*u));
-        chartTab.fontSize=Mathf.RoundToInt(13*u);
-        chartTabSelected.fontSize=Mathf.RoundToInt(13*u);
+        orderCard.padding=new RectOffset(Mathf.RoundToInt(16*u),Mathf.RoundToInt(16*u),
+            Mathf.RoundToInt(12*u),Mathf.RoundToInt(14*u));
+        orderCard.margin=new RectOffset(0,0,0,Mathf.RoundToInt(10*u));
+        orderRoll.padding=new RectOffset(Mathf.RoundToInt(10*u),Mathf.RoundToInt(10*u),
+            Mathf.RoundToInt(4*u),Mathf.RoundToInt(4*u));
+        orderEffect.padding=new RectOffset(Mathf.RoundToInt(11*u),Mathf.RoundToInt(11*u),
+            Mathf.RoundToInt(8*u),Mathf.RoundToInt(8*u));
+        orderEffectValue.padding=new RectOffset(Mathf.RoundToInt(8*u),Mathf.RoundToInt(8*u),
+            Mathf.RoundToInt(4*u),Mathf.RoundToInt(4*u));
+        chartTab.fontSize=Mathf.RoundToInt(15*u);
+        chartTabSelected.fontSize=Mathf.RoundToInt(15*u);
+        chartClose.fontSize=Mathf.RoundToInt(17*u);
 
         Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
         float width=Mathf.Min(Screen.width-32f,1120f*u);
@@ -3076,22 +3080,18 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.Label(new Rect(24*u,13*u,width-190*u,38*u),"BATTLE ORDERS",orderTitle);
         bool optionsPending=game.OptionsPending();
         GUI.enabled=!optionsPending;
-        if(GUI.Button(new Rect(width-108*u,13*u,84*u,32*u),"Close  ×",panelLink))
+        if(GUI.Button(new Rect(width-112*u,12*u,88*u,34*u),"Close",chartClose))
         {showOrderResults=false;GUI.EndGroup();return;}
         GUI.enabled=true;
         Side displayedSide=orderResolutionTab==0?Side.Norman:Side.Saxon;
-        string explanation=displayedSide==Side.Norman?
-            "Each nationality rolls 2d6 once; that roll sets both its foot and knight orders.":
-            "Each Saxon wing rolls 2d6 once to determine its foot order.";
-        GUI.Label(new Rect(25*u,65*u,width-50*u,28*u),explanation,orderSubtitle);
 
-        float tabsX=25*u,tabsY=96*u,tabsWidth=width-50*u,gap=7*u;
+        float tabsX=25*u,tabsY=69*u,tabsWidth=width-50*u,gap=7*u;
         float tabWidth=(tabsWidth-gap)/2f;
         string[] tabs={PlayerSide()==Side.Norman?"YOUR NORMANS":"NORMANS",
             PlayerSide()==Side.Saxon?"YOUR SAXONS":"SAXONS"};
         for(int index=0;index<tabs.Length;index++)
         {
-            if(GUI.Button(new Rect(tabsX+index*(tabWidth+gap),tabsY,tabWidth,36*u),
+            if(GUI.Button(new Rect(tabsX+index*(tabWidth+gap),tabsY,tabWidth,40*u),
                 tabs[index],index==orderResolutionTab?chartTabSelected:chartTab))
             {
                 orderResolutionTab=index;
@@ -3099,7 +3099,7 @@ public sealed class HastingsGame : MonoBehaviour
             }
         }
 
-        var contentRect=new Rect(25*u,142*u,width-50*u,height-202*u);
+        var contentRect=new Rect(25*u,119*u,width-50*u,height-179*u);
         GUILayout.BeginArea(contentRect);
         orderScroll=GUILayout.BeginScrollView(orderScroll);
         DrawOrderSide(displayedSide==PlayerSide()?"YOUR CURRENT ORDERS":"CURRENT ORDERS",
@@ -3135,7 +3135,8 @@ public sealed class HastingsGame : MonoBehaviour
         DrawThemeFrame(rect);
         GUI.BeginGroup(rect);
         GUI.Label(new Rect(27*u,15*u,width-205*u,42*u),"BATTLE ORDERS",orderTitle);
-        if(GUI.Button(new Rect(width-120*u,16*u,94*u,34*u),"Close  ×",panelLink))
+        chartClose.fontSize=Mathf.RoundToInt(17*u);
+        if(GUI.Button(new Rect(width-120*u,15*u,94*u,36*u),"Close",chartClose))
         {showOrderResults=false;GUI.EndGroup();return;}
         GUI.Label(new Rect(30*u,70*u,width-60*u,30*u),
             "Current orders for Assault "+game.state.period+", turn "+game.state.turn+".",
@@ -3308,7 +3309,7 @@ public sealed class HastingsGame : MonoBehaviour
         float u=orderScale;
         var results=game.state.orderResults.Where(result=>result.side==side).ToList();
         if(results.Count==0)return;
-        GUILayout.Label(heading,orderSection,GUILayout.Height(23*u));
+        GUILayout.Label(heading,orderSection,GUILayout.Height(28*u));
         foreach(var result in results)DrawOrderResultCard(result,contentWidth);
     }
     private void DrawOrderResultCard(OrderRollResult result,float contentWidth)
@@ -3319,15 +3320,15 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.BeginHorizontal();
         var oldTitleColor=orderCardTitle.normal.textColor;
         orderCardTitle.normal.textColor=FactionColor(result.group,result.side);
-        GUILayout.Label(result.group.ToUpperInvariant(),orderCardTitle,GUILayout.Height(26*u));
+        GUILayout.Label(result.group.ToUpperInvariant(),orderCardTitle,GUILayout.Height(32*u));
         orderCardTitle.normal.textColor=oldTitleColor;
         GUILayout.FlexibleSpace();
         GUILayout.Label(result.strategy.ToString().ToUpperInvariant(),
-            orderRoll,GUILayout.Height(26*u));
+            orderRoll,GUILayout.Height(32*u));
         GUILayout.EndHorizontal();
         GUILayout.Space(3*u);
         GUILayout.BeginHorizontal();
-        float columnWidth=(contentWidth-46*u)/(result.hasKnights?2f:1f);
+        float columnWidth=(contentWidth-50*u)/(result.hasKnights?2f:1f);
         DrawOrderColumn(result,"FOOT",false,group.footOptional,group.footReroll,columnWidth);
         if(result.hasKnights)
         {
@@ -3335,16 +3336,16 @@ public sealed class HastingsGame : MonoBehaviour
             DrawOrderColumn(result,"KNIGHTS",true,group.knightOptional,group.knightReroll,columnWidth);
         }
         GUILayout.EndHorizontal();
-        GUILayout.Space(5*u);
+        GUILayout.Space(8*u);
         GUILayout.BeginVertical(orderEffect);
         GUILayout.BeginHorizontal();
-        GUILayout.Label("STRATEGY EFFECT",orderEffectHeading,GUILayout.Height(25*u));
+        GUILayout.Label("STRATEGY EFFECT",orderEffectHeading,GUILayout.Height(30*u));
         GUILayout.FlexibleSpace();
         GUILayout.Label(Signed(result.effectChange)+"  THIS TURN",orderEffectValue,
-            GUILayout.Width(112*u),GUILayout.Height(25*u));
+            GUILayout.Width(130*u),GUILayout.Height(30*u));
         GUILayout.Space(5*u);
         GUILayout.Label(Signed(result.totalEffect)+"  TOTAL",orderEffectValue,
-            GUILayout.Width(94*u),GUILayout.Height(25*u));
+            GUILayout.Width(110*u),GUILayout.Height(30*u));
         GUILayout.EndHorizontal();
         GUILayout.Space(2*u);
         bool penalty=StrategyEffects.Code(false,result.totalEffect)!='-' ||
@@ -3366,16 +3367,16 @@ public sealed class HastingsGame : MonoBehaviour
         var counter=OrderCounterTexture(result,knight);
         if(counter!=null)
         {
-            GUILayout.Label(counter,GUILayout.Width(62*u),GUILayout.Height(62*u));
-            GUILayout.Space(8*u);
+            GUILayout.Label(counter,GUILayout.Width(78*u),GUILayout.Height(78*u));
+            GUILayout.Space(10*u);
         }
         GUILayout.BeginVertical();
         int sectionRoll=knight?result.knightRoll:result.footRoll;
         if(sectionRoll<=0 && !continued)sectionRoll=result.roll;
         GUILayout.Label(unitKind+"   ·   "+(continued?"CONTINUED ORDER":"2D6: "+sectionRoll),
-            orderType,GUILayout.Height(15*u));
+            orderType,GUILayout.Height(20*u));
         GUILayout.Label(choicePending?"CHOOSE AN ORDER":OrderDisplay(order),orderName,
-            GUILayout.Height(22*u));
+            GUILayout.Height(29*u));
         string timing=choicePending?"Optional result · your choice is required":
             rerollPending?"Extended assault · keep this order or reroll":
             optional?(result.side==PlayerSide()?"Optional result · your selected order":
@@ -3391,27 +3392,27 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.BeginHorizontal();
             if(knight)
             {
-                if(GUILayout.Button("Hold",orderChoice,GUILayout.Height(31*u)))
+                if(GUILayout.Button("Hold",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,true,Order.Hold);
-                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(31*u)))
+                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,true,Order.Advance);
-                if(GUILayout.Button("Charge",orderChoice,GUILayout.Height(31*u)))
+                if(GUILayout.Button("Charge",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,true,Order.Charge);
             }
             else
             {
-                if(GUILayout.Button("Shield Wall",orderChoice,GUILayout.Height(31*u)))
+                if(GUILayout.Button("Shield Wall",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,false,Order.ShieldWall);
                 if(result.side==Side.Saxon)
                 {
-                    if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(31*u)))
+                    if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
                         ChooseOptionalOrder(result.group,false,Order.FireInPlace);
-                    if(GUILayout.Button("Attack & Pursue",orderChoice,GUILayout.Height(31*u)))
+                    if(GUILayout.Button("Attack & Pursue",orderChoice,GUILayout.Height(36*u)))
                         ChooseOptionalOrder(result.group,false,Order.AttackPursue);
                 }
-                else if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(31*u)))
+                else if(GUILayout.Button("Fire in Place",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,false,Order.FireInPlace);
-                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(31*u)))
+                if(GUILayout.Button("Advance",orderChoice,GUILayout.Height(36*u)))
                     ChooseOptionalOrder(result.group,false,Order.Advance);
             }
             GUILayout.EndHorizontal();
@@ -3420,13 +3421,12 @@ public sealed class HastingsGame : MonoBehaviour
         {
             GUILayout.Label("This result may be rerolled once:",orderText);
             GUILayout.BeginHorizontal();
-            if(GUILayout.Button("Keep",orderChoice,GUILayout.Height(31*u)))
+            if(GUILayout.Button("Keep",orderChoice,GUILayout.Height(36*u)))
                 game.ResolveExtendedReroll(result.group,knight,false);
-            if(GUILayout.Button("Reroll",orderChoice,GUILayout.Height(31*u)))
+            if(GUILayout.Button("Reroll",orderChoice,GUILayout.Height(36*u)))
                 game.ResolveExtendedReroll(result.group,knight,true);
             GUILayout.EndHorizontal();
         }
-        else GUILayout.Label(OrderDescription(order),orderText);
         GUILayout.EndVertical();
         GUILayout.EndHorizontal();
     }
