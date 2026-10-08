@@ -2753,8 +2753,6 @@ public sealed class HastingsGame : MonoBehaviour
         DrawSurface(new Rect(rect.x+9,rect.y+9,rect.width-18,rect.height-18),
             themeSkin.cardTexture,themeSkin.card);
         DrawThemeFrame(rect);
-        DrawThemeOrnament(new Rect(rect.x+rect.width*.57f,rect.y+12,
-            rect.width*.38f,132),.72f);
         float inset=Mathf.Clamp(width*.08f,35,80);
         float buttonHeight=Mathf.Clamp(Screen.height*.055f,54,96);
         GUILayout.BeginArea(new Rect(rect.x+inset,rect.y+25,rect.width-2*inset,rect.height-50));
@@ -2784,7 +2782,14 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Space(12);
             if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
             {menuPage="theme";menuScroll=Vector2.zero;}
-            GUILayout.FlexibleSpace();
+            var ornamentRegion=GUILayoutUtility.GetRect(1f,1f,
+                GUILayout.ExpandWidth(true),GUILayout.ExpandHeight(true));
+            float ornamentHeight=Mathf.Min(132f,ornamentRegion.height);
+            float ornamentWidth=Mathf.Min(rect.width*.38f,ornamentRegion.width);
+            DrawThemeOrnament(new Rect(
+                ornamentRegion.center.x-ornamentWidth/2f,
+                ornamentRegion.center.y-ornamentHeight/2f,
+                ornamentWidth,ornamentHeight),.72f);
             if(GUILayout.Button("Quit",menuButton,GUILayout.Height(buttonHeight)))RequestQuit();
         }
         else if(menuPage=="load")
