@@ -670,6 +670,15 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.DrawTexture(rect,themeSkin.ornament,ScaleMode.ScaleToFit,true);
         GUI.color=old;
     }
+    private void DrawCenteredMenuOrnament(float menuWidth)
+    {
+        var region=GUILayoutUtility.GetRect(1f,1f,
+            GUILayout.ExpandWidth(true),GUILayout.ExpandHeight(true));
+        float height=Mathf.Min(132f,region.height);
+        float width=Mathf.Min(menuWidth*.38f,region.width);
+        DrawThemeOrnament(new Rect(region.center.x-width/2f,
+            region.center.y-height/2f,width,height),.72f);
+    }
     private void DrawThemeDivider(float height,float alpha=1f)
     {
         var rect=GUILayoutUtility.GetRect(1f,height,GUILayout.ExpandWidth(true));
@@ -2782,14 +2791,7 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Space(12);
             if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
             {menuPage="theme";menuScroll=Vector2.zero;}
-            var ornamentRegion=GUILayoutUtility.GetRect(1f,1f,
-                GUILayout.ExpandWidth(true),GUILayout.ExpandHeight(true));
-            float ornamentHeight=Mathf.Min(132f,ornamentRegion.height);
-            float ornamentWidth=Mathf.Min(rect.width*.38f,ornamentRegion.width);
-            DrawThemeOrnament(new Rect(
-                ornamentRegion.center.x-ornamentWidth/2f,
-                ornamentRegion.center.y-ornamentHeight/2f,
-                ornamentWidth,ornamentHeight),.72f);
+            DrawCenteredMenuOrnament(rect.width);
             if(GUILayout.Button("Quit",menuButton,GUILayout.Height(buttonHeight)))RequestQuit();
         }
         else if(menuPage=="load")
@@ -2868,7 +2870,7 @@ public sealed class HastingsGame : MonoBehaviour
                 StartNewGame(Side.Saxon);
             GUILayout.Label(saxonDescription,menuDescription,GUILayout.Height(
                 menuDescription.CalcHeight(new GUIContent(saxonDescription),descriptionWidth)+8f));
-            GUILayout.FlexibleSpace();
+            DrawCenteredMenuOrnament(rect.width);
             if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
         else if(menuPage=="theme")
