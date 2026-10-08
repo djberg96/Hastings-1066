@@ -622,6 +622,41 @@ public static class ProjectChecks
             meleeEngine.lastMeleeResult.attack>0 && meleeEngine.lastMeleeResult.defense>0 &&
             !string.IsNullOrEmpty(meleeEngine.lastMeleeResult.tableResult),
             "Melee did not expose a visual result");
+        var steppedMeleeState=Setup.New(board,138);steppedMeleeState.playerSide=Side.Norman;
+        steppedMeleeState.phase=Phase.NormanDefenseFire;
+        foreach(var unit in steppedMeleeState.units)unit.hex="";
+        var steppedAttackers=steppedMeleeState.units.Where(unit=>unit.side==Side.Saxon &&
+            !UnitTypes.Get(unit).leader).Take(2).ToArray();
+        var steppedDefenders=steppedMeleeState.units.Where(unit=>unit.side==Side.Norman &&
+            !UnitTypes.Get(unit).leader).Take(2).ToArray();
+        string firstAttackHex="1112";
+        string firstDefenseHex=board.Adjacent(firstAttackHex).First();
+        string secondAttackHex=board.data.hexes.Select(hex=>hex.id).First(hex=>
+            board.Distance(firstAttackHex,hex)>=6 && board.Adjacent(hex).Any());
+        string secondDefenseHex=board.Adjacent(secondAttackHex).First();
+        steppedAttackers[0].hex=firstAttackHex;steppedDefenders[0].hex=firstDefenseHex;
+        steppedAttackers[1].hex=secondAttackHex;steppedDefenders[1].hex=secondDefenseHex;
+        for(int index=0;index<2;index++)
+        {
+            steppedAttackers[index].facing=board.Direction(steppedAttackers[index].hex,
+                steppedDefenders[index].hex);
+            steppedDefenders[index].facing=board.Direction(steppedDefenders[index].hex,
+                steppedAttackers[index].hex);
+        }
+        var steppedMeleeEngine=new GameEngine(board,steppedMeleeState);
+        Check(steppedMeleeEngine.CanAdvanceOpponentMelee() &&
+            steppedMeleeEngine.AdvanceOpponentMeleeStep() &&
+            steppedMeleeEngine.recentMeleeResults.Count==1,
+            "Opponent melee did not expose exactly one combat for animation");
+        string firstSteppedDefender=steppedMeleeEngine.recentMeleeResults[0].defenderIds[0];
+        Check(steppedMeleeState.phase==Phase.NormanDefenseFire &&
+            steppedMeleeEngine.AdvanceOpponentMeleeStep() &&
+            steppedMeleeEngine.recentMeleeResults.Count==1 &&
+            steppedMeleeEngine.recentMeleeResults[0].defenderIds[0]!=firstSteppedDefender,
+            "Opponent melee did not pause between distinct combats");
+        Check(!steppedMeleeEngine.AdvanceOpponentMeleeStep() &&
+            steppedMeleeState.phase==Phase.Orders && steppedMeleeState.turn==2,
+            "Opponent melee sequence did not advance the turn after its final combat");
         var downhillState=Setup.New(board,380);downhillState.phase=Phase.NormanMelee;
         downhillState.playerSide=Side.Norman;
         foreach(var unit in downhillState.units)unit.hex="";

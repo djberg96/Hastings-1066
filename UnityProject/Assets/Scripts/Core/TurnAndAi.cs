@@ -129,6 +129,28 @@ namespace Hastings
                 ResolveMelee(new List<UnitState>{attacker},targets);
             }
         }
+        public bool CanAdvanceOpponentMelee()
+        {
+            return (state.playerSide==Side.Norman && state.phase==Phase.NormanDefenseFire) ||
+                (state.playerSide==Side.Saxon && state.phase==Phase.SaxonDefenseFire);
+        }
+        public bool AdvanceOpponentMeleeStep()
+        {
+            recentFireResults.Clear();
+            recentMeleeResults.Clear();
+            automaticMovements.Clear();
+            if(!CanAdvanceOpponentMelee())return false;
+            Side side=Opposite(state.playerSide);
+            if(AiMeleeStep(side))return true;
+            if(state.phase==Phase.GameOver)return false;
+            if(state.playerSide==Side.Norman)EndTurn();
+            else
+            {
+                Rally(Side.Saxon);ResetFire();state.phase=Phase.SaxonFire;
+                Log("Saxon missile fire segment");
+            }
+            return false;
+        }
         private void EndTurn()
         {
             if(state.phase==Phase.GameOver)return;
@@ -324,11 +346,16 @@ namespace Hastings
         }
         private void AiMelee(Side side)
         {
+            while(AiMeleeStep(side)){}
+        }
+        private bool AiMeleeStep(Side side)
+        {
+            if(state.phase==Phase.GameOver)return false;
             var attackers=Living(side).Where(u=>!UnitTypes.Get(u).leader && u.status==Status.Ready)
                 .OrderByDescending(u=>UnitTypes.Get(u).attack).ToList();
             foreach(var attacker in attackers)
             {
-                if(state.phase==Phase.GameOver)return;
+                if(state.phase==Phase.GameOver)return false;
                 if(attacker.engaged)continue;
                 var targets=RequiredMeleeTargets(new[]{attacker});
                 if(targets.Count==0)continue;
@@ -339,8 +366,14 @@ namespace Hastings
                     .OrderByDescending(a=>UnitTypes.Get(a).attack).Take(2).ToList();
                 var group=new List<UnitState>{attacker};group.AddRange(partners);
                 ResolveMelee(group,targets);
+                return true;
             }
-            ResolveRemainingMandatory(side);
+            var mandatoryAttacker=RequiredMeleeAttackers(side).FirstOrDefault();
+            if(mandatoryAttacker==null)return false;
+            var mandatoryTargets=RequiredMeleeTargets(new[]{mandatoryAttacker});
+            if(mandatoryTargets.Count==0)return false;
+            ResolveMelee(new List<UnitState>{mandatoryAttacker},mandatoryTargets);
+            return true;
         }
         private void EnterReinforcements()
         {

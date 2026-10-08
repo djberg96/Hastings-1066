@@ -55,7 +55,8 @@ public sealed class HastingsGame : MonoBehaviour
     private MeleeCombatResult meleeResult;
     private MovementResult movementResult;
     private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
-        showQuitPrompt, quitApproved, orderReviewMode, showStrategyTrack, fullMapMode;
+        showQuitPrompt, quitApproved, orderReviewMode, showStrategyTrack, fullMapMode,
+        automaticMeleeSequence;
     private int orderReviewTab, orderResolutionTab;
     private int requiredMovementHighlightSignature=int.MinValue;
     private string saveSlot="", notice="", chart="", menuPage="main",
@@ -86,6 +87,7 @@ public sealed class HastingsGame : MonoBehaviour
     private const float AutomaticMovementStepSeconds=.24f;
     private const float AiMovementPauseSeconds=.10f;
     private const float AutomaticFirePreludeSeconds=1.6f;
+    private const float AutomaticMeleeEffectSeconds=3.0f;
     private const string DisplayPrefsVersion="display-prefs-version";
 
     private void Awake()
@@ -121,6 +123,11 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void Update()
     {
+        if(automaticMeleeSequence)
+        {
+            ContinueAutomaticMeleeSequence();
+            return;
+        }
         if(Input.GetKeyDown(KeyCode.Escape))
         {
             if(showQuitPrompt)
@@ -413,7 +420,7 @@ public sealed class HastingsGame : MonoBehaviour
         DrawMap(mapRect);
         DrawStrategyEffectsTrack(strategyTrackRect);
         if(showOrderResults || MovementAnimationActive() || UnitTransitionAnimationActive() ||
-            showQuitPrompt)
+            automaticMeleeSequence || showQuitPrompt)
             GUI.enabled=false;
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
         GUI.enabled=true;
@@ -752,7 +759,8 @@ public sealed class HastingsGame : MonoBehaviour
     private void HandleInput(Rect region)
     {
         Event e=Event.current;
-        if(showQuitPrompt || MovementAnimationActive() || UnitTransitionAnimationActive())return;
+        if(showQuitPrompt || MovementAnimationActive() || UnitTransitionAnimationActive() ||
+           automaticMeleeSequence)return;
         if(e.type==EventType.KeyDown)
         {
             if(showUnits && !showMenu && chart=="" && !showOrderResults &&
@@ -1296,7 +1304,7 @@ public sealed class HastingsGame : MonoBehaviour
             Select(hex=>MapPoint(hex.x,hex.y)).ToArray();
         if(targets.Length==0)return;
         float elapsed=Time.unscaledTime-meleeEffectStarted;
-        float fade=1f-Mathf.Clamp01((elapsed-3.2f)/1.1f);
+        float fade=1f-Mathf.Clamp01((elapsed-(meleeEffectUntil-meleeEffectStarted-1.1f))/1.1f);
         float travel=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.8f));
         foreach(var hexId in meleeResult.attackerHexes)
         {
@@ -1411,7 +1419,7 @@ public sealed class HastingsGame : MonoBehaviour
             Select(hex=>MapPoint(hex.x,hex.y)).ToArray();
         if(targets.Length==0)return;
         float elapsed=Time.unscaledTime-meleeEffectStarted;
-        float fade=1f-Mathf.Clamp01((elapsed-3.2f)/1.1f);
+        float fade=1f-Mathf.Clamp01((elapsed-(meleeEffectUntil-meleeEffectStarted-1.1f))/1.1f);
         float impact=Mathf.SmoothStep(0,1,Mathf.Clamp01((elapsed-.45f)/.25f));
         float pulse=.5f+.5f*Mathf.Sin(elapsed*11f);
         float largestRadius=Mathf.Max(32f,(42f+9f*pulse)*scale);
@@ -2565,7 +2573,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void Advance()
     {
         if(game==null)return;
-        if(MovementAnimationActive())return;
+        if(MovementAnimationActive() || automaticMeleeSequence)return;
         if(PlayerMovePhase())
         {
             int required=game.RequiredMovementUnits(PlayerSide()).Count;
@@ -2585,6 +2593,11 @@ public sealed class HastingsGame : MonoBehaviour
                     " resolve mandatory melee before this segment can end.";
                 return;
             }
+        }
+        if(game.CanAdvanceOpponentMelee())
+        {
+            BeginAutomaticMeleeSequence();
+            return;
         }
         var transitionBefore=SnapshotUnitTransitions();
         string transitionLogMarker=game.state.log.LastOrDefault();
@@ -2824,11 +2837,75 @@ public sealed class HastingsGame : MonoBehaviour
         unitTransitionEffectUntil=unitTransitionTravelUntil+
             (captured.Any(transition=>transition.showAftermath)?3f:.28f);
     }
+    private void BeginAutomaticMeleeSequence()
+    {
+        automaticMeleeSequence=true;
+        meleeResult=null;
+        unitTransitionNotices.Clear();
+        selected.Clear();selectedTargets.Clear();highTrajectoryTargetId="";
+        ResolveNextAutomaticMelee();
+    }
+    private void ContinueAutomaticMeleeSequence()
+    {
+        if(!automaticMeleeSequence || showMenu || showQuitPrompt || chart!="" ||
+           showOrderResults)return;
+        if(meleeResult!=null && Time.unscaledTime<=meleeEffectUntil)return;
+        if(UnitTransitionAnimationActive())return;
+        ResolveNextAutomaticMelee();
+    }
+    private void ResolveNextAutomaticMelee()
+    {
+        var before=SnapshotUnitTransitions();
+        string logMarker=game.state.log.LastOrDefault();
+        var priorPhase=game.state.phase;
+        unitTransitionNotices.Clear();
+        bool resolved=game.AdvanceOpponentMeleeStep();
+        CaptureUnitTransitions(before,logMarker,priorPhase);
+        if(resolved)
+        {
+            ShowMeleeResult(AutomaticMeleeEffectSeconds);
+            CenterMeleeOnMap(meleeResult);
+            var attacker=game.state.units.FirstOrDefault(unit=>
+                meleeResult.attackerIds.Contains(unit.id));
+            notice=(attacker==null?"Opponent":attacker.side.ToString())+
+                " melee resolving…";
+            return;
+        }
+        automaticMeleeSequence=false;
+        meleeResult=null;
+        notice="";
+        if(game.state.phase!=priorPhase)movementUndo.Clear();
+    }
+    private void CenterMeleeOnMap(MeleeCombatResult result)
+    {
+        if(result==null)return;
+        var hexes=result.defenderHexes.Concat(result.attackerHexes).Where(board.Has)
+            .Select(board.Hex).ToArray();
+        if(hexes.Length==0)return;
+        var boardCenter=new Vector2(hexes.Average(hex=>hex.x),hexes.Average(hex=>hex.y));
+        boardCenter=BoardViewMath.OrientBattlefield(boardCenter,board.data.width,SaxonView());
+        float mapWidth=Mathf.Max(100f,Screen.width-PanelWidth());
+        float mapHeight=Screen.height-(showStrategyTrack?
+            Mathf.Clamp(Screen.height*.26f,330f,400f):
+            Mathf.Clamp(Screen.height*.045f,54f,68f));
+        var visible=MapPoint(hexes.Average(hex=>hex.x),hexes.Average(hex=>hex.y));
+        float margin=Mathf.Min(150f,mapWidth*.18f);
+        if(visible.x>=margin && visible.x<=mapWidth-margin &&
+           visible.y>=margin && visible.y<=mapHeight-margin)return;
+        fullMapMode=false;
+        pan=new Vector2(mapWidth*.5f,mapHeight*.5f)-boardCenter*scale;
+        pan=BoardViewMath.ClampPan(pan,scale,mapWidth,mapHeight,
+            board.data.width,board.data.height);
+    }
     private void ShowMeleeResult()
+    {
+        ShowMeleeResult(4.3f);
+    }
+    private void ShowMeleeResult(float duration)
     {
         meleeResult=game.lastMeleeResult;
         meleeEffectStarted=Time.unscaledTime;
-        meleeEffectUntil=meleeEffectStarted+4.3f;
+        meleeEffectUntil=meleeEffectStarted+duration;
         missileResult=null;notice="";
         selected.Clear();selectedTargets.Clear();
     }
@@ -2914,7 +2991,7 @@ public sealed class HastingsGame : MonoBehaviour
                         movementResult=null;
                         unitTransitionNotices.Clear();
                         stackSpread.Clear();hoveredHex="";
-                        missileResult=null;meleeResult=null;
+                        missileResult=null;meleeResult=null;automaticMeleeSequence=false;
                         lastMapWidth=0;scale=0;fullMapMode=false;
                     }
                     catch(Exception ex){notice="Load failed: "+ex.Message;}
@@ -3109,6 +3186,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void StartNewGame(Side playerSide)
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks,playerSide));
+        automaticMeleeSequence=false;
         saveSlot="";
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
         showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
