@@ -385,10 +385,15 @@ public static class ProjectChecks
         Check(saxonOptionalEngine.SetOptionalOrder("Left",false,Order.AttackPursue) &&
             saxonOptionalGroup.footOrder==Order.AttackPursue,
             "Saxon optional result no longer allowed Attack & Pursue");
+        Check(GameStorage.DefaultSlotName(new DateTime(2026,10,8,14,35,22))==
+            "Hastings - 2026-10-08 14-35-22",
+            "Default save slot name was not a readable timestamp");
         string slot="HastingsVerification"+Guid.NewGuid().ToString("N");
         try
         {
             GameStorage.Save(slot,state);
+            Check(!GameStorage.Slots().Contains(slot),
+                "Internal verification save appeared in the player save list");
             var diskState=GameStorage.Load(slot);
             Check(diskState.randomState==state.randomState && diskState.phase==state.phase,
                 "Named save slot failed to restore state");

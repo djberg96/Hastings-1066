@@ -58,7 +58,7 @@ public sealed class HastingsGame : MonoBehaviour
         showQuitPrompt, quitApproved, orderReviewMode, showStrategyTrack, fullMapMode;
     private int orderReviewTab, orderResolutionTab;
     private int requiredMovementHighlightSignature=int.MinValue;
-    private string saveSlot="Game 1", notice="", chart="", menuPage="main",
+    private string saveSlot="", notice="", chart="", menuPage="main",
         highTrajectoryTargetId="", quitPromptError="";
     private InterfaceTheme interfaceTheme;
     private InterfaceThemeSkin themeSkin;
@@ -2884,7 +2884,8 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Space(12);
             if(game!=null)
             {
-                if(GUILayout.Button("Save Game",menuButton,GUILayout.Height(buttonHeight)))menuPage="save";
+                if(GUILayout.Button("Save Game",menuButton,GUILayout.Height(buttonHeight)))
+                    OpenSaveMenu();
                 GUILayout.Space(12);
             }
             if(GUILayout.Button("Load Game",menuButton,GUILayout.Height(buttonHeight)))menuPage="load";
@@ -2930,7 +2931,11 @@ public sealed class HastingsGame : MonoBehaviour
             GUILayout.Space(12);
             if(GUILayout.Button("Save Game",menuButton,GUILayout.Height(buttonHeight)))
             {
-                try{GameStorage.Save(saveSlot,game.state);notice="Saved as " +saveSlot;}
+                try
+                {
+                    EnsureSaveSlot();
+                    GameStorage.Save(saveSlot,game.state);notice="Saved as " +saveSlot;
+                }
                 catch(Exception ex){notice="Save failed: "+ex.Message;}
             }
             GUILayout.Space(12);
@@ -3007,12 +3012,22 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(game!=null && game.state!=null && game.state.phase!=Phase.GameOver)
         {
+            EnsureSaveSlot();
             showQuitPrompt=true;
             quitPromptError="";
             return;
         }
         quitApproved=true;
         Application.Quit();
+    }
+    private void OpenSaveMenu()
+    {
+        EnsureSaveSlot();
+        menuPage="save";
+    }
+    private void EnsureSaveSlot()
+    {
+        if(string.IsNullOrWhiteSpace(saveSlot))saveSlot=GameStorage.DefaultSlotName();
     }
     private void DrawQuitPrompt()
     {
@@ -3043,6 +3058,7 @@ public sealed class HastingsGame : MonoBehaviour
         {
             try
             {
+                EnsureSaveSlot();
                 GameStorage.Save(saveSlot,game.state);
                 quitApproved=true;
                 showQuitPrompt=false;
@@ -3093,6 +3109,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void StartNewGame(Side playerSide)
     {
         game=new GameEngine(board,Setup.New(board,(uint)DateTime.UtcNow.Ticks,playerSide));
+        saveSlot="";
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
         showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
         orderResolutionTab=playerSide==Side.Norman?0:1;

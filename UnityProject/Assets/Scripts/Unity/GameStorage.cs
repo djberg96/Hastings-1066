@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Hastings;
@@ -6,6 +7,8 @@ using UnityEngine;
 
 public static class GameStorage
 {
+    private const string VerificationSlotPrefix="HastingsVerification";
+
     private static string Folder
     {
         get
@@ -24,7 +27,18 @@ public static class GameStorage
     public static string[] Slots()
     {
         return Directory.GetFiles(Folder,"*.json").OrderByDescending(File.GetLastWriteTimeUtc)
+            .Where(path=>!Path.GetFileNameWithoutExtension(path).StartsWith(
+                VerificationSlotPrefix,StringComparison.Ordinal))
             .Select(Path.GetFileNameWithoutExtension).ToArray();
+    }
+    public static string DefaultSlotName()
+    {
+        return DefaultSlotName(DateTime.Now);
+    }
+    public static string DefaultSlotName(DateTime timestamp)
+    {
+        return "Hastings - "+timestamp.ToString("yyyy-MM-dd HH-mm-ss",
+            CultureInfo.InvariantCulture);
     }
     public static void Save(string slot,GameState state)
     {
