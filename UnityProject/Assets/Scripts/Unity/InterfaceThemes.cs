@@ -58,6 +58,11 @@ public static class InterfaceThemeCatalog
         skin=Create(theme);Cache[theme]=skin;return skin;
     }
 
+    public static Texture2D TintedButtonTexture(InterfaceThemeSkin skin,Color fill,int seed)
+    {
+        return Button(skin.id,fill,skin.frame,skin.frameHighlight,seed,false);
+    }
+
     private static InterfaceThemeSkin Create(InterfaceTheme theme)
     {
         var skin=new InterfaceThemeSkin{id=theme,border=new RectOffset(8,8,8,8)};

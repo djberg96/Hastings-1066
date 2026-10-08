@@ -499,6 +499,12 @@ public sealed class HastingsGame : MonoBehaviour
         SetButtonTheme(panelButton,false);SetButtonTheme(panelNavButton,false);
         SetButtonTheme(panelPrimary,true);SetButtonTheme(panelLink,false);
         SetButtonTheme(fireModeButton,false);SetButtonTheme(fireModeSelected,true);
+        SetFactionButtonTheme(panelBretonButton,new Color(.72f,.81f,.64f),
+            new Color(.15f,.25f,.13f),71);
+        SetFactionButtonTheme(panelNormanButton,new Color(.85f,.70f,.63f),
+            new Color(.31f,.13f,.10f),73);
+        SetFactionButtonTheme(panelFlemishButton,new Color(.68f,.79f,.86f),
+            new Color(.12f,.22f,.30f),79);
         SetButtonTheme(strategyToggle,false);
         SetText(strategyHeading,t.accent);SetText(strategyScale,t.ink);
         SetText(strategyLegend,t.mutedInk);SetText(strategyBand,t.ink);
@@ -541,6 +547,24 @@ public sealed class HastingsGame : MonoBehaviour
         style.onActive.background=style.active.background;
         style.border=new RectOffset(t.border.left,t.border.right,t.border.top,t.border.bottom);
         SetText(style,primary?t.accentText:t.ink);
+    }
+    private void SetFactionButtonTheme(GUIStyle style,Color fill,Color textColor,int seed)
+    {
+        style.normal.background=InterfaceThemeCatalog.TintedButtonTexture(
+            themeSkin,fill,seed);
+        style.hover.background=InterfaceThemeCatalog.TintedButtonTexture(
+            themeSkin,Color.Lerp(fill,Color.white,.10f),seed+2);
+        style.active.background=InterfaceThemeCatalog.TintedButtonTexture(
+            themeSkin,Color.Lerp(fill,Color.black,.10f),seed+4);
+        style.focused.background=style.hover.background;
+        style.onNormal.background=style.normal.background;
+        style.onHover.background=style.hover.background;
+        style.onActive.background=style.active.background;
+        style.border=new RectOffset(themeSkin.border.left,themeSkin.border.right,
+            themeSkin.border.top,themeSkin.border.bottom);
+        style.fontStyle=FontStyle.Bold;
+        style.padding=new RectOffset(12,12,7,7);
+        SetText(style,textColor);
     }
     private void SetBoxTheme(GUIStyle style,Texture2D texture)
     {
@@ -2858,8 +2882,13 @@ public sealed class HastingsGame : MonoBehaviour
             float descriptionWidth=rect.width-2*inset;
             const string battleDescription=
                 "The armies of Harold Godwinson and William of Normandy meet near Hastings with the English crown at stake.";
+            var battleContent=new GUIContent(battleDescription);
+            float battleDescriptionHeight=Mathf.Max(
+                menuSubtitle.CalcHeight(battleContent,
+                    descriptionWidth-menuSubtitle.margin.horizontal),
+                menuSubtitle.lineHeight*3f)+8f;
             GUILayout.Label(battleDescription,menuSubtitle,GUILayout.Height(
-                menuSubtitle.CalcHeight(new GUIContent(battleDescription),descriptionWidth)+8f));
+                battleDescriptionHeight));
             GUILayout.Space(18);
             if(GUILayout.Button("Normans",menuPrimary,GUILayout.Height(buttonHeight)))
                 StartNewGame(Side.Norman);
