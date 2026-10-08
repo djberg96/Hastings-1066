@@ -27,6 +27,49 @@ namespace Hastings
             if(shooter.side==Side.Saxon && type.missile=="J" && !SupplyAvailable(shooter.group,Side.Saxon))return false;
             return LineOfSight(shooter.hex,target.hex,high);
         }
+        public MissileAvailability MissileAvailabilityFor(UnitState shooter)
+        {
+            var type=UnitTypes.Get(shooter);
+            if(type.missile=="" || shooter.status!=Status.Ready || !board.Has(shooter.hex))
+                return MissileAvailability.NotReady;
+            if(shooter.fired)return MissileAvailability.Fired;
+            var targets=Living(Opposite(shooter.side)).ToList();
+            if(targets.Count==0)return MissileAvailability.NoTargets;
+            if(targets.Any(target=>CanFire(shooter,target,false) ||
+                CanFire(shooter,target,true)))return MissileAvailability.Eligible;
+            if(shooter.reacted && type.missile!="B")return MissileAvailability.Restricted;
+            if(shooter.side==Side.Norman && state.phase!=Phase.NormanFire &&
+               state.phase!=Phase.NormanDefenseFire)return MissileAvailability.Restricted;
+            if(shooter.side==Side.Saxon && state.playerSide==Side.Saxon &&
+               state.phase!=Phase.SaxonFire && state.phase!=Phase.SaxonDefenseFire)
+                return MissileAvailability.Restricted;
+            if(OptionsPending())return MissileAvailability.Restricted;
+            if(shooter.side==Side.Norman && type.missile=="B" &&
+               !SupplyAvailable(shooter.group,Side.Norman))return MissileAvailability.NoSupply;
+            if(shooter.side==Side.Saxon && type.missile=="J" &&
+               !SupplyAvailable(shooter.group,Side.Saxon))return MissileAvailability.NoSupply;
+            var inRange=targets.Where(target=>
+                RuleTables.MissileStrength(type.missile,
+                    board.Distance(shooter.hex,target.hex))>0).ToList();
+            if(inRange.Count==0)return MissileAvailability.OutOfRange;
+            var inArc=inRange.Where(target=>
+            {
+                int direction=board.Direction(shooter.hex,target.hex);
+                return direction==shooter.facing || direction==(shooter.facing+1)%6;
+            }).ToList();
+            if(inArc.Count==0)return MissileAvailability.OutOfArc;
+            if(InEnemyZoc(shooter.side,shooter.hex))
+            {
+                inArc=inArc.Where(target=>Controls(target,shooter.hex)).ToList();
+                if(inArc.Count==0)return MissileAvailability.EnemyZoc;
+            }
+            bool highAllowed=type.missile=="B" &&
+                (shooter.side!=Side.Norman || state.period!=1);
+            if(!inArc.Any(target=>LineOfSight(shooter.hex,target.hex,false) ||
+                (highAllowed && LineOfSight(shooter.hex,target.hex,true))))
+                return MissileAvailability.NoLineOfSight;
+            return MissileAvailability.Restricted;
+        }
         private bool SupplyAvailable(string group,Side side)
         {
             var g=state.groups.First(x=>x.id==group);

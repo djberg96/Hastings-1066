@@ -10,6 +10,8 @@ namespace Hastings
         NormanDefenseFire, Reform, GameOver, SaxonReaction, SaxonDefenseFire, SaxonFire,
         SaxonMove, SaxonMelee }
     public enum Status { Ready, Disrupted, Routed, Eliminated }
+    public enum MissileAvailability { Eligible, Fired, NotReady, NoTargets, OutOfRange,
+        OutOfArc, NoLineOfSight, NoSupply, EnemyZoc, Restricted }
     public enum Strategy { Defensive, Cautious, Moderate, Aggressive }
     public enum Order { ShieldWall, FireInPlace, Advance, AttackPursue, Hold, Charge }
 

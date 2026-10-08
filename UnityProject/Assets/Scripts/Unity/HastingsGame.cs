@@ -884,6 +884,17 @@ public sealed class HastingsGame : MonoBehaviour
         {
             highTrajectoryTargetId="";
             var unit=preferLeader?(leader??friendly):(friendly??leader);
+            if(PlayerFirePhase() && unit.side==player && UnitTypes.Get(unit).missile!="")
+            {
+                var availability=game.MissileAvailabilityFor(unit);
+                if(availability!=MissileAvailability.Eligible)
+                {
+                    selected.Remove(unit.id);
+                    selectedTargets.Clear();
+                    notice=MissileUnavailableMessage(availability);
+                    return;
+                }
+            }
             if(selected.Contains(unit.id))selected.Remove(unit.id);
             else if(add)selected.Add(unit.id);
             else{selected.Clear();selected.Add(unit.id);}
@@ -984,16 +995,24 @@ public sealed class HastingsGame : MonoBehaviour
                     var type=UnitTypes.Get(u);
                     var rect=CounterRect(u,SpreadFor(u.hex));
                     var texture=CounterTexture(u);
+                    var missileAvailability=PlayerFirePhase() && u.side==PlayerSide() &&
+                        type.missile!="" && u.status==Status.Ready?
+                        game.MissileAvailabilityFor(u):MissileAvailability.Eligible;
+                    bool missileUnavailable=missileAvailability!=MissileAvailability.Eligible;
                     var old=GUI.matrix;
                     if(!type.leader)GUIUtility.RotateAroundPivot(
                         BoardViewMath.FacingRotationDegrees(u.facing,SaxonView()),rect.center);
+                    if(missileUnavailable)GUI.color=new Color(.55f,.55f,.55f,.72f);
                     if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
+                    GUI.color=Color.white;
                     if(selected.Contains(u.id))DrawSelectionOutline(rect);
                     GUI.matrix=old;
                     if(u.status==Status.Disrupted||u.status==Status.Routed)
                         DrawUnitStatusMarker(u.status,rect);
                     if(PlayerMovePhase() && u.side==PlayerSide() && u.moved)
                         DrawUnitMovedMarker(rect);
+                    if(missileUnavailable)
+                        DrawMissileUnavailableMarker(rect,missileAvailability);
                 }
                 DrawUnitTransitionCounters();
                 DrawRequiredMovementHighlights();
@@ -1098,6 +1117,53 @@ public sealed class HastingsGame : MonoBehaviour
         movedMarker.fontSize=Mathf.Clamp(Mathf.RoundToInt(size*.62f),11,18);
         GUI.Label(marker,"M",movedMarker);
     }
+    private void DrawMissileUnavailableMarker(Rect counter,MissileAvailability availability)
+    {
+        string label=MissileUnavailableBadge(availability);
+        float height=Mathf.Clamp(20f*scale,17f,23f);
+        float width=Mathf.Clamp((label.Length*8f+14f)*scale,52f,78f);
+        var badge=new Rect(counter.center.x-width/2f,counter.y-height-4f,width,height);
+        Fill(new Rect(badge.x-2,badge.y-2,badge.width+4,badge.height+4),
+            new Color(.18f,.15f,.13f,.94f));
+        Fill(badge,new Color(.39f,.38f,.36f,.96f));
+        missileMapResult.fontSize=Mathf.Clamp(Mathf.RoundToInt(height*.55f),10,13);
+        GUI.Label(badge,label,missileMapResult);
+    }
+    private static string MissileUnavailableBadge(MissileAvailability availability)
+    {
+        switch(availability)
+        {
+            case MissileAvailability.Fired:return "FIRED";
+            case MissileAvailability.OutOfRange:return "RANGE";
+            case MissileAvailability.OutOfArc:return "ARC";
+            case MissileAvailability.NoLineOfSight:return "NO LOS";
+            case MissileAvailability.NoSupply:return "NO AMMO";
+            case MissileAvailability.EnemyZoc:return "ZOC";
+            case MissileAvailability.NoTargets:return "NO TARGET";
+            default:return "DISABLED";
+        }
+    }
+    private static string MissileUnavailableMessage(MissileAvailability availability)
+    {
+        switch(availability)
+        {
+            case MissileAvailability.Fired:
+                return "That missile unit has already fired this segment.";
+            case MissileAvailability.OutOfRange:
+                return "That missile unit has no enemy target in range.";
+            case MissileAvailability.OutOfArc:
+                return "That missile unit has no enemy target in its firing arc.";
+            case MissileAvailability.NoLineOfSight:
+                return "That missile unit has no line of sight to a legal target.";
+            case MissileAvailability.NoSupply:
+                return "That missile unit's ammunition supply is exhausted.";
+            case MissileAvailability.EnemyZoc:
+                return "That missile unit is in an enemy zone of control and cannot fire at another target.";
+            case MissileAvailability.NoTargets:
+                return "No enemy missile target remains.";
+            default:return "That missile unit cannot fire during this segment.";
+        }
+    }
     private void DrawRequiredMovementHighlights()
     {
         if(!PlayerMovePhase())return;
@@ -1146,11 +1212,10 @@ public sealed class HastingsGame : MonoBehaviour
     {
         if(!PlayerFirePhase())return;
         var shooters=SelectedUnits();
-        var enemies=game.Living(GameEngine.Opposite(PlayerSide())).ToList();
         float pulse=.5f+.5f*Mathf.Sin(Time.unscaledTime*5.5f);
         foreach(var unit in game.Living(PlayerSide()).Where(unit=>
             !UnitTypes.Get(unit).leader && !unit.fired &&
-            enemies.Any(target=>game.CanFire(unit,target,false)||game.CanFire(unit,target,true))))
+            game.MissileAvailabilityFor(unit)==MissileAvailability.Eligible))
         {
             var rect=CounterRect(unit,SpreadFor(unit.hex));
             float inset=3f+2f*pulse;
@@ -2113,11 +2178,19 @@ public sealed class HastingsGame : MonoBehaviour
     {
         var missiles=game.Living(PlayerSide()).Where(unit=>
             UnitTypes.Get(unit).missile!="" && unit.status==Status.Ready).ToList();
-        int fired=missiles.Count(unit=>unit.fired),total=missiles.Count;
-        bool complete=total>0 && fired==total;
-        string detail=total==0?"No ready missile units are available.":complete?
-            "Every ready missile unit has fired this segment.":
-            (total-fired)+" ready missile unit"+(total-fired==1?" remains.":"s remain.");
+        int fired=missiles.Count(unit=>unit.fired);
+        int eligible=missiles.Count(unit=>
+            game.MissileAvailabilityFor(unit)==MissileAvailability.Eligible);
+        int total=fired+eligible;
+        int unavailable=missiles.Count-total;
+        bool complete=total>0 && eligible==0;
+        string unavailableDetail=unavailable>0?
+            " "+unavailable+" other missile unit"+(unavailable==1?" has":"s have")+
+            " no legal target.":"";
+        string detail=total==0?"No ready missile unit has a legal target.":complete?
+            "Every eligible missile unit has fired this segment."+unavailableDetail:
+            eligible+" eligible missile unit"+(eligible==1?" remains.":"s remain.")+
+            unavailableDetail;
         string badge=total==0?"NONE":complete?"COMPLETE":fired+" / "+total;
         GUILayout.Space(5*p);
         GUILayout.BeginHorizontal(controlRow);
@@ -2421,8 +2494,8 @@ public sealed class HastingsGame : MonoBehaviour
             }
             case Phase.NormanFire:return PlayerSide()==Side.Saxon?
                 "Continue to resolve Norman missile fire and movement.":
-                "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Saxon target.";
-            case Phase.NormanDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Saxon target.";
+                "Gold outlines mark missile units that can fire. Dimmed counters show why others cannot. Select a unit, then click a red-outlined Saxon target.";
+            case Phase.NormanDefenseFire:return "Gold outlines mark missile units that can fire. Dimmed counters show why others cannot. Select a unit, then click a red-outlined Saxon target.";
             case Phase.NormanMelee:
             {
                 int required=PlayerSide()==Side.Norman?
@@ -2433,8 +2506,8 @@ public sealed class HastingsGame : MonoBehaviour
             }
             case Phase.NormanReaction:return "Select a Norman unit and click a highlighted reaction destination.";
             case Phase.SaxonReaction:return "Select a Saxon unit and click a highlighted reaction destination.";
-            case Phase.SaxonDefenseFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
-            case Phase.SaxonFire:return "Gold outlines mark missile units that can fire. Select them, then click a red-outlined Norman target.";
+            case Phase.SaxonDefenseFire:return "Gold outlines mark missile units that can fire. Dimmed counters show why others cannot. Select a unit, then click a red-outlined Norman target.";
+            case Phase.SaxonFire:return "Gold outlines mark missile units that can fire. Dimmed counters show why others cannot. Select a unit, then click a red-outlined Norman target.";
             case Phase.SaxonMove:
             {
                 int required=PlayerSide()==Side.Saxon?

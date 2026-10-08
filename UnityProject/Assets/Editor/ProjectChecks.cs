@@ -550,7 +550,8 @@ public static class ProjectChecks
         string firedAtHex=fireTarget.hex;
         bowman.facing=board.Direction(bowman.hex,fireTarget.hex);
         fireTarget.facing=board.Direction(fireTarget.hex,bowman.hex);
-        Check(fireEngine.Fire(new List<UnitState>{bowman},fireTarget),
+        Check(fireEngine.MissileAvailabilityFor(bowman)==MissileAvailability.Eligible &&
+            fireEngine.Fire(new List<UnitState>{bowman},fireTarget),
             "Legal bow fire was rejected");
         Check(fireEngine.lastFireResult!=null &&
             fireEngine.recentFireResults.Count==1 &&
@@ -560,6 +561,43 @@ public static class ProjectChecks
             fireEngine.lastFireResult.targetHex==firedAtHex &&
             fireEngine.lastFireResult.strength>0 && fireEngine.lastFireResult.defense>0,
             "Missile fire did not expose a visual result");
+        Check(fireEngine.MissileAvailabilityFor(bowman)==MissileAvailability.Fired,
+            "A missile unit remained eligible after firing");
+        var availabilityState=Setup.New(board,371);availabilityState.phase=Phase.NormanFire;
+        foreach(var unit in availabilityState.units)unit.hex="";
+        var availabilityBow=availabilityState.units.First(unit=>unit.type=="NB");
+        var availabilityTarget=availabilityState.units.First(unit=>unit.type=="HC");
+        var availabilityBlocker=availabilityState.units.First(unit=>unit.type=="NF");
+        availabilityBow.hex="1112";availabilityBow.status=Status.Ready;
+        availabilityTarget.status=Status.Ready;availabilityBlocker.status=Status.Ready;
+        var availabilityEngine=new GameEngine(board,availabilityState);
+        string clearTarget=null,blockingHex=null;
+        foreach(var candidate in board.data.hexes.Select(hex=>hex.id).Where(hex=>
+            board.Distance(availabilityBow.hex,hex)==2))
+        {
+            string middle=board.Adjacent(availabilityBow.hex).FirstOrDefault(hex=>
+                board.Distance(hex,candidate)==1 &&
+                board.Direction(availabilityBow.hex,hex)==
+                    board.Direction(availabilityBow.hex,candidate));
+            if(middle==null)continue;
+            availabilityTarget.hex=candidate;
+            availabilityBow.facing=board.Direction(availabilityBow.hex,candidate);
+            if(availabilityEngine.MissileAvailabilityFor(availabilityBow)!=
+               MissileAvailability.Eligible)continue;
+            clearTarget=candidate;blockingHex=middle;break;
+        }
+        Check(clearTarget!=null,"Could not find a clear range-two missile test lane");
+        availabilityBlocker.hex=blockingHex;
+        Check(availabilityEngine.MissileAvailabilityFor(availabilityBow)==
+                MissileAvailability.NoLineOfSight,
+            "An intervening unit did not mark missile fire as blocked by line of sight");
+        availabilityBlocker.hex="";
+        availabilityTarget.hex=board.data.hexes.Select(hex=>hex.id)
+            .OrderByDescending(hex=>board.Distance(availabilityBow.hex,hex)).First();
+        availabilityBow.facing=board.Direction(availabilityBow.hex,availabilityTarget.hex);
+        Check(availabilityEngine.MissileAvailabilityFor(availabilityBow)==
+                MissileAvailability.OutOfRange,
+            "A missile unit with no target in range was counted as eligible");
         var meleeState=Setup.New(board,38);meleeState.phase=Phase.NormanMelee;
         var meleeEngine=new GameEngine(board,meleeState);
         var meleeAttacker=meleeState.units.First(u=>u.type=="NF");
