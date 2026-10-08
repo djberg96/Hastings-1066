@@ -9,6 +9,8 @@ public static class ProjectBuilder
 {
     private const string ScenePath = "Assets/Scenes/Hastings.unity";
     private const string AppIconPath = "Assets/Art/AppIcon/hastings_app_icon.png";
+    private const string PublisherLogoPath =
+        "Assets/Art/Branding/Red_Dragon_Enterprises_Logo.png";
 
     [MenuItem("Hastings/Create Main Scene")]
     public static void CreateScene()
@@ -143,5 +145,42 @@ public static class ProjectBuilder
         var icons=new Texture2D[iconSizes.Length];
         for(int i=0;i<icons.Length;i++)icons[i]=icon;
         PlayerSettings.SetIcons(NamedBuildTarget.Standalone,icons,IconKind.Application);
+        ConfigureSplashScreen();
+    }
+
+    private static void ConfigureSplashScreen()
+    {
+        var importer=AssetImporter.GetAtPath(PublisherLogoPath) as TextureImporter;
+        if(importer==null)
+            throw new FileNotFoundException("Publisher logo is missing",PublisherLogoPath);
+        bool changed=importer.textureType!=TextureImporterType.Sprite ||
+            importer.spriteImportMode!=SpriteImportMode.Single ||
+            importer.maxTextureSize!=2048 || importer.mipmapEnabled ||
+            importer.npotScale!=TextureImporterNPOTScale.None ||
+            importer.textureCompression!=TextureImporterCompression.Uncompressed ||
+            !importer.alphaIsTransparency;
+        if(changed)
+        {
+            importer.textureType=TextureImporterType.Sprite;
+            importer.spriteImportMode=SpriteImportMode.Single;
+            importer.maxTextureSize=2048;
+            importer.mipmapEnabled=false;
+            importer.npotScale=TextureImporterNPOTScale.None;
+            importer.textureCompression=TextureImporterCompression.Uncompressed;
+            importer.alphaIsTransparency=true;
+            importer.SaveAndReimport();
+        }
+        var publisherLogo=AssetDatabase.LoadAssetAtPath<Sprite>(PublisherLogoPath);
+        if(publisherLogo==null)
+            throw new FileNotFoundException(
+                "Unity could not import the publisher logo",PublisherLogoPath);
+        PlayerSettings.SplashScreen.show=true;
+        PlayerSettings.SplashScreen.showUnityLogo=true;
+        PlayerSettings.SplashScreen.drawMode=
+            PlayerSettings.SplashScreen.DrawMode.AllSequential;
+        PlayerSettings.SplashScreen.logos=new[] {
+            PlayerSettings.SplashScreenLogo.Create(2f,publisherLogo),
+            PlayerSettings.SplashScreenLogo.CreateWithUnityLogo(2f)
+        };
     }
 }
