@@ -144,7 +144,7 @@ public sealed class HastingsGame : MonoBehaviour
             if(chart!=""){chart="";return;}
             if(game==null){showMenu=true;menuPage="main";}
             else if(!showMenu){showMenu=true;menuPage="main";}
-            else if(menuPage!="main")menuPage="main";
+            else if(menuPage!="main")menuPage=menuPage=="theme"?"settings":"main";
             else showMenu=false;
         }
         UpdateStackSpread();
@@ -2945,7 +2945,8 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label(ThemeTitle(),menuTitle,GUILayout.Height(Mathf.Clamp(Screen.height*.10f,75,115)));
         GUILayout.Label(menuPage=="main"?"The Battle for Senlac Hill":
             menuPage=="load"?"Load a game":menuPage=="save"?"Save your battle":
-            menuPage=="newSide"?"14 October 1066":menuPage=="theme"?"Interface style":
+            menuPage=="newSide"?"14 October 1066":menuPage=="settings"?"Settings":
+            menuPage=="theme"?"Interface style":
             "Start a new battle?",
             menuSubtitle,GUILayout.Height(42));
         GUILayout.Space(28);
@@ -2967,10 +2968,19 @@ public sealed class HastingsGame : MonoBehaviour
             }
             if(GUILayout.Button("Load Game",menuButton,GUILayout.Height(buttonHeight)))menuPage="load";
             GUILayout.Space(12);
-            if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
-            {menuPage="theme";menuScroll=Vector2.zero;}
+            if(GUILayout.Button("Settings",menuButton,GUILayout.Height(buttonHeight)))
+                menuPage="settings";
             DrawCenteredMenuOrnament(rect.width);
             if(GUILayout.Button("Quit",menuButton,GUILayout.Height(buttonHeight)))RequestQuit();
+        }
+        else if(menuPage=="settings")
+        {
+            GUILayout.Label("Adjust how the game looks and plays.",menuDescription);
+            GUILayout.Space(16);
+            if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
+            {menuPage="theme";menuScroll=Vector2.zero;}
+            GUILayout.FlexibleSpace();
+            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
         }
         else if(menuPage=="load")
         {
@@ -3080,7 +3090,7 @@ public sealed class HastingsGame : MonoBehaviour
             }
             GUILayout.EndScrollView();
             GUILayout.Space(10);
-            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
+            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="settings";
         }
         if(notice!="")GUILayout.Label(notice,small);
         GUILayout.EndArea();
