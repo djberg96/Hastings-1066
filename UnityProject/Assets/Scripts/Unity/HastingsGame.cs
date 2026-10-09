@@ -3022,8 +3022,8 @@ public sealed class HastingsGame : MonoBehaviour
             menuPage=="newSide"?"14 October 1066":menuPage=="settings"?"Settings":
             menuPage=="theme"?"Interface style":menuPage=="credits"?"Credits":
             "Start a new battle?",
-            menuSubtitle,GUILayout.Height(42));
-        GUILayout.Space(28);
+            menuSubtitle,GUILayout.Height(54));
+        GUILayout.Space(20);
         if(menuPage=="main")
         {
             if(game!=null)
@@ -3049,8 +3049,7 @@ public sealed class HastingsGame : MonoBehaviour
         }
         else if(menuPage=="settings")
         {
-            GUILayout.Label("Adjust how the game looks and plays.",menuDescription);
-            GUILayout.Space(20);
+            GUILayout.Space(8);
             GUILayout.BeginHorizontal();
             GUILayout.Label("Music volume",menuSubtitle,GUILayout.Height(40));
             GUILayout.FlexibleSpace();
@@ -3060,13 +3059,7 @@ public sealed class HastingsGame : MonoBehaviour
             float adjustedMusicVolume=GUILayout.HorizontalSlider(musicVolume,0f,1f,
                 GUILayout.Height(28));
             SetMusicVolume(adjustedMusicVolume);
-            string musicStatus=musicPlaylist.Length==0?
-                "Soundtrack selection pending. Set this to 0% to keep music off.":
-                musicVolume<=.001f?"Music is off.":
-                "Now playing: "+musicPlaylist[musicTrackIndex].name.Replace('_',' ');
-            GUILayout.Label(musicStatus,menuDescription,GUILayout.Height(
-                menuDescription.CalcHeight(new GUIContent(musicStatus),rect.width-2*inset)+4f));
-            GUILayout.Space(24);
+            GUILayout.Space(34);
             if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
             {menuPage="theme";menuScroll=Vector2.zero;}
             GUILayout.Space(12);
