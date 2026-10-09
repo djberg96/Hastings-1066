@@ -42,6 +42,12 @@ namespace Hastings
             return state.units.FirstOrDefault(u=>u.hex==hex && u.status!=Status.Eliminated &&
                 (!side.HasValue || u.side==side.Value) && UnitTypes.Get(u).leader==leader);
         }
+        private void MatchLeaderFacing(UnitState unit)
+        {
+            if(unit==null || !UnitTypes.Get(unit).leader || !board.Has(unit.hex))return;
+            var underlying=UnitAt(unit.hex,unit.side);
+            if(underlying!=null)unit.facing=underlying.facing;
+        }
         public GroupState Group(UnitState unit) { return state.groups.First(g=>g.id==unit.group); }
         public Order OrderFor(UnitState unit)
         {
@@ -615,6 +621,7 @@ namespace Hastings
             unit.charged=!reaction && unit.status==Status.Ready && option.charge && unit.hex==option.destination;
             if(reaction){unit.reacted=true;CheckMorale(unit,false);}
             else unit.moved=true;
+            MatchLeaderFacing(unit);
             movementResult.finalHex=unit.hex;
             movementResult.path=traveled.ToArray();
             movementResult.statusAfter=unit.status;
@@ -680,7 +687,11 @@ namespace Hastings
                     leader.hex=next;visited.Add(next);
                 }
                 if(!escaped)Eliminate(leader);
-                else Log(leader.id+" retreats to "+leader.hex);
+                else
+                {
+                    MatchLeaderFacing(leader);
+                    Log(leader.id+" retreats to "+leader.hex);
+                }
             }
         }
     }

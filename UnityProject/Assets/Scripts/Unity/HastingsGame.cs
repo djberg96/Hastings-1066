@@ -1030,7 +1030,8 @@ public sealed class HastingsGame : MonoBehaviour
                         game.MissileAvailabilityFor(u):MissileAvailability.Eligible;
                     bool missileUnavailable=missileAvailability!=MissileAvailability.Eligible;
                     var old=GUI.matrix;
-                    if(!type.leader)GUIUtility.RotateAroundPivot(
+                    bool rotateCounter=!type.leader || game.UnitAt(u.hex,u.side)!=null;
+                    if(rotateCounter)GUIUtility.RotateAroundPivot(
                         BoardViewMath.FacingRotationDegrees(u.facing,SaxonView()),rect.center);
                     if(missileUnavailable)GUI.color=new Color(.55f,.55f,.55f,.72f);
                     if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);
@@ -1425,7 +1426,9 @@ public sealed class HastingsGame : MonoBehaviour
             var rect=CounterLayout.RectFor(position,scale,UnitTypes.Get(unit).leader,0f);
             int facing=arrived?transition.facingAfter:transition.facingBefore;
             var oldMatrix=GUI.matrix;
-            if(!UnitTypes.Get(unit).leader)GUIUtility.RotateAroundPivot(
+            bool rotateCounter=!UnitTypes.Get(unit).leader ||
+                (arrived && game.UnitAt(unit.hex,unit.side)!=null);
+            if(rotateCounter)GUIUtility.RotateAroundPivot(
                 BoardViewMath.FacingRotationDegrees(facing,SaxonView()),rect.center);
             var texture=CounterTexture(unit);
             if(texture!=null)GUI.DrawTexture(rect,texture,ScaleMode.StretchToFill);

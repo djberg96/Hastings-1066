@@ -435,7 +435,11 @@ namespace Hastings
             {
                 var companion=placedCombat.FirstOrDefault(unit=>unit.group==leader.group)??
                     placedCombat.FirstOrDefault();
-                if(companion!=null)leader.hex=companion.hex;
+                if(companion!=null)
+                {
+                    leader.hex=companion.hex;
+                    MatchLeaderFacing(leader);
+                }
             }
         }
         public bool ReformMove(UnitState unit,string hex)
@@ -448,7 +452,9 @@ namespace Hastings
                !ReformArea(unit.side,hex) || UnitAt(hex,Opposite(unit.side))!=null)return false;
             var occupant=UnitAt(hex,unit.side);
             if(!UnitTypes.Get(unit).leader && occupant!=null && occupant!=unit)return false;
-            unit.hex=hex;Log(unit.id+" reforms at "+hex);return true;
+            unit.hex=hex;
+            MatchLeaderFacing(unit);
+            Log(unit.id+" reforms at "+hex);return true;
         }
         public bool FinishReform()
         {

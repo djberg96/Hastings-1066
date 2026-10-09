@@ -515,6 +515,20 @@ public static class ProjectChecks
         Check(reactionLeaderEngine.Move(reactionKnight,reactionDestination,true) &&
               reactionKnight.hex==reactionDestination && reactionLeader.hex==leaderOrigin,
             "A friendly leader auto-retreated when its stacked cavalry made a reaction move");
+        var leaderFacingState=Setup.New(board,97532,Side.Norman);
+        leaderFacingState.phase=Phase.NormanMove;
+        foreach(var unit in leaderFacingState.units)unit.status=Status.Eliminated;
+        var joiningLeader=leaderFacingState.units.First(unit=>unit.type=="Eustace");
+        var facingCompanion=leaderFacingState.units.First(unit=>unit.type=="FK");
+        joiningLeader.status=Status.Ready;joiningLeader.hex="1112";joiningLeader.facing=1;
+        facingCompanion.status=Status.Ready;
+        facingCompanion.hex=board.Adjacent(joiningLeader.hex).First();
+        facingCompanion.facing=4;
+        var leaderFacingEngine=new GameEngine(board,leaderFacingState);
+        Check(leaderFacingEngine.Move(joiningLeader,facingCompanion.hex) &&
+              joiningLeader.hex==facingCompanion.hex &&
+              joiningLeader.facing==facingCompanion.facing,
+            "A leader did not match the facing of the unit it joined");
         var pursueState=Setup.New(board,97531);pursueState.phase=Phase.SaxonMove;
         foreach(var unit in pursueState.units)unit.status=Status.Eliminated;
         var pursueUnit=pursueState.units.First(unit=>unit.type=="F1");
