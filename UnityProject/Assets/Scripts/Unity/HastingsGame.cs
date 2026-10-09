@@ -3540,7 +3540,6 @@ public sealed class HastingsGame : MonoBehaviour
         }
         DrawRallyCallout(region,game.recentRallyResults[rallyResultIndex],
             activeCenter,elapsed,activeReveal);
-        DrawRallyControls(region);
     }
     private string[] RallyPath(RallyResult result)
     {
@@ -3556,10 +3555,10 @@ public sealed class HastingsGame : MonoBehaviour
         float u=Mathf.Clamp(Screen.height/900f,1f,1.3f);
         float width=Mathf.Min(510f*u,region.width-18f);
         u=Mathf.Min(u,width/510f);
-        float height=184f*u;
+        float height=238f*u;
         float x=Mathf.Clamp(center.x-width/2f,9f,region.width-width-9f);
         float above=center.y-height-70f*scale;
-        float y=above>=9f?above:Mathf.Clamp(center.y+70f*scale,9f,region.height-height-72f);
+        float y=above>=9f?above:Mathf.Clamp(center.y+70f*scale,9f,region.height-height-9f);
         var callout=new Rect(x,y,width,height);
         bool revealed=elapsed>=revealAt;
         Color header=!revealed?new Color(.49f,.25f,.12f):result.success?
@@ -3638,7 +3637,7 @@ public sealed class HastingsGame : MonoBehaviour
             if(leader!=null)
             {
                 float columnX=callout.xMax-leaderWidth;
-                Fill(new Rect(columnX,callout.y+55f*u,1.5f*u,callout.height-68f*u),
+                Fill(new Rect(columnX,callout.y+55f*u,1.5f*u,114f*u),
                     new Color(.35f,.22f,.14f,.35f));
                 var leaderRect=new Rect(columnX+19f*u,callout.y+67f*u,54f*u,62f*u);
                 var texture=CounterTexture(leader);
@@ -3648,6 +3647,7 @@ public sealed class HastingsGame : MonoBehaviour
                     leader.type,missileMapDetail);
             }
         }
+        DrawRallyControls(callout,u);
     }
     private void DrawRallyLeaderLine(Rect callout,Vector2 center)
     {
@@ -3667,22 +3667,27 @@ public sealed class HastingsGame : MonoBehaviour
         DrawCircleOutline(center,radius,8f,dark);
         DrawCircleOutline(center,radius,3f,gold);
     }
-    private void DrawRallyControls(Rect region)
+    private void DrawRallyControls(Rect callout,float u)
     {
-        float u=Mathf.Clamp(Screen.height/900f,1f,1.25f);
-        float width=Mathf.Min(470f*u,region.width-18f),height=56f*u;
-        u=Mathf.Min(u,width/470f);
-        height=56f*u;
-        var rect=new Rect((region.width-width)/2f,region.height-height-8f,width,height);
-        Fill(new Rect(rect.x-3,rect.y-3,rect.width+6,rect.height+6),new Color(.18f,.10f,.07f,.94f));
-        Fill(rect,new Color(.93f,.87f,.72f,.97f));
-        GUI.Label(new Rect(rect.x+12f*u,rect.y,105f*u,height),
-            "RALLY "+(rallyResultIndex+1)+" / "+game.recentRallyResults.Count,panelSection);
+        float separatorY=callout.y+176f*u;
+        Fill(new Rect(callout.x+12f*u,separatorY,callout.width-24f*u,1.5f*u),
+            new Color(.35f,.22f,.14f,.38f));
+        float y=separatorY+9f*u,height=42f*u;
+        float left=callout.x+16f*u,right=callout.xMax-16f*u;
+        float progressWidth=91f*u,gap=8f*u,skipWidth=86f*u;
+        string progress="RALLY "+(rallyResultIndex+1)+" / "+game.recentRallyResults.Count;
+        bool oldWrap=panelSection.wordWrap;
+        panelSection.wordWrap=false;
+        FitSingleLineFont(panelSection,progress,14*u,10*u,progressWidth);
+        GUI.Label(new Rect(left,y,progressWidth,height),progress,panelSection);
+        panelSection.wordWrap=oldWrap;
         string next=rallyResultIndex+1<game.recentRallyResults.Count?"Next result":"Continue";
-        if(GUI.Button(new Rect(rect.x+120f*u,rect.y+7f*u,210f*u,42f*u),next,panelPrimary))
+        float nextX=left+progressWidth+gap;
+        float skipX=right-skipWidth;
+        if(GUI.Button(new Rect(nextX,y,skipX-nextX-gap,height),next,panelPrimary))
             AdvanceRallyPresentation();
-        if(GUI.Button(new Rect(rect.x+338f*u,rect.y+7f*u,118f*u,42f*u),
-            "Skip",panelButton))CloseRallyResults();
+        if(GUI.Button(new Rect(skipX,y,skipWidth,height),"Skip",panelButton))
+            CloseRallyResults();
     }
     private void DrawRallyStatusToken(Rect rect,Status status,float u)
     {

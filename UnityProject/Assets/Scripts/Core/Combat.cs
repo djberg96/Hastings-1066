@@ -85,15 +85,39 @@ namespace Hastings
         private bool LineOfSight(string from,string to,bool high)
         {
             var a=board.Hex(from);var b=board.Hex(to);
+            int range=board.Distance(from,to);
+            int maximumEndpointLevel=Math.Max(a.level,b.level);
+            var corridor=new List<HexData>();
             foreach(var h in board.data.hexes)
             {
                 if(h.id==from||h.id==to)continue;
-                if(DistanceToLine(h.x,h.y,a.x,a.y,b.x,b.y)>44)continue;
-                if(board.Distance(from,h.id)+board.Distance(h.id,to)>board.Distance(from,to))continue;
-                if(h.woods||h.level>Math.Max(a.level,b.level))return false;
-                if(!high && (UnitAt(h.id,Side.Norman)!=null || UnitAt(h.id,Side.Saxon)!=null))return false;
+                if(board.Distance(from,h.id)+board.Distance(h.id,to)>range)continue;
+                corridor.Add(h);
+                if(DistanceToLine(h.x,h.y,a.x,a.y,b.x,b.y)<=44 &&
+                   BlocksLineOfSight(h,high,maximumEndpointLevel))return false;
             }
+            // A center-to-center LOS can run exactly along the shared hexside
+            // between two intervening hexes. One blocking terrain hex beside a
+            // clear hex does not block that LOS, but there is no clear side when
+            // both adjoining hexes contain an obstruction.
+            for(int first=0;first<corridor.Count;first++)
+                for(int second=first+1;second<corridor.Count;second++)
+                {
+                    var left=corridor[first];var right=corridor[second];
+                    if(board.Edge(left.id,right.id)==null)continue;
+                    float midpointX=(left.x+right.x)/2f;
+                    float midpointY=(left.y+right.y)/2f;
+                    if(DistanceToLine(midpointX,midpointY,a.x,a.y,b.x,b.y)>1)continue;
+                    if(BlocksLineOfSight(left,high,maximumEndpointLevel) &&
+                       BlocksLineOfSight(right,high,maximumEndpointLevel))return false;
+                }
             return true;
+        }
+        private bool BlocksLineOfSight(HexData hex,bool high,int maximumEndpointLevel)
+        {
+            if(hex.woods || hex.level>maximumEndpointLevel)return true;
+            return !high && (UnitAt(hex.id,Side.Norman)!=null ||
+                UnitAt(hex.id,Side.Saxon)!=null);
         }
         public bool Fire(List<UnitState> shooters,UnitState target,bool high=false)
         {

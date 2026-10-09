@@ -656,7 +656,24 @@ public static class ProjectChecks
         Check(availabilityEngine.MissileAvailabilityFor(availabilityBow)==
                 MissileAvailability.NoLineOfSight,
             "An intervening unit did not mark missile fire as blocked by line of sight");
+        var availabilityEdgeBlocker=availabilityState.units.First(unit=>
+            unit.type=="NF" && unit!=availabilityBlocker);
+        availabilityBow.hex="1119";availabilityBow.facing=board.Direction("1119","0919");
+        availabilityTarget.hex="0919";
+        availabilityBlocker.hex="1018";
+        availabilityEdgeBlocker.hex="1019";
+        availabilityState.period=1;
+        Check(!availabilityEngine.CanFire(availabilityBow,availabilityTarget,false) &&
+              !availabilityEngine.CanFire(availabilityBow,availabilityTarget,true) &&
+              availabilityEngine.MissileAvailabilityFor(availabilityBow)==
+                MissileAvailability.NoLineOfSight,
+            "Units adjoining a shared LOS hexside did not block Assault I Norman bow fire");
+        availabilityState.period=2;
+        Check(!availabilityEngine.CanFire(availabilityBow,availabilityTarget,false) &&
+              availabilityEngine.CanFire(availabilityBow,availabilityTarget,true),
+            "Shared-hexside blockers did not preserve Assault II high trajectory fire");
         availabilityBlocker.hex="";
+        availabilityEdgeBlocker.hex="";
         availabilityTarget.hex=board.data.hexes.Select(hex=>hex.id)
             .OrderByDescending(hex=>board.Distance(availabilityBow.hex,hex)).First();
         availabilityBow.facing=board.Direction(availabilityBow.hex,availabilityTarget.hex);
