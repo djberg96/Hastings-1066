@@ -1745,6 +1745,18 @@ public sealed class HastingsGame : MonoBehaviour
         Fill(new Rect(from.x,from.y-width/2f,length,width),color);
         GUI.matrix=old;
     }
+    private static void DrawCircleOutline(Vector2 center,float radius,float width,Color color)
+    {
+        const int segments=36;
+        Vector2 previous=center+new Vector2(radius,0f);
+        for(int index=1;index<=segments;index++)
+        {
+            float angle=index*Mathf.PI*2f/segments;
+            var point=center+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*radius;
+            DrawLine(previous,point,width,color);
+            previous=point;
+        }
+    }
     private static void DrawRectOutline(Rect rect,float width,Color color)
     {
         Fill(new Rect(rect.x,rect.y,rect.width,width),color);
@@ -3523,13 +3535,6 @@ public sealed class HastingsGame : MonoBehaviour
                 GUI.matrix=old;
                 if(status==Status.Disrupted || status==Status.Routed)
                     DrawUnitStatusMarker(status,counter);
-                if(active)
-                {
-                    float pulse=.5f+.5f*Mathf.Sin(Time.unscaledTime*8f);
-                    DrawRectOutline(new Rect(counter.x-8f,counter.y-8f,
-                        counter.width+16f,counter.height+16f),4f,
-                        new Color(1f,.76f,.20f,.72f+.24f*pulse));
-                }
             }
             if(active){activeCenter=position;activeReveal=reveal;}
         }
@@ -3549,7 +3554,9 @@ public sealed class HastingsGame : MonoBehaviour
         float elapsed,float revealAt)
     {
         float u=Mathf.Clamp(Screen.height/900f,1f,1.3f);
-        float width=Mathf.Min(440f*u,region.width-18f),height=176f*u;
+        float width=Mathf.Min(510f*u,region.width-18f);
+        u=Mathf.Min(u,width/510f);
+        float height=184f*u;
         float x=Mathf.Clamp(center.x-width/2f,9f,region.width-width-9f);
         float above=center.y-height-70f*scale;
         float y=above>=9f?above:Mathf.Clamp(center.y+70f*scale,9f,region.height-height-72f);
@@ -3557,6 +3564,7 @@ public sealed class HastingsGame : MonoBehaviour
         bool revealed=elapsed>=revealAt;
         Color header=!revealed?new Color(.49f,.25f,.12f):result.success?
             new Color(.24f,.43f,.18f):new Color(.57f,.18f,.13f);
+        DrawRallyLeaderLine(callout,center);
         Fill(new Rect(callout.x-4,callout.y-4,callout.width+8,callout.height+8),
             new Color(.20f,.11f,.07f,.96f));
         DrawSurface(callout,themeSkin.cardTexture,themeSkin.card);
@@ -3564,49 +3572,100 @@ public sealed class HastingsGame : MonoBehaviour
         var labels=UnitDisplayNames.Build(game.state);
         string name;
         if(!labels.TryGetValue(result.unitId,out name))name=result.unitId;
-        missileMapResult.fontSize=Mathf.RoundToInt(20*u);
+        string heading=revealed?RallyOutcome(result):"RALLY CHECK · "+name;
+        FitSingleLineFont(missileMapResult,heading,20*u,15*u,callout.width-24f*u);
         missileMapDetail.fontSize=Mathf.RoundToInt(14*u);
         GUI.Label(new Rect(callout.x+10f*u,callout.y,callout.width-20f*u,46f*u),
-            revealed?RallyOutcome(result):"RALLY CHECK · "+name,missileMapResult);
+            heading,missileMapResult);
+
+        float padding=16f*u;
+        float leaderWidth=result.leaderSupport?92f*u:0f;
+        float contentLeft=callout.x+padding;
+        float contentRight=callout.xMax-padding-leaderWidth;
+        float contentWidth=contentRight-contentLeft;
         float tokenY=callout.y+58f*u;
-        DrawRallyStatusToken(new Rect(callout.x+16f*u,tokenY,112f*u,38f*u),result.statusBefore);
-        GUI.Label(new Rect(callout.x+132f*u,tokenY,34f*u,38f*u),"→",missileMapResult);
-        DrawRallyStatusToken(new Rect(callout.x+168f*u,tokenY,112f*u,38f*u),
-            revealed?result.statusAfter:result.statusBefore);
+        float arrowWidth=34f*u,gap=8f*u;
+        float tokenWidth=(contentWidth-arrowWidth-2f*gap)/2f;
+        DrawRallyStatusToken(new Rect(contentLeft,tokenY,tokenWidth,40f*u),
+            result.statusBefore,u);
+        FitSingleLineFont(missileMapResult,"→",21*u,17*u,arrowWidth);
+        GUI.Label(new Rect(contentLeft+tokenWidth+gap,tokenY,arrowWidth,40f*u),
+            "→",missileMapResult);
+        DrawRallyStatusToken(new Rect(contentLeft+tokenWidth+arrowWidth+2f*gap,
+                tokenY,tokenWidth,40f*u),
+            revealed?result.statusAfter:result.statusBefore,u);
         if(result.statusBefore==Status.Disrupted)
         {
-            float dieY=callout.y+108f*u;
+            float dieY=callout.y+116f*u,dieSize=44f*u;
             int shownRoll=revealed?result.rawRoll:
                 1+Mathf.Abs(Mathf.FloorToInt(Time.unscaledTime*12f))%6;
-            DrawRallyDie(new Rect(callout.x+18f*u,dieY,44f*u,44f*u),shownRoll);
-            string modifier=result.leaderSupport?"−1 LEADER":"NO MODIFIER";
-            GUI.Label(new Rect(callout.x+72f*u,dieY,112f*u,44f*u),modifier,missileMapDetail);
+            DrawRallyDie(new Rect(contentLeft,dieY,dieSize,dieSize),shownRoll);
+            string modifier=result.leaderSupport?"− 1  LEADER":"NO MODIFIER";
+            float modifierX=contentLeft+dieSize+10f*u;
+            float moraleWidth=92f*u;
+            float moraleX=contentRight-moraleWidth;
+            float finalDieX=modifierX+104f*u;
+            float modifierWidth=Mathf.Max(70f*u,
+                (revealed && result.modifiedRoll!=result.rawRoll?
+                    finalDieX:moraleX)-modifierX-6f*u);
+            FitSingleLineFont(missileMapDetail,modifier,14*u,11*u,modifierWidth);
+            GUI.Label(new Rect(modifierX,dieY,modifierWidth,dieSize),modifier,missileMapDetail);
             if(revealed && result.modifiedRoll!=result.rawRoll)
-                DrawRallyDie(new Rect(callout.x+188f*u,dieY,44f*u,44f*u),result.modifiedRoll);
-            GUI.Label(new Rect(callout.x+240f*u,dieY,95f*u,44f*u),
+                DrawRallyDie(new Rect(finalDieX,dieY,dieSize,dieSize),result.modifiedRoll);
+            FitSingleLineFont(missileMapDetail,"MORALE "+result.morale,
+                14*u,11*u,moraleWidth);
+            GUI.Label(new Rect(moraleX,dieY,moraleWidth,dieSize),
                 "MORALE "+result.morale,missileMapDetail);
         }
         else
         {
-            GUI.Label(new Rect(callout.x+18f*u,callout.y+108f*u,260f*u,44f*u),
-                result.leaderSupport?"AUTOMATIC · LEADER IN RANGE":"NO LEADER · RETREAT",
-                missileMapDetail);
+            string detail=result.leaderSupport?"AUTOMATIC RALLY · LEADER IN RANGE":
+                "NO LEADER · RETREAT 2 HEXES";
+            FitSingleLineFont(missileMapDetail,detail,14*u,11*u,contentWidth);
+            GUI.Label(new Rect(contentLeft,callout.y+111f*u,contentWidth,28f*u),
+                detail,missileMapDetail);
+            if(revealed && result.originHex!=result.finalHex)
+            {
+                string route=result.originHex+"  →  "+result.finalHex;
+                FitSingleLineFont(missileMapDetail,route,13*u,11*u,contentWidth);
+                GUI.Label(new Rect(contentLeft,callout.y+143f*u,contentWidth,25f*u),
+                    route,missileMapDetail);
+            }
         }
         if(result.leaderSupport)
         {
             var leader=game.state.units.FirstOrDefault(unit=>unit.id==result.leaderId);
             if(leader!=null)
             {
-                var leaderRect=new Rect(callout.xMax-66f*u,callout.y+63f*u,50f*u,58f*u);
+                float columnX=callout.xMax-leaderWidth;
+                Fill(new Rect(columnX,callout.y+55f*u,1.5f*u,callout.height-68f*u),
+                    new Color(.35f,.22f,.14f,.35f));
+                var leaderRect=new Rect(columnX+19f*u,callout.y+67f*u,54f*u,62f*u);
                 var texture=CounterTexture(leader);
                 if(texture!=null)GUI.DrawTexture(leaderRect,texture,ScaleMode.ScaleToFit);
-                GUI.Label(new Rect(callout.xMax-105f*u,callout.y+124f*u,90f*u,28f*u),
+                FitSingleLineFont(missileMapDetail,leader.type,13*u,10*u,76f*u);
+                GUI.Label(new Rect(columnX+8f*u,callout.y+136f*u,76f*u,26f*u),
                     leader.type,missileMapDetail);
             }
         }
-        if(revealed && result.originHex!=result.finalHex)
-            GUI.Label(new Rect(callout.x+18f*u,callout.yMax-29f*u,250f*u,24f*u),
-                result.originHex+" → "+result.finalHex,missileMapDetail);
+    }
+    private void DrawRallyLeaderLine(Rect callout,Vector2 center)
+    {
+        bool below=center.y>=callout.center.y;
+        float margin=34f;
+        var anchor=new Vector2(Mathf.Clamp(center.x,callout.x+margin,callout.xMax-margin),
+            below?callout.yMax:callout.y);
+        Vector2 direction=center-anchor;
+        if(direction.sqrMagnitude<1f)return;
+        direction.Normalize();
+        float radius=Mathf.Clamp(43f*scale,32f,62f);
+        var lineEnd=center-direction*radius;
+        Color dark=new Color(.20f,.11f,.06f,.92f);
+        Color gold=new Color(1f,.76f,.20f,.96f);
+        DrawLine(anchor,lineEnd,8f,dark);
+        DrawLine(anchor,lineEnd,3f,gold);
+        DrawCircleOutline(center,radius,8f,dark);
+        DrawCircleOutline(center,radius,3f,gold);
     }
     private void DrawRallyControls(Rect region)
     {
@@ -3625,15 +3684,16 @@ public sealed class HastingsGame : MonoBehaviour
         if(GUI.Button(new Rect(rect.x+338f*u,rect.y+7f*u,118f*u,42f*u),
             "Skip",panelButton))CloseRallyResults();
     }
-    private void DrawRallyStatusToken(Rect rect,Status status)
+    private void DrawRallyStatusToken(Rect rect,Status status,float u)
     {
         Color color=status==Status.Ready?new Color(.30f,.50f,.22f):
             status==Status.Disrupted?new Color(.76f,.51f,.14f):
             status==Status.Routed?new Color(.62f,.13f,.10f):new Color(.25f,.22f,.20f);
         Fill(new Rect(rect.x-2,rect.y-2,rect.width+4,rect.height+4),new Color(.18f,.10f,.07f,.96f));
         Fill(rect,color);
-        string label=status==Status.Ready?"READY":status==Status.Disrupted?"D  DISRUPTED":
-            status==Status.Routed?"R  ROUTED":"ELIMINATED";
+        string label=status==Status.Ready?"READY":status==Status.Disrupted?"DISRUPTED":
+            status==Status.Routed?"ROUTED":"ELIMINATED";
+        FitSingleLineFont(missileMapResult,label,18*u,12*u,rect.width-12f*u);
         GUI.Label(rect,label,missileMapResult);
     }
     private void DrawRallyDie(Rect rect,int value)
