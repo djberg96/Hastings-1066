@@ -101,11 +101,11 @@ namespace Hastings
     }
     public sealed class RallyResult
     {
-        public string unitId,originHex,finalHex;
+        public string unitId,leaderId,originHex,finalHex;
         public Side side;
         public Status statusBefore,statusAfter;
         public char morale;
-        public int rawRoll,modifiedRoll;
+        public int rawRoll,modifiedRoll,facingBefore,facingAfter;
         public bool leaderSupport,success;
     }
     [Serializable] public class GameState

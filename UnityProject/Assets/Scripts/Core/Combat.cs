@@ -509,12 +509,16 @@ namespace Hastings
             recentRallyResults.Clear();
             foreach(var unit in Living(side).Where(u=>u.status==Status.Disrupted || u.status==Status.Routed).ToList())
             {
-                bool nearby=Living(side).Any(l=>UnitTypes.Get(l).leader && l.leaderCondition==0 &&
+                var supportingLeader=Living(side).Where(l=>UnitTypes.Get(l).leader && l.leaderCondition==0 &&
                     (l.type=="William" || side==Side.Saxon || UnitTypes.Get(l).nation==UnitTypes.Get(unit).nation) &&
-                    board.Distance(l.hex,unit.hex)<=Math.Max(0,UnitTypes.Get(l).rally-l.leaderPenalty));
+                    board.Distance(l.hex,unit.hex)<=Math.Max(0,UnitTypes.Get(l).rally-l.leaderPenalty))
+                    .OrderBy(l=>board.Distance(l.hex,unit.hex)).ThenBy(l=>l.id).FirstOrDefault();
+                bool nearby=supportingLeader!=null;
                 var rallyResult=new RallyResult {
                     unitId=unit.id,side=side,originHex=unit.hex,statusBefore=unit.status,
-                    leaderSupport=nearby,morale=UnitTypes.Get(unit).morale
+                    leaderId=supportingLeader==null?"":supportingLeader.id,
+                    leaderSupport=nearby,morale=UnitTypes.Get(unit).morale,
+                    facingBefore=unit.facing
                 };
                 if(unit.status==Status.Routed)
                 {
@@ -553,6 +557,7 @@ namespace Hastings
                 }
                 rallyResult.finalHex=unit.hex;
                 rallyResult.statusAfter=unit.status;
+                rallyResult.facingAfter=unit.facing;
                 recentRallyResults.Add(rallyResult);
             }
         }

@@ -57,7 +57,7 @@ public sealed class HastingsGame : MonoBehaviour
     private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
         showRallyResults, showQuitPrompt, quitApproved, orderReviewMode, showStrategyTrack, fullMapMode,
         automaticMeleeSequence;
-    private int orderReviewTab, orderResolutionTab;
+    private int orderReviewTab, orderResolutionTab, rallyResultIndex;
     private int requiredMovementHighlightSignature=int.MinValue;
     private string saveSlot="", notice="", chart="", menuPage="main",
         highTrajectoryTargetId="", quitPromptError="";
@@ -69,7 +69,8 @@ public sealed class HastingsGame : MonoBehaviour
     private float musicVolume;
     private bool musicPausedForMute;
     private Font periodFont,defaultFont;
-    private Vector2 panelScroll, chartScroll, menuScroll, orderScroll, rallyScroll;
+    private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
+    private float rallyResultStarted;
     private GUIStyle small, hexNumber, hexNumberShadow,
         menuTitle, menuSubtitle, menuDescription, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
@@ -446,7 +447,6 @@ public sealed class HastingsGame : MonoBehaviour
         if(showMenu)DrawMenu();
         if(chart!="")DrawChart();
         if(showOrderResults && !showMenu && chart=="")DrawOrderResults();
-        if(showRallyResults && !showMenu && chart=="")DrawRallyResults();
         GUI.enabled=true;
         if(showQuitPrompt)DrawQuitPrompt();
     }
@@ -1020,6 +1020,8 @@ public sealed class HastingsGame : MonoBehaviour
                        u.id==movementResult.unitId)continue;
                     if(UnitTransitionAnimationActive() &&
                        unitTransitionNotices.Any(transition=>transition.unitId==u.id))continue;
+                    if(showRallyResults && game.recentRallyResults.Any(result=>result.unitId==u.id))
+                        continue;
                     var type=UnitTypes.Get(u);
                     var rect=CounterRect(u,SpreadFor(u.hex));
                     var texture=CounterTexture(u);
@@ -1048,6 +1050,7 @@ public sealed class HastingsGame : MonoBehaviour
                 DrawMeleeDesignationHighlights();
                 DrawMovementAnimation(region);
             }
+            if(showRallyResults)DrawRallyPresentation(region);
             DrawMissileImpact(region);
             DrawMeleeImpact(region);
         }
@@ -2642,8 +2645,7 @@ public sealed class HastingsGame : MonoBehaviour
         CaptureUnitTransitions(transitionBefore,transitionLogMarker,priorPhase);
         if(game.recentRallyResults.Count>0)
         {
-            showRallyResults=true;
-            rallyScroll=Vector2.zero;
+            BeginRallyPresentation();
         }
         selected.Clear();
         selectedTargets.Clear();
@@ -2901,8 +2903,7 @@ public sealed class HastingsGame : MonoBehaviour
         notice="";
         if(game.recentRallyResults.Count>0)
         {
-            showRallyResults=true;
-            rallyScroll=Vector2.zero;
+            BeginRallyPresentation();
         }
         if(game.state.phase!=priorPhase)movementUndo.Clear();
     }
@@ -3103,7 +3104,7 @@ public sealed class HastingsGame : MonoBehaviour
                         showUnits=true;chart="";showOrderResults=game.NormanRallyPending();
                         showRallyResults=false;orderReviewMode=false;
                         orderResolutionTab=PlayerSide()==Side.Norman?0:1;
-                        orderScroll=Vector2.zero;rallyScroll=Vector2.zero;
+                        orderScroll=Vector2.zero;
                         highTrajectoryTargetId="";
                         movementUndo.Clear();
                         movementResult=null;
@@ -3342,14 +3343,50 @@ public sealed class HastingsGame : MonoBehaviour
         highTrajectoryTargetId="";
         if(game.recentRallyResults.Count>0)
         {
-            showRallyResults=true;
-            rallyScroll=Vector2.zero;
+            BeginRallyPresentation();
         }
+    }
+    private void BeginRallyPresentation()
+    {
+        if(game==null || game.recentRallyResults.Count==0)return;
+        showRallyResults=true;
+        rallyResultIndex=0;
+        rallyResultStarted=Time.unscaledTime;
+        unitTransitionNotices.Clear();
+        CenterRallyResultOnMap();
+    }
+    private void AdvanceRallyPresentation()
+    {
+        if(game==null){CloseRallyResults();return;}
+        rallyResultIndex++;
+        if(rallyResultIndex>=game.recentRallyResults.Count)
+        {CloseRallyResults();return;}
+        rallyResultStarted=Time.unscaledTime;
+        CenterRallyResultOnMap();
     }
     private void CloseRallyResults()
     {
         showRallyResults=false;
+        rallyResultIndex=0;
         if(game!=null)game.recentRallyResults.Clear();
+    }
+    private void CenterRallyResultOnMap()
+    {
+        if(game==null || rallyResultIndex<0 ||
+           rallyResultIndex>=game.recentRallyResults.Count)return;
+        var result=game.recentRallyResults[rallyResultIndex];
+        var hexes=new[]{result.originHex,result.finalHex}.Where(board.Has).Select(board.Hex).ToArray();
+        if(hexes.Length==0)return;
+        var boardCenter=new Vector2(hexes.Average(hex=>hex.x),hexes.Average(hex=>hex.y));
+        boardCenter=BoardViewMath.OrientBattlefield(boardCenter,board.data.width,SaxonView());
+        float mapWidth=Mathf.Max(100f,Screen.width-PanelWidth());
+        float mapHeight=Screen.height-(showStrategyTrack?
+            Mathf.Clamp(Screen.height*.26f,330f,400f):
+            Mathf.Clamp(Screen.height*.045f,54f,68f));
+        fullMapMode=false;
+        pan=new Vector2(mapWidth*.5f,mapHeight*.5f)-boardCenter*scale;
+        pan=BoardViewMath.ClampPan(pan,scale,mapWidth,mapHeight,
+            board.data.width,board.data.height);
     }
     private void DrawOrderResults()
     {
@@ -3434,46 +3471,183 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.enabled=true;
         GUI.EndGroup();
     }
-    private void DrawRallyResults()
+    private void DrawRallyPresentation(Rect region)
     {
         if(game==null || game.recentRallyResults.Count==0)
         {showRallyResults=false;return;}
-        float u=Mathf.Clamp(Screen.height/900f,.90f,1.24f);
-        orderTitle.fontSize=Mathf.RoundToInt(28*u);
-        orderSubtitle.fontSize=Mathf.RoundToInt(16*u);
-        Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
-        float width=Mathf.Min(Screen.width-40f,820f*u);
-        float height=Mathf.Min(Screen.height-40f,650f*u);
-        var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
-        DrawSurface(rect,themeSkin.cardTexture,themeSkin.card);
-        Fill(new Rect(rect.x,rect.y,rect.width,62*u),themeSkin.accent);
-        DrawThemeFrame(rect);
-        GUI.BeginGroup(rect);
-        GUI.Label(new Rect(27*u,14*u,width-54*u,40*u),"RALLY SEGMENT",orderTitle);
-        Side side=game.recentRallyResults[0].side;
-        GUI.Label(new Rect(30*u,76*u,width-60*u,34*u),
-            side+" units attempt to recover before battle resumes.",orderSubtitle);
-        var contentRect=new Rect(30*u,118*u,width-60*u,height-190*u);
-        GUILayout.BeginArea(contentRect);
-        rallyScroll=GUILayout.BeginScrollView(rallyScroll);
-        var labels=UnitDisplayNames.Build(game.state);
-        foreach(var result in game.recentRallyResults)
+        rallyResultIndex=Mathf.Clamp(rallyResultIndex,0,game.recentRallyResults.Count-1);
+        float elapsed=Mathf.Max(0f,Time.unscaledTime-rallyResultStarted);
+        Vector2 activeCenter=Vector2.zero;
+        float activeReveal=.72f;
+        for(int index=0;index<game.recentRallyResults.Count;index++)
         {
-            string name;
-            if(!labels.TryGetValue(result.unitId,out name))name=result.unitId;
-            GUILayout.BeginVertical(panelCard);
-            GUILayout.Label(name+" · "+RallyOutcome(result),panelValue);
-            GUILayout.Label(RallyDetail(result),panelBody);
-            if(result.originHex!=result.finalHex)
-                GUILayout.Label("Hex "+result.originHex+" → "+result.finalHex,panelMuted);
-            GUILayout.EndVertical();
-            GUILayout.Space(8*u);
+            var result=game.recentRallyResults[index];
+            var unit=game.state.units.FirstOrDefault(candidate=>candidate.id==result.unitId);
+            if(unit==null)continue;
+            var path=RallyPath(result);
+            int segments=Math.Max(0,path.Length-1);
+            float reveal=Mathf.Max(.72f,segments*.40f);
+            bool active=index==rallyResultIndex;
+            bool before=index>rallyResultIndex || (active && elapsed<reveal);
+            Vector2 position;
+            if(active && segments>0)
+            {
+                float progress=Mathf.Clamp(elapsed/.40f,0f,segments);
+                int segment=Math.Min(segments-1,Mathf.FloorToInt(progress));
+                float amount=progress-segment;
+                var from=board.Hex(path[segment]);var to=board.Hex(path[segment+1]);
+                position=Vector2.Lerp(MapPoint(from.x,from.y),MapPoint(to.x,to.y),
+                    Mathf.SmoothStep(0,1,amount));
+                DrawMovementRoute(path,new Color(.88f,.54f,.16f,.78f));
+            }
+            else
+            {
+                string hex=before?result.originHex:result.finalHex;
+                if(!board.Has(hex))continue;
+                var location=board.Hex(hex);position=MapPoint(location.x,location.y);
+            }
+            Status status=before?result.statusBefore:result.statusAfter;
+            if(status!=Status.Eliminated)
+            {
+                var type=UnitTypes.Get(unit);
+                var counter=CounterLayout.RectFor(position,scale,type.leader,0f);
+                var old=GUI.matrix;
+                int facing=before?result.facingBefore:result.facingAfter;
+                if(!type.leader)GUIUtility.RotateAroundPivot(
+                    BoardViewMath.FacingRotationDegrees(facing,SaxonView()),counter.center);
+                var texture=CounterTexture(unit);
+                if(texture!=null)GUI.DrawTexture(counter,texture,ScaleMode.StretchToFill);
+                GUI.matrix=old;
+                if(status==Status.Disrupted || status==Status.Routed)
+                    DrawUnitStatusMarker(status,counter);
+                if(active)
+                {
+                    float pulse=.5f+.5f*Mathf.Sin(Time.unscaledTime*8f);
+                    DrawRectOutline(new Rect(counter.x-8f,counter.y-8f,
+                        counter.width+16f,counter.height+16f),4f,
+                        new Color(1f,.76f,.20f,.72f+.24f*pulse));
+                }
+            }
+            if(active){activeCenter=position;activeReveal=reveal;}
         }
-        GUILayout.EndScrollView();
-        GUILayout.EndArea();
-        if(GUI.Button(new Rect(30*u,height-58*u,width-60*u,42*u),
-            "Continue to battle",panelPrimary))CloseRallyResults();
-        GUI.EndGroup();
+        DrawRallyCallout(region,game.recentRallyResults[rallyResultIndex],
+            activeCenter,elapsed,activeReveal);
+        DrawRallyControls(region);
+    }
+    private string[] RallyPath(RallyResult result)
+    {
+        var movement=game.automaticMovements.LastOrDefault(candidate=>
+            candidate.unitId==result.unitId && candidate.kind=="failed rally");
+        var path=movement==null?null:movement.path.Where(board.Has).ToArray();
+        if(path!=null && path.Length>0)return path;
+        return new[]{result.originHex,result.finalHex}.Where(board.Has).Distinct().ToArray();
+    }
+    private void DrawRallyCallout(Rect region,RallyResult result,Vector2 center,
+        float elapsed,float revealAt)
+    {
+        float u=Mathf.Clamp(Screen.height/900f,1f,1.3f);
+        float width=Mathf.Min(440f*u,region.width-18f),height=176f*u;
+        float x=Mathf.Clamp(center.x-width/2f,9f,region.width-width-9f);
+        float above=center.y-height-70f*scale;
+        float y=above>=9f?above:Mathf.Clamp(center.y+70f*scale,9f,region.height-height-72f);
+        var callout=new Rect(x,y,width,height);
+        bool revealed=elapsed>=revealAt;
+        Color header=!revealed?new Color(.49f,.25f,.12f):result.success?
+            new Color(.24f,.43f,.18f):new Color(.57f,.18f,.13f);
+        Fill(new Rect(callout.x-4,callout.y-4,callout.width+8,callout.height+8),
+            new Color(.20f,.11f,.07f,.96f));
+        DrawSurface(callout,themeSkin.cardTexture,themeSkin.card);
+        Fill(new Rect(callout.x,callout.y,callout.width,46f*u),header);
+        var labels=UnitDisplayNames.Build(game.state);
+        string name;
+        if(!labels.TryGetValue(result.unitId,out name))name=result.unitId;
+        missileMapResult.fontSize=Mathf.RoundToInt(20*u);
+        missileMapDetail.fontSize=Mathf.RoundToInt(14*u);
+        GUI.Label(new Rect(callout.x+10f*u,callout.y,callout.width-20f*u,46f*u),
+            revealed?RallyOutcome(result):"RALLY CHECK · "+name,missileMapResult);
+        float tokenY=callout.y+58f*u;
+        DrawRallyStatusToken(new Rect(callout.x+16f*u,tokenY,112f*u,38f*u),result.statusBefore);
+        GUI.Label(new Rect(callout.x+132f*u,tokenY,34f*u,38f*u),"→",missileMapResult);
+        DrawRallyStatusToken(new Rect(callout.x+168f*u,tokenY,112f*u,38f*u),
+            revealed?result.statusAfter:result.statusBefore);
+        if(result.statusBefore==Status.Disrupted)
+        {
+            float dieY=callout.y+108f*u;
+            int shownRoll=revealed?result.rawRoll:
+                1+Mathf.Abs(Mathf.FloorToInt(Time.unscaledTime*12f))%6;
+            DrawRallyDie(new Rect(callout.x+18f*u,dieY,44f*u,44f*u),shownRoll);
+            string modifier=result.leaderSupport?"−1 LEADER":"NO MODIFIER";
+            GUI.Label(new Rect(callout.x+72f*u,dieY,112f*u,44f*u),modifier,missileMapDetail);
+            if(revealed && result.modifiedRoll!=result.rawRoll)
+                DrawRallyDie(new Rect(callout.x+188f*u,dieY,44f*u,44f*u),result.modifiedRoll);
+            GUI.Label(new Rect(callout.x+240f*u,dieY,95f*u,44f*u),
+                "MORALE "+result.morale,missileMapDetail);
+        }
+        else
+        {
+            GUI.Label(new Rect(callout.x+18f*u,callout.y+108f*u,260f*u,44f*u),
+                result.leaderSupport?"AUTOMATIC · LEADER IN RANGE":"NO LEADER · RETREAT",
+                missileMapDetail);
+        }
+        if(result.leaderSupport)
+        {
+            var leader=game.state.units.FirstOrDefault(unit=>unit.id==result.leaderId);
+            if(leader!=null)
+            {
+                var leaderRect=new Rect(callout.xMax-66f*u,callout.y+63f*u,50f*u,58f*u);
+                var texture=CounterTexture(leader);
+                if(texture!=null)GUI.DrawTexture(leaderRect,texture,ScaleMode.ScaleToFit);
+                GUI.Label(new Rect(callout.xMax-105f*u,callout.y+124f*u,90f*u,28f*u),
+                    leader.type,missileMapDetail);
+            }
+        }
+        if(revealed && result.originHex!=result.finalHex)
+            GUI.Label(new Rect(callout.x+18f*u,callout.yMax-29f*u,250f*u,24f*u),
+                result.originHex+" → "+result.finalHex,missileMapDetail);
+    }
+    private void DrawRallyControls(Rect region)
+    {
+        float u=Mathf.Clamp(Screen.height/900f,1f,1.25f);
+        float width=Mathf.Min(470f*u,region.width-18f),height=56f*u;
+        u=Mathf.Min(u,width/470f);
+        height=56f*u;
+        var rect=new Rect((region.width-width)/2f,region.height-height-8f,width,height);
+        Fill(new Rect(rect.x-3,rect.y-3,rect.width+6,rect.height+6),new Color(.18f,.10f,.07f,.94f));
+        Fill(rect,new Color(.93f,.87f,.72f,.97f));
+        GUI.Label(new Rect(rect.x+12f*u,rect.y,105f*u,height),
+            "RALLY "+(rallyResultIndex+1)+" / "+game.recentRallyResults.Count,panelSection);
+        string next=rallyResultIndex+1<game.recentRallyResults.Count?"Next result":"Continue";
+        if(GUI.Button(new Rect(rect.x+120f*u,rect.y+7f*u,210f*u,42f*u),next,panelPrimary))
+            AdvanceRallyPresentation();
+        if(GUI.Button(new Rect(rect.x+338f*u,rect.y+7f*u,118f*u,42f*u),
+            "Skip",panelButton))CloseRallyResults();
+    }
+    private void DrawRallyStatusToken(Rect rect,Status status)
+    {
+        Color color=status==Status.Ready?new Color(.30f,.50f,.22f):
+            status==Status.Disrupted?new Color(.76f,.51f,.14f):
+            status==Status.Routed?new Color(.62f,.13f,.10f):new Color(.25f,.22f,.20f);
+        Fill(new Rect(rect.x-2,rect.y-2,rect.width+4,rect.height+4),new Color(.18f,.10f,.07f,.96f));
+        Fill(rect,color);
+        string label=status==Status.Ready?"READY":status==Status.Disrupted?"D  DISRUPTED":
+            status==Status.Routed?"R  ROUTED":"ELIMINATED";
+        GUI.Label(rect,label,missileMapResult);
+    }
+    private void DrawRallyDie(Rect rect,int value)
+    {
+        Fill(new Rect(rect.x-3,rect.y-3,rect.width+6,rect.height+6),new Color(.20f,.12f,.08f,.96f));
+        Fill(rect,new Color(.96f,.91f,.79f));
+        float pip=Mathf.Max(4f,rect.width*.11f);
+        Vector2[] spots={new Vector2(.27f,.27f),new Vector2(.73f,.27f),new Vector2(.27f,.5f),
+            new Vector2(.73f,.5f),new Vector2(.27f,.73f),new Vector2(.73f,.73f),new Vector2(.5f,.5f)};
+        int[][] pips={new[]{6},new[]{0,5},new[]{0,6,5},new[]{0,1,4,5},
+            new[]{0,1,6,4,5},new[]{0,1,2,3,4,5}};
+        foreach(int index in pips[Mathf.Clamp(value,1,6)-1])
+        {
+            var point=new Vector2(rect.x+rect.width*spots[index].x,
+                rect.y+rect.height*spots[index].y);
+            Fill(new Rect(point.x-pip/2f,point.y-pip/2f,pip,pip),new Color(.20f,.12f,.08f));
+        }
     }
     private static string RallyOutcome(RallyResult result)
     {
@@ -3481,18 +3655,6 @@ public sealed class HastingsGame : MonoBehaviour
             "RALLIED FROM ROUT":"RALLIED";
         if(result.statusAfter==Status.Eliminated)return "ELIMINATED DURING RETREAT";
         return result.statusBefore==Status.Routed?"FAILED TO RALLY":"REMAINS DISRUPTED";
-    }
-    private static string RallyDetail(RallyResult result)
-    {
-        if(result.statusBefore==Status.Routed)
-            return result.success?
-                "A friendly leader in rally range automatically removed the rout marker.":
-                "No friendly leader was in rally range, so the routed unit retreated toward its rear line.";
-        string roll=result.rawRoll==result.modifiedRoll?
-            result.modifiedRoll.ToString():result.rawRoll+" → "+result.modifiedRoll+
-            " with leader support";
-        return "Morale "+result.morale+" · roll "+roll+" · "+
-            (result.success?"the disruption marker is removed.":"the unit remains disrupted.");
     }
     private void DrawOrderReview()
     {
