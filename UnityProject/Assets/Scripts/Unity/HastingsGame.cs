@@ -63,6 +63,11 @@ public sealed class HastingsGame : MonoBehaviour
         highTrajectoryTargetId="", quitPromptError="";
     private InterfaceTheme interfaceTheme;
     private InterfaceThemeSkin themeSkin;
+    private AudioSource musicSource;
+    private AudioClip[] musicPlaylist=Array.Empty<AudioClip>();
+    private int musicTrackIndex=-1;
+    private float musicVolume;
+    private bool musicPausedForMute;
     private Font periodFont,defaultFont;
     private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
@@ -89,6 +94,9 @@ public sealed class HastingsGame : MonoBehaviour
     private const float AutomaticFirePreludeSeconds=1.6f;
     private const float AutomaticMeleeEffectSeconds=3.0f;
     private const string DisplayPrefsVersion="display-prefs-version";
+    private const string MusicVolumePreference="music-volume-v1";
+    private const string MusicResourcePath="Audio/Music";
+    private const float DefaultMusicVolume=.35f;
 
     private void Awake()
     {
@@ -96,6 +104,7 @@ public sealed class HastingsGame : MonoBehaviour
         RestoreWindowedDisplay();
         interfaceTheme=InterfaceThemeCatalog.Load();
         themeSkin=InterfaceThemeCatalog.Get(interfaceTheme);
+        InitializeMusic();
         periodFont=Font.CreateDynamicFontFromOSFont(
             new[]{"Palatino","Baskerville","Georgia","Times New Roman"},18);
         var asset=Resources.Load<TextAsset>("Data/Map");
@@ -112,6 +121,7 @@ public sealed class HastingsGame : MonoBehaviour
     private void OnDestroy()
     {
         Application.wantsToQuit-=WantsToQuit;
+        PlayerPrefs.Save();
     }
     private bool WantsToQuit()
     {
@@ -123,6 +133,7 @@ public sealed class HastingsGame : MonoBehaviour
     }
     private void Update()
     {
+        UpdateMusicPlayback();
         if(automaticMeleeSequence)
         {
             ContinueAutomaticMeleeSequence();
@@ -144,7 +155,8 @@ public sealed class HastingsGame : MonoBehaviour
             if(chart!=""){chart="";return;}
             if(game==null){showMenu=true;menuPage="main";}
             else if(!showMenu){showMenu=true;menuPage="main";}
-            else if(menuPage!="main")menuPage=menuPage=="theme"?"settings":"main";
+            else if(menuPage!="main")
+                menuPage=menuPage=="theme" || menuPage=="credits"?"settings":"main";
             else showMenu=false;
         }
         UpdateStackSpread();
@@ -2897,6 +2909,68 @@ public sealed class HastingsGame : MonoBehaviour
         pan=BoardViewMath.ClampPan(pan,scale,mapWidth,mapHeight,
             board.data.width,board.data.height);
     }
+    private void InitializeMusic()
+    {
+        musicVolume=Mathf.Clamp01(PlayerPrefs.GetFloat(
+            MusicVolumePreference,DefaultMusicVolume));
+        musicSource=GetComponent<AudioSource>();
+        if(musicSource==null)musicSource=gameObject.AddComponent<AudioSource>();
+        musicSource.playOnAwake=false;
+        musicSource.loop=false;
+        musicSource.spatialBlend=0f;
+        musicSource.volume=musicVolume;
+        musicPlaylist=Resources.LoadAll<AudioClip>(MusicResourcePath)
+            .OrderBy(clip=>clip.name,StringComparer.OrdinalIgnoreCase).ToArray();
+        if(musicVolume>.001f)PlayNextMusicTrack();
+    }
+    private void UpdateMusicPlayback()
+    {
+        if(musicSource==null || musicPlaylist.Length==0)return;
+        musicSource.volume=musicVolume;
+        if(musicVolume<=.001f)
+        {
+            if(musicSource.isPlaying)
+            {
+                musicSource.Pause();
+                musicPausedForMute=true;
+            }
+            return;
+        }
+        if(musicPausedForMute)
+        {
+            musicSource.UnPause();
+            musicPausedForMute=false;
+        }
+        else if(!musicSource.isPlaying)PlayNextMusicTrack();
+    }
+    private void PlayNextMusicTrack()
+    {
+        if(musicSource==null || musicPlaylist.Length==0)return;
+        musicTrackIndex=(musicTrackIndex+1)%musicPlaylist.Length;
+        musicSource.clip=musicPlaylist[musicTrackIndex];
+        musicSource.volume=musicVolume;
+        musicSource.Play();
+    }
+    private void SetMusicVolume(float value)
+    {
+        float adjusted=Mathf.Round(Mathf.Clamp01(value)*100f)/100f;
+        if(Mathf.Approximately(adjusted,musicVolume))return;
+        musicVolume=adjusted;
+        PlayerPrefs.SetFloat(MusicVolumePreference,musicVolume);
+        if(musicSource==null)return;
+        musicSource.volume=musicVolume;
+        if(musicVolume<=.001f)
+        {
+            if(musicSource.isPlaying)musicSource.Pause();
+            musicPausedForMute=true;
+        }
+        else if(musicPausedForMute)
+        {
+            musicSource.UnPause();
+            musicPausedForMute=false;
+        }
+        else if(!musicSource.isPlaying)PlayNextMusicTrack();
+    }
     private void ShowMeleeResult()
     {
         ShowMeleeResult(4.3f);
@@ -2946,7 +3020,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUILayout.Label(menuPage=="main"?"The Battle for Senlac Hill":
             menuPage=="load"?"Load a game":menuPage=="save"?"Save your battle":
             menuPage=="newSide"?"14 October 1066":menuPage=="settings"?"Settings":
-            menuPage=="theme"?"Interface style":
+            menuPage=="theme"?"Interface style":menuPage=="credits"?"Credits":
             "Start a new battle?",
             menuSubtitle,GUILayout.Height(42));
         GUILayout.Space(28);
@@ -2976,11 +3050,31 @@ public sealed class HastingsGame : MonoBehaviour
         else if(menuPage=="settings")
         {
             GUILayout.Label("Adjust how the game looks and plays.",menuDescription);
-            GUILayout.Space(16);
+            GUILayout.Space(20);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Music volume",menuSubtitle,GUILayout.Height(40));
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(Mathf.RoundToInt(musicVolume*100f)+"%",menuDescription,
+                GUILayout.Width(74),GUILayout.Height(40));
+            GUILayout.EndHorizontal();
+            float adjustedMusicVolume=GUILayout.HorizontalSlider(musicVolume,0f,1f,
+                GUILayout.Height(28));
+            SetMusicVolume(adjustedMusicVolume);
+            string musicStatus=musicPlaylist.Length==0?
+                "Soundtrack selection pending. Set this to 0% to keep music off.":
+                musicVolume<=.001f?"Music is off.":
+                "Now playing: "+musicPlaylist[musicTrackIndex].name.Replace('_',' ');
+            GUILayout.Label(musicStatus,menuDescription,GUILayout.Height(
+                menuDescription.CalcHeight(new GUIContent(musicStatus),rect.width-2*inset)+4f));
+            GUILayout.Space(24);
             if(GUILayout.Button("Interface Style",menuButton,GUILayout.Height(buttonHeight)))
             {menuPage="theme";menuScroll=Vector2.zero;}
+            GUILayout.Space(12);
+            if(GUILayout.Button("Credits",menuButton,GUILayout.Height(buttonHeight)))
+                menuPage="credits";
             GUILayout.FlexibleSpace();
-            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="main";
+            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))
+            {PlayerPrefs.Save();menuPage="main";}
         }
         else if(menuPage=="load")
         {
@@ -3090,6 +3184,21 @@ public sealed class HastingsGame : MonoBehaviour
             }
             GUILayout.EndScrollView();
             GUILayout.Space(10);
+            if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="settings";
+        }
+        else if(menuPage=="credits")
+        {
+            GUILayout.Label("MUSIC",panelSection,GUILayout.Height(38));
+            GUILayout.Space(10);
+            GUILayout.Label("Lord of the Land",menuSubtitle,GUILayout.Height(44));
+            GUILayout.Label("Kevin MacLeod (incompetech.com)",menuDescription);
+            GUILayout.Space(18);
+            const string licenseCredit=
+                "Licensed under Creative Commons: By Attribution 4.0 License\n"+
+                "https://creativecommons.org/licenses/by/4.0/";
+            GUILayout.Label(licenseCredit,menuDescription,GUILayout.Height(
+                menuDescription.CalcHeight(new GUIContent(licenseCredit),rect.width-2*inset)+8f));
+            GUILayout.FlexibleSpace();
             if(GUILayout.Button("Back",menuButton,GUILayout.Height(buttonHeight)))menuPage="settings";
         }
         if(notice!="")GUILayout.Label(notice,small);

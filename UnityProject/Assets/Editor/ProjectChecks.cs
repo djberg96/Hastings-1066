@@ -20,6 +20,9 @@ public static class ProjectChecks
             "Assault period marker art missing");
         Check(Resources.Load<Texture2D>("Art/Counters/Markers/Battle_Turn")!=null,
             "Battle turn marker art missing");
+        var music=Resources.Load<AudioClip>("Audio/Music/Lord of the Land");
+        Check(music!=null && music.length>180f && music.length<190f,
+            "Lord of the Land soundtrack is missing or has the wrong duration");
         foreach(var terrain in new[]{"clear","ridge","marsh","stream","woods","road"})
         {
             var swatch=Resources.Load<Texture2D>("Art/Terrain/"+terrain);
