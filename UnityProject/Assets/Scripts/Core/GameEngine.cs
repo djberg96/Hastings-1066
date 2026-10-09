@@ -31,6 +31,8 @@ namespace Hastings
             new List<MissileFireResult>();
         public readonly List<MeleeCombatResult> recentMeleeResults=
             new List<MeleeCombatResult>();
+        public readonly List<RallyResult> recentRallyResults=
+            new List<RallyResult>();
         public readonly List<AutomaticMovementResult> automaticMovements=
             new List<AutomaticMovementResult>();
         public GameEngine(Board board, GameState state) { this.board=board; this.state=state; }
@@ -87,6 +89,7 @@ namespace Hastings
             if(state.phase!=Phase.Orders)return;
             recentFireResults.Clear();
             recentMeleeResults.Clear();
+            recentRallyResults.Clear();
             automaticMovements.Clear();
             if(state.playerSide==Side.Saxon)
             {
@@ -176,8 +179,20 @@ namespace Hastings
                         "; knights: "+group.knightOrder):"")+
                     "; effect "+group.effect);
             }
-            Rally(Side.Norman);
+            state.normanRallyPending=true;
             state.phase=Phase.NormanFire;
+        }
+        public bool NormanRallyPending()
+        {
+            return state.normanRallyPending;
+        }
+        public bool ResolvePendingNormanRally()
+        {
+            if(!state.normanRallyPending || OptionsPending())return false;
+            automaticMovements.Clear();
+            Rally(Side.Norman);
+            state.normanRallyPending=false;
+            return true;
         }
         public bool ResolveExtendedReroll(string groupId,bool knight,bool reroll)
         {
@@ -606,7 +621,9 @@ namespace Hastings
             movementResult.charged=unit.charged;
             lastMovementResult=movementResult;
             Log(unit.id+" moves "+origin+" → "+unit.hex+(unit.charged?" (charge)":""));
-            CheckExposedLeaders();
+            // Only an approaching enemy can trigger rule 10.2.3. Moving a friendly
+            // combat unit out of a leader's hex must not make that leader auto-retreat.
+            CheckExposedLeaders(Opposite(unit.side));
             CheckVictory();
         }
         public void UpdateReserveOrder(UnitState unit)
@@ -642,9 +659,10 @@ namespace Hastings
                 (l.side==Side.Saxon || l.type=="William" || UnitTypes.Get(l).nation==UnitTypes.Get(unit).nation) &&
                 board.Distance(l.hex,unit.hex)<=Math.Max(0,UnitTypes.Get(l).command-l.leaderPenalty));
         }
-        private void CheckExposedLeaders()
+        private void CheckExposedLeaders(Side side)
         {
-            foreach(var leader in state.units.Where(u=>u.status!=Status.Eliminated &&
+            foreach(var leader in state.units.Where(u=>u.side==side &&
+                u.status!=Status.Eliminated &&
                 UnitTypes.Get(u).leader && board.Has(u.hex)).ToList())
             {
                 if(UnitAt(leader.hex,leader.side)!=null)continue;

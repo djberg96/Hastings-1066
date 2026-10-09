@@ -55,7 +55,7 @@ public sealed class HastingsGame : MonoBehaviour
     private MeleeCombatResult meleeResult;
     private MovementResult movementResult;
     private bool showMenu=true, showUnits=true, showHelp, showEventLog, showOrderResults,
-        showQuitPrompt, quitApproved, orderReviewMode, showStrategyTrack, fullMapMode,
+        showRallyResults, showQuitPrompt, quitApproved, orderReviewMode, showStrategyTrack, fullMapMode,
         automaticMeleeSequence;
     private int orderReviewTab, orderResolutionTab;
     private int requiredMovementHighlightSignature=int.MinValue;
@@ -69,7 +69,7 @@ public sealed class HastingsGame : MonoBehaviour
     private float musicVolume;
     private bool musicPausedForMute;
     private Font periodFont,defaultFont;
-    private Vector2 panelScroll, chartScroll, menuScroll, orderScroll;
+    private Vector2 panelScroll, chartScroll, menuScroll, orderScroll, rallyScroll;
     private GUIStyle small, hexNumber, hexNumberShadow,
         menuTitle, menuSubtitle, menuDescription, menuButton, menuPrimary, menuTextField,
         panelTitle, panelStatus, panelSection, panelBody, panelMuted, panelValue,
@@ -149,7 +149,12 @@ public sealed class HastingsGame : MonoBehaviour
             }
             if(showOrderResults)
             {
-                if(game==null || !game.OptionsPending())showOrderResults=false;
+                if(game==null || !game.OptionsPending())CloseOrderResults();
+                return;
+            }
+            if(showRallyResults)
+            {
+                CloseRallyResults();
                 return;
             }
             if(chart!=""){chart="";return;}
@@ -160,7 +165,7 @@ public sealed class HastingsGame : MonoBehaviour
             else showMenu=false;
         }
         UpdateStackSpread();
-        if(game==null||showMenu||showQuitPrompt||chart!=""||showOrderResults||
+        if(game==null||showMenu||showQuitPrompt||chart!=""||showOrderResults||showRallyResults||
             !Application.isFocused)return;
         var viewDirection=new Vector2(
             (Input.GetKey(KeyCode.D)?1:0)-(Input.GetKey(KeyCode.A)?1:0),
@@ -172,7 +177,8 @@ public sealed class HastingsGame : MonoBehaviour
     private void UpdateStackSpread()
     {
         if(game==null || !showUnits){stackSpread.Clear();return;}
-        string opening=!showMenu && chart=="" && !showOrderResults && LeaderStackAt(hoveredHex)?hoveredHex:"";
+        string opening=!showMenu && chart=="" && !showOrderResults && !showRallyResults &&
+            LeaderStackAt(hoveredHex)?hoveredHex:"";
         if(opening!="" && !stackSpread.ContainsKey(opening))stackSpread[opening]=0f;
         foreach(var hex in stackSpread.Keys.ToArray())
         {
@@ -431,7 +437,7 @@ public sealed class HastingsGame : MonoBehaviour
             board.data.width,board.data.height);
         DrawMap(mapRect);
         DrawStrategyEffectsTrack(strategyTrackRect);
-        if(showOrderResults || MovementAnimationActive() || UnitTransitionAnimationActive() ||
+        if(showOrderResults || showRallyResults || MovementAnimationActive() || UnitTransitionAnimationActive() ||
             automaticMeleeSequence || showQuitPrompt)
             GUI.enabled=false;
         DrawPanel(new Rect(mapRect.xMax,0,PanelWidth(),Screen.height));
@@ -440,6 +446,7 @@ public sealed class HastingsGame : MonoBehaviour
         if(showMenu)DrawMenu();
         if(chart!="")DrawChart();
         if(showOrderResults && !showMenu && chart=="")DrawOrderResults();
+        if(showRallyResults && !showMenu && chart=="")DrawRallyResults();
         GUI.enabled=true;
         if(showQuitPrompt)DrawQuitPrompt();
     }
@@ -775,7 +782,7 @@ public sealed class HastingsGame : MonoBehaviour
            automaticMeleeSequence)return;
         if(e.type==EventType.KeyDown)
         {
-            if(showUnits && !showMenu && chart=="" && !showOrderResults &&
+            if(showUnits && !showMenu && chart=="" && !showOrderResults && !showRallyResults &&
                     (e.keyCode==KeyCode.Q||e.keyCode==KeyCode.E) && selected.Count==1)
             {
                 var unit=SelectedUnits().FirstOrDefault();
@@ -788,7 +795,7 @@ public sealed class HastingsGame : MonoBehaviour
                 e.Use();
             }
         }
-        if(showMenu||chart!=""||showOrderResults||!region.Contains(e.mousePosition))return;
+        if(showMenu||chart!=""||showOrderResults||showRallyResults||!region.Contains(e.mousePosition))return;
         if(e.type==EventType.ScrollWheel)
         {
             fullMapMode=false;
@@ -971,7 +978,8 @@ public sealed class HastingsGame : MonoBehaviour
         if(game!=null)
         {
             var e=Event.current;
-            hoveredHex=!showMenu && chart=="" && !showOrderResults && region.Contains(e.mousePosition)?
+            hoveredHex=!showMenu && chart=="" && !showOrderResults && !showRallyResults &&
+                region.Contains(e.mousePosition)?
                 HexAtPointer(e.mousePosition):"";
             var unit=SelectedUnits().FirstOrDefault();
             if(showUnits && unit!=null && (PlayerMovePhase() || PlayerReactionPhase()))
@@ -2632,6 +2640,11 @@ public sealed class HastingsGame : MonoBehaviour
             default:game.Advance();break;
         }
         CaptureUnitTransitions(transitionBefore,transitionLogMarker,priorPhase);
+        if(game.recentRallyResults.Count>0)
+        {
+            showRallyResults=true;
+            rallyScroll=Vector2.zero;
+        }
         selected.Clear();
         selectedTargets.Clear();
         highTrajectoryTargetId="";
@@ -2886,6 +2899,11 @@ public sealed class HastingsGame : MonoBehaviour
         automaticMeleeSequence=false;
         meleeResult=null;
         notice="";
+        if(game.recentRallyResults.Count>0)
+        {
+            showRallyResults=true;
+            rallyScroll=Vector2.zero;
+        }
         if(game.state.phase!=priorPhase)movementUndo.Clear();
     }
     private void CenterMeleeOnMap(MeleeCombatResult result)
@@ -3082,7 +3100,10 @@ public sealed class HastingsGame : MonoBehaviour
                     {
                         game=new GameEngine(board,GameStorage.Load(slot));saveSlot=slot;
                         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-                        showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
+                        showUnits=true;chart="";showOrderResults=game.NormanRallyPending();
+                        showRallyResults=false;orderReviewMode=false;
+                        orderResolutionTab=PlayerSide()==Side.Norman?0:1;
+                        orderScroll=Vector2.zero;rallyScroll=Vector2.zero;
                         highTrajectoryTargetId="";
                         movementUndo.Clear();
                         movementResult=null;
@@ -3301,7 +3322,7 @@ public sealed class HastingsGame : MonoBehaviour
         automaticMeleeSequence=false;
         saveSlot="";
         selected.Clear();selectedTargets.Clear();showMenu=false;menuPage="main";notice="";
-        showUnits=true;chart="";showOrderResults=false;orderReviewMode=false;
+        showUnits=true;chart="";showOrderResults=false;showRallyResults=false;orderReviewMode=false;
         orderResolutionTab=playerSide==Side.Norman?0:1;
         highTrajectoryTargetId="";
         movementUndo.Clear();
@@ -3310,6 +3331,25 @@ public sealed class HastingsGame : MonoBehaviour
         stackSpread.Clear();hoveredHex="";
         missileResult=null;meleeResult=null;
         lastMapWidth=0;scale=0;fullMapMode=false;
+    }
+    private void CloseOrderResults()
+    {
+        showOrderResults=false;
+        if(game==null || !game.NormanRallyPending() || game.OptionsPending())return;
+        if(!game.ResolvePendingNormanRally())return;
+        selected.Clear();
+        selectedTargets.Clear();
+        highTrajectoryTargetId="";
+        if(game.recentRallyResults.Count>0)
+        {
+            showRallyResults=true;
+            rallyScroll=Vector2.zero;
+        }
+    }
+    private void CloseRallyResults()
+    {
+        showRallyResults=false;
+        if(game!=null)game.recentRallyResults.Clear();
     }
     private void DrawOrderResults()
     {
@@ -3361,7 +3401,7 @@ public sealed class HastingsGame : MonoBehaviour
         bool optionsPending=game.OptionsPending();
         GUI.enabled=!optionsPending;
         if(GUI.Button(new Rect(width-112*u,12*u,88*u,34*u),"Close",chartClose))
-        {showOrderResults=false;GUI.EndGroup();return;}
+        {CloseOrderResults();GUI.EndGroup();return;}
         GUI.enabled=true;
         Side displayedSide=orderResolutionTab==0?Side.Norman:Side.Saxon;
 
@@ -3390,9 +3430,69 @@ public sealed class HastingsGame : MonoBehaviour
         string buttonText=optionsPending?"Complete the order choices above":"Continue to battle";
         GUI.enabled=!optionsPending;
         if(GUI.Button(new Rect(25*u,height-54*u,width-50*u,40*u),buttonText,panelPrimary))
-            showOrderResults=false;
+            CloseOrderResults();
         GUI.enabled=true;
         GUI.EndGroup();
+    }
+    private void DrawRallyResults()
+    {
+        if(game==null || game.recentRallyResults.Count==0)
+        {showRallyResults=false;return;}
+        float u=Mathf.Clamp(Screen.height/900f,.90f,1.24f);
+        orderTitle.fontSize=Mathf.RoundToInt(28*u);
+        orderSubtitle.fontSize=Mathf.RoundToInt(16*u);
+        Fill(new Rect(0,0,Screen.width,Screen.height),themeSkin.overlay);
+        float width=Mathf.Min(Screen.width-40f,820f*u);
+        float height=Mathf.Min(Screen.height-40f,650f*u);
+        var rect=new Rect((Screen.width-width)/2f,(Screen.height-height)/2f,width,height);
+        DrawSurface(rect,themeSkin.cardTexture,themeSkin.card);
+        Fill(new Rect(rect.x,rect.y,rect.width,62*u),themeSkin.accent);
+        DrawThemeFrame(rect);
+        GUI.BeginGroup(rect);
+        GUI.Label(new Rect(27*u,14*u,width-54*u,40*u),"RALLY SEGMENT",orderTitle);
+        Side side=game.recentRallyResults[0].side;
+        GUI.Label(new Rect(30*u,76*u,width-60*u,34*u),
+            side+" units attempt to recover before battle resumes.",orderSubtitle);
+        var contentRect=new Rect(30*u,118*u,width-60*u,height-190*u);
+        GUILayout.BeginArea(contentRect);
+        rallyScroll=GUILayout.BeginScrollView(rallyScroll);
+        var labels=UnitDisplayNames.Build(game.state);
+        foreach(var result in game.recentRallyResults)
+        {
+            string name;
+            if(!labels.TryGetValue(result.unitId,out name))name=result.unitId;
+            GUILayout.BeginVertical(panelCard);
+            GUILayout.Label(name+" · "+RallyOutcome(result),panelValue);
+            GUILayout.Label(RallyDetail(result),panelBody);
+            if(result.originHex!=result.finalHex)
+                GUILayout.Label("Hex "+result.originHex+" → "+result.finalHex,panelMuted);
+            GUILayout.EndVertical();
+            GUILayout.Space(8*u);
+        }
+        GUILayout.EndScrollView();
+        GUILayout.EndArea();
+        if(GUI.Button(new Rect(30*u,height-58*u,width-60*u,42*u),
+            "Continue to battle",panelPrimary))CloseRallyResults();
+        GUI.EndGroup();
+    }
+    private static string RallyOutcome(RallyResult result)
+    {
+        if(result.success)return result.statusBefore==Status.Routed?
+            "RALLIED FROM ROUT":"RALLIED";
+        if(result.statusAfter==Status.Eliminated)return "ELIMINATED DURING RETREAT";
+        return result.statusBefore==Status.Routed?"FAILED TO RALLY":"REMAINS DISRUPTED";
+    }
+    private static string RallyDetail(RallyResult result)
+    {
+        if(result.statusBefore==Status.Routed)
+            return result.success?
+                "A friendly leader in rally range automatically removed the rout marker.":
+                "No friendly leader was in rally range, so the routed unit retreated toward its rear line.";
+        string roll=result.rawRoll==result.modifiedRoll?
+            result.modifiedRoll.ToString():result.rawRoll+" → "+result.modifiedRoll+
+            " with leader support";
+        return "Morale "+result.morale+" · roll "+roll+" · "+
+            (result.success?"the disruption marker is removed.":"the unit remains disrupted.");
     }
     private void DrawOrderReview()
     {
@@ -3417,7 +3517,7 @@ public sealed class HastingsGame : MonoBehaviour
         GUI.Label(new Rect(27*u,15*u,width-205*u,42*u),"BATTLE ORDERS",orderTitle);
         chartClose.fontSize=Mathf.RoundToInt(17*u);
         if(GUI.Button(new Rect(width-120*u,15*u,94*u,36*u),"Close",chartClose))
-        {showOrderResults=false;GUI.EndGroup();return;}
+        {CloseOrderResults();GUI.EndGroup();return;}
         GUI.Label(new Rect(30*u,70*u,width-60*u,30*u),
             "Current orders for Assault "+game.state.period+", turn "+game.state.turn+".",
             orderSubtitle);

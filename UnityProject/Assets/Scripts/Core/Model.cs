@@ -99,6 +99,15 @@ namespace Hastings
         public bool reaction, chargeOrder, charged, interrupted;
         public string interruptionCause, interruptionFrom, interruptionTo;
     }
+    public sealed class RallyResult
+    {
+        public string unitId,originHex,finalHex;
+        public Side side;
+        public Status statusBefore,statusAfter;
+        public char morale;
+        public int rawRoll,modifiedRoll;
+        public bool leaderSupport,success;
+    }
     [Serializable] public class GameState
     {
         public int saveVersion = 1;
@@ -110,6 +119,7 @@ namespace Hastings
         public List<GroupState> groups = new List<GroupState>();
         public List<RoadState> road = new List<RoadState>();
         public List<OrderRollResult> orderResults = new List<OrderRollResult>();
+        public bool normanRallyPending;
         public int normanCasualties, saxonCasualties;
         public string result = "";
         public List<string> log = new List<string>();

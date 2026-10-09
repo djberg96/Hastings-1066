@@ -10,7 +10,12 @@ namespace Hastings
         {
             recentFireResults.Clear();
             recentMeleeResults.Clear();
+            recentRallyResults.Clear();
             automaticMovements.Clear();
+            if(state.normanRallyPending)
+            {
+                if(!ResolvePendingNormanRally())return;
+            }
             if(state.playerSide==Side.Saxon)
             {
                 AdvanceSaxonPlayer();
@@ -138,6 +143,7 @@ namespace Hastings
         {
             recentFireResults.Clear();
             recentMeleeResults.Clear();
+            recentRallyResults.Clear();
             automaticMovements.Clear();
             if(!CanAdvanceOpponentMelee())return false;
             Side side=Opposite(state.playerSide);

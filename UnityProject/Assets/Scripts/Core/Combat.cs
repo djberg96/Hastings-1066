@@ -377,7 +377,7 @@ namespace Hastings
             if(unit.side==Side.Norman)state.normanCasualties+=RuleTables.CasualtyPoints(UnitTypes.Get(unit));
             else state.saxonCasualties+=RuleTables.CasualtyPoints(UnitTypes.Get(unit));
             Log(unit.id+" eliminated");
-            if(!UnitTypes.Get(unit).leader)CheckExposedLeaders();
+            if(!UnitTypes.Get(unit).leader)CheckExposedLeaders(unit.side);
         }
         private void Disrupt(UnitState unit)
         {
@@ -506,14 +506,24 @@ namespace Hastings
         }
         private void Rally(Side side)
         {
+            recentRallyResults.Clear();
             foreach(var unit in Living(side).Where(u=>u.status==Status.Disrupted || u.status==Status.Routed).ToList())
             {
                 bool nearby=Living(side).Any(l=>UnitTypes.Get(l).leader && l.leaderCondition==0 &&
                     (l.type=="William" || side==Side.Saxon || UnitTypes.Get(l).nation==UnitTypes.Get(unit).nation) &&
                     board.Distance(l.hex,unit.hex)<=Math.Max(0,UnitTypes.Get(l).rally-l.leaderPenalty));
+                var rallyResult=new RallyResult {
+                    unitId=unit.id,side=side,originHex=unit.hex,statusBefore=unit.status,
+                    leaderSupport=nearby,morale=UnitTypes.Get(unit).morale
+                };
                 if(unit.status==Status.Routed)
                 {
-                    if(nearby){unit.status=Status.Ready;Log(unit.id+" rallies from rout");}
+                    if(nearby)
+                    {
+                        unit.status=Status.Ready;
+                        rallyResult.success=true;
+                        Log(unit.id+" rallies from rout");
+                    }
                     else
                     {
                         string origin=unit.hex;
@@ -527,12 +537,23 @@ namespace Hastings
                 }
                 else
                 {
-                    int roll=Math.Max(1,Die()-(nearby?1:0));
+                    rallyResult.rawRoll=Die();
+                    int roll=Math.Max(1,rallyResult.rawRoll-(nearby?1:0));
+                    rallyResult.modifiedRoll=roll;
                     var type=UnitTypes.Get(unit);char morale=type.morale;
                     if(StrategyEffects.WorsensMorale(type.knight,Group(unit).effect) && morale<'E')morale++;
+                    rallyResult.morale=morale;
                     if(RuleTables.Rally(morale,roll))
-                    {unit.status=Status.Ready;Log(unit.id+" rallies");}
+                    {
+                        unit.status=Status.Ready;
+                        rallyResult.success=true;
+                        Log(unit.id+" rallies (morale "+morale+", roll "+roll+")");
+                    }
+                    else Log(unit.id+" fails to rally (morale "+morale+", roll "+roll+")");
                 }
+                rallyResult.finalHex=unit.hex;
+                rallyResult.statusAfter=unit.status;
+                recentRallyResults.Add(rallyResult);
             }
         }
         private void LeaderCasualty(UnitState leader,bool melee)

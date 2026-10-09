@@ -188,6 +188,8 @@ public static class ProjectChecks
         }
         var engine=new GameEngine(board,state);engine.Begin();engine.ResolveOrders();
         Check(state.phase==Phase.NormanFire,"Opening order phase did not advance");
+        Check(state.normanRallyPending,
+            "Norman rally did not wait for the order-results review");
         Check(state.orderResults.Count==6 &&
             state.orderResults.Count(r=>r.side==Side.Norman)==3 &&
             state.orderResults.All(r=>r.roll>=2 && r.roll<=12),
@@ -210,6 +212,25 @@ public static class ProjectChecks
         Check(state.orderResults.Where(r=>r.side==Side.Norman)
             .All(r=>r.footRoll==r.knightRoll),
             "Norman foot and knight sections did not reuse the nationality roll");
+        var delayedRallyState=Setup.New(board,12347,Side.Norman);
+        var delayedRallyUnit=delayedRallyState.units.First(unit=>unit.side==Side.Norman &&
+            !UnitTypes.Get(unit).leader && board.Has(unit.hex));
+        delayedRallyUnit.status=Status.Disrupted;
+        delayedRallyState.phase=Phase.Orders;
+        var delayedRallyEngine=new GameEngine(board,delayedRallyState);
+        delayedRallyEngine.ResolveOrders();
+        Check(delayedRallyUnit.status==Status.Disrupted && delayedRallyState.normanRallyPending,
+            "A Norman unit rallied before order results could be reviewed");
+        foreach(var group in delayedRallyState.groups)
+        {
+            group.footOptional=false;group.knightOptional=false;
+            group.footReroll=false;group.knightReroll=false;
+        }
+        Check(delayedRallyEngine.ResolvePendingNormanRally() &&
+            !delayedRallyState.normanRallyPending &&
+            delayedRallyEngine.recentRallyResults.Count==1 &&
+            delayedRallyEngine.recentRallyResults[0].unitId==delayedRallyUnit.id,
+            "Deferred Norman rally did not resolve after the order review");
         GameState extendedNormanState=null;GameEngine extendedNormanEngine=null;
         GroupState normanRerollGroup=null;OrderRollResult normanRerollResult=null;
         for(uint extendedSeed=1;extendedSeed<=100 && normanRerollGroup==null;extendedSeed++)
@@ -277,7 +298,8 @@ public static class ProjectChecks
         var json=JsonUtility.ToJson(state);
         var restored=JsonUtility.FromJson<GameState>(json);
         Check(restored.randomState==state.randomState && restored.units.Count==state.units.Count &&
-              restored.phase==state.phase && restored.orderResults.Count==state.orderResults.Count,
+              restored.phase==state.phase && restored.orderResults.Count==state.orderResults.Count &&
+              restored.normanRallyPending==state.normanRallyPending,
               "Save state round trip failed");
         var restoredEngine=new GameEngine(board,restored);
         var originalMoves=engine.LegalMoves(state.units.First(u=>u.type=="BK"))
@@ -472,6 +494,27 @@ public static class ProjectChecks
         Check(guardEngine.OrderFor(guard)==Order.Charge &&
               guardEngine.MovementAllowance(guard)==6,
             "William's Guard did not follow the Norman knight order after William was lost");
+        var reactionLeaderState=Setup.New(board,97530,Side.Norman);
+        reactionLeaderState.phase=Phase.NormanReaction;
+        foreach(var unit in reactionLeaderState.units)unit.status=Status.Eliminated;
+        var reactionKnight=reactionLeaderState.units.First(unit=>unit.type=="FK");
+        var reactionLeader=reactionLeaderState.units.First(unit=>unit.type=="Eustace");
+        var reactionEnemy=reactionLeaderState.units.First(unit=>unit.type=="HC");
+        reactionKnight.status=Status.Ready;reactionKnight.hex="1112";
+        reactionLeader.status=Status.Ready;reactionLeader.hex=reactionKnight.hex;
+        reactionEnemy.status=Status.Ready;
+        reactionEnemy.hex=board.Adjacent(reactionKnight.hex).First();
+        reactionEnemy.facing=board.Direction(reactionEnemy.hex,reactionKnight.hex);
+        reactionLeaderState.groups.First(group=>group.id==reactionKnight.group).knightOrder=Order.Hold;
+        reactionLeaderState.randomState=2;
+        var reactionLeaderEngine=new GameEngine(board,reactionLeaderState);
+        var reactionMoves=reactionLeaderEngine.LegalMoves(reactionKnight,true);
+        Check(reactionMoves.Count>0,"Stacked cavalry had no legal reaction retreat for the leader test");
+        string reactionDestination=reactionMoves.Keys.First();
+        string leaderOrigin=reactionLeader.hex;
+        Check(reactionLeaderEngine.Move(reactionKnight,reactionDestination,true) &&
+              reactionKnight.hex==reactionDestination && reactionLeader.hex==leaderOrigin,
+            "A friendly leader auto-retreated when its stacked cavalry made a reaction move");
         var pursueState=Setup.New(board,97531);pursueState.phase=Phase.SaxonMove;
         foreach(var unit in pursueState.units)unit.status=Status.Eliminated;
         var pursueUnit=pursueState.units.First(unit=>unit.type=="F1");
